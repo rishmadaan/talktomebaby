@@ -1,16 +1,21 @@
 # Read — Text to Speech for VS Code
 
-Read your Markdown and text files aloud with **sentence-level text highlighting**. The current sentence is highlighted in your editor as the audio plays — like a reading guide that follows along.
+A VS Code extension that reads your documents aloud while highlighting each sentence in the editor as it's spoken. Think audiobook mode for your Markdown and text files.
 
-Supports **Sarvam AI** and **ElevenLabs** as TTS providers, with an architecture that makes adding new providers straightforward.
+You bring your own TTS API key (Sarvam AI or ElevenLabs), and the extension handles the rest — sentence parsing, audio playback, caching, and synchronized highlighting that follows along in the editor.
+
+## Why
+
+Reading your own writing aloud is one of the best ways to catch awkward phrasing, run-on sentences, and flow issues. But switching between an editor and a separate TTS tool breaks concentration. This extension keeps everything in one place — you hear your text and see exactly which sentence is playing, right in VS Code.
 
 ## Features
 
-- **Highlight while reading** — the current sentence is highlighted in your editor and auto-scrolls to stay visible
-- **Play / Pause / Resume** — full playback controls in the sidebar, plus `Cmd+Shift+R` keyboard shortcut
-- **Start from anywhere** — right-click any sentence and choose "Read: Start from Here"
-- **Session caching** — sentences are cached in memory so re-reading a document costs zero API credits
-- **Provider-agnostic** — switch between Sarvam AI and ElevenLabs (or add your own provider)
+- **Sentence highlighting** — the current sentence is highlighted in the editor and auto-scrolls to stay visible
+- **Full playback controls** — play, pause, resume, stop — in the sidebar panel and via `Cmd+Shift+R`
+- **Start from anywhere** — right-click to start reading from any point in the document
+- **Smart caching** — audio is cached per-sentence in memory, so re-reading costs zero API calls
+- **Multiple providers** — switch between Sarvam AI and ElevenLabs from the sidebar, or add your own
+- **Markdown-aware** — strips formatting before speaking, so you hear clean prose, not syntax
 
 ## Installation
 
