@@ -1,0 +1,152 @@
+{
+  "name": "read-vscode-tts",
+  "displayName": "Read — Text to Speech",
+  "description": "Read documents aloud with sentence-level text highlighting. Supports Sarvam AI and ElevenLabs.",
+  "version": "0.1.0",
+  "publisher": "rish",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "read-aloud",
+    "highlight",
+    "sarvam",
+    "elevenlabs"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "read-tts.speakDocument",
+        "title": "Read: Speak Document",
+        "icon": "$(unmute)"
+      },
+      {
+        "command": "read-tts.speakSelection",
+        "title": "Read: Speak Selection"
+      },
+      {
+        "command": "read-tts.startFromCursor",
+        "title": "Read: Start from Here"
+      },
+      {
+        "command": "read-tts.pauseResume",
+        "title": "Read: Pause/Resume"
+      },
+      {
+        "command": "read-tts.stop",
+        "title": "Read: Stop"
+      },
+      {
+        "command": "read-tts.setApiKey",
+        "title": "Read: Set API Key"
+      },
+      {
+        "command": "read-tts.selectProvider",
+        "title": "Read: Select TTS Provider"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "read-tts.speakDocument",
+          "when": "resourceExtname =~ /\\.(md|txt)$/",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "read-tts.startFromCursor",
+          "when": "resourceExtname =~ /\\.(md|txt)$/",
+          "group": "navigation"
+        },
+        {
+          "command": "read-tts.speakSelection",
+          "when": "editorHasSelection && resourceExtname =~ /\\.(md|txt)$/",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "read-tts.pauseResume",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "readTtsView",
+          "title": "Read TTS",
+          "icon": "$(play-circle)"
+        }
+      ]
+    },
+    "views": {
+      "readTtsView": [
+        {
+          "type": "webview",
+          "id": "read-tts.playback",
+          "name": "Playback"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Read TTS",
+      "properties": {
+        "read-tts.provider": {
+          "type": "string",
+          "default": "sarvam",
+          "enum": [
+            "sarvam",
+            "elevenlabs"
+          ],
+          "enumDescriptions": [
+            "Sarvam AI (Indian English, free credits included)",
+            "ElevenLabs (requires paid plan)"
+          ],
+          "description": "TTS provider to use"
+        },
+        "read-tts.voice": {
+          "type": "string",
+          "default": "",
+          "description": "Voice name/ID. Leave empty for provider default (Sarvam: Shubh, ElevenLabs: Rachel)"
+        },
+        "read-tts.speed": {
+          "type": "number",
+          "default": 1.0,
+          "minimum": 0.5,
+          "maximum": 2.0,
+          "description": "Speech speed (0.5 = half speed, 2.0 = double speed)"
+        },
+        "read-tts.highlightColor": {
+          "type": "string",
+          "default": "",
+          "description": "Background color for the current sentence highlight (e.g., #FFFF0033). Leave empty for theme default."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "npm run compile -- --watch",
+    "build": "npm run compile -- --minify",
+    "vscode:prepublish": "npm run build",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}
