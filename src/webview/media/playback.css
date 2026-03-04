@@ -12,6 +12,74 @@ body {
   padding: 12px;
 }
 
+.provider-section {
+  margin-bottom: 12px;
+}
+
+.provider-label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  display: block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.provider-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.provider-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+}
+
+.provider-btn:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.provider-btn.active {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.provider-btn.no-key {
+  opacity: 0.7;
+}
+
+.provider-btn-label {
+  font-weight: 500;
+}
+
+.provider-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.provider-badge.configured {
+  background: var(--vscode-testing-iconPassed, #388a34);
+  color: #fff;
+}
+
+.provider-badge.missing {
+  background: var(--vscode-errorForeground, #f44747);
+  color: #fff;
+}
+
 .controls {
   display: flex;
   align-items: center;

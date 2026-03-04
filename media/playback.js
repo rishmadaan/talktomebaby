@@ -9,6 +9,7 @@
   const statusEl = document.getElementById("status");
   const sentenceEl = document.getElementById("sentence-text");
   const progressFill = document.getElementById("progress-fill");
+  const providerOptionsEl = document.getElementById("provider-options");
 
   /** @type {AudioContext | null} */
   let audioCtx = null;
@@ -172,6 +173,10 @@
         progressFill.style.width = "0%";
         break;
 
+      case "updateProviderStatus":
+        renderProviders(msg.providers, msg.activeProvider);
+        break;
+
       case "cacheStats":
         const cacheEl = document.getElementById("cache-info");
         if (cacheEl) {
@@ -196,6 +201,43 @@
       const pct = Math.round(((current + 1) / total) * 100);
       progressFill.style.width = pct + "%";
     }
+  }
+
+  // --- Provider picker ---
+
+  function renderProviders(providers, activeProvider) {
+    providerOptionsEl.innerHTML = "";
+    providers.forEach(function (p) {
+      const btn = document.createElement("button");
+      btn.className =
+        "provider-btn" +
+        (p.name === activeProvider ? " active" : "") +
+        (!p.hasKey ? " no-key" : "");
+      btn.title = p.hasKey
+        ? p.label + " (API key configured)"
+        : p.label + " (no API key)";
+
+      const label = document.createElement("span");
+      label.className = "provider-btn-label";
+      label.textContent = p.label;
+
+      const badge = document.createElement("span");
+      badge.className = "provider-badge " + (p.hasKey ? "configured" : "missing");
+      badge.textContent = p.hasKey ? "Ready" : "No key";
+
+      btn.appendChild(label);
+      btn.appendChild(badge);
+
+      btn.addEventListener("click", function () {
+        if (!p.hasKey) {
+          vscode.postMessage({ command: "setApiKeyFromWebview", provider: p.name });
+        } else {
+          vscode.postMessage({ command: "selectProviderFromWebview", provider: p.name });
+        }
+      });
+
+      providerOptionsEl.appendChild(btn);
+    });
   }
 
   // Signal to extension that the webview script is ready to receive messages

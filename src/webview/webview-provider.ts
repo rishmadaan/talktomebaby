@@ -121,6 +121,11 @@ export class PlaybackWebviewProvider
 <body>
   <audio id="audio-player" preload="auto"></audio>
 
+  <div class="provider-section">
+    <label class="provider-label">Provider</label>
+    <div class="provider-options" id="provider-options"></div>
+  </div>
+
   <div class="controls">
     <button id="play-pause" disabled title="Play/Pause">&#9654;</button>
     <button id="stop" disabled title="Stop">&#9632;</button>

@@ -35,9 +35,12 @@ export function activate(context: vscode.ExtensionContext) {
   audioManager.setWebviewProvider(webviewProvider);
 
   // Set up webview → extension message handler
-  webviewProvider.setMessageHandler((msg) => {
+  webviewProvider.setMessageHandler(async (msg) => {
     log.info(`Webview message: ${msg.command}`);
     switch (msg.command) {
+      case "ready":
+        await sendProviderStatus();
+        break;
       case "audioEnded":
         audioManager.onAudioEnded();
         break;
@@ -48,6 +51,29 @@ export function activate(context: vscode.ExtensionContext) {
         audioManager.stop();
         highlightManager.clear();
         break;
+      case "selectProviderFromWebview": {
+        const name = msg.provider as string;
+        const config = vscode.workspace.getConfiguration("read-tts");
+        await config.update("provider", name, vscode.ConfigurationTarget.Global);
+        const provider = await apiKeyManager.getProvider(name);
+        if (provider) {
+          audioManager.setProvider(provider);
+          audioManager.clearCache();
+        }
+        await sendProviderStatus();
+        break;
+      }
+      case "setApiKeyFromWebview": {
+        const success = await apiKeyManager.setApiKey();
+        if (success) {
+          const provider = await apiKeyManager.getProvider();
+          if (provider) {
+            audioManager.setProvider(provider);
+          }
+        }
+        await sendProviderStatus();
+        break;
+      }
       case "error":
         log.error(`Webview error: ${msg.message}`);
         break;
@@ -107,11 +133,14 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  // Refresh highlight color when settings change
+  // Refresh highlight color and provider status when settings change
   context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration((e) => {
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (e.affectsConfiguration("read-tts.highlightColor")) {
         highlightManager.refreshDecorationType();
+      }
+      if (e.affectsConfiguration("read-tts.provider")) {
+        await sendProviderStatus();
       }
     })
   );
@@ -126,6 +155,17 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   log.info("Read TTS extension activated");
+}
+
+async function sendProviderStatus() {
+  const config = vscode.workspace.getConfiguration("read-tts");
+  const activeProvider = config.get<string>("provider") || "sarvam";
+  const providers = await apiKeyManager.getProviderStatuses();
+  webviewProvider.postMessage({
+    command: "updateProviderStatus",
+    providers,
+    activeProvider,
+  });
 }
 
 async function ensureProvider(): Promise<boolean> {
@@ -287,6 +327,7 @@ async function handleSetApiKey() {
       audioManager.setProvider(provider);
     }
   }
+  await sendProviderStatus();
 }
 
 async function handleSelectProvider() {
@@ -298,6 +339,7 @@ async function handleSelectProvider() {
       audioManager.clearCache();
     }
   }
+  await sendProviderStatus();
 }
 
 export function deactivate() {}

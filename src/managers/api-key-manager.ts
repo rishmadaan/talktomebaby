@@ -108,6 +108,28 @@ export class ApiKeyManager {
     return true;
   }
 
+  async hasApiKey(providerName: string): Promise<boolean> {
+    const secretKey =
+      providerName === "elevenlabs" ? SECRET_KEY_ELEVENLABS : SECRET_KEY_SARVAM;
+    const key = await this.secrets.get(secretKey);
+    return !!key;
+  }
+
+  async getProviderStatuses(): Promise<
+    { name: string; label: string; hasKey: boolean }[]
+  > {
+    const providers = [
+      { name: "sarvam", label: "Sarvam AI" },
+      { name: "elevenlabs", label: "ElevenLabs" },
+    ];
+    return Promise.all(
+      providers.map(async (p) => ({
+        ...p,
+        hasKey: await this.hasApiKey(p.name),
+      }))
+    );
+  }
+
   async selectProvider(): Promise<string | undefined> {
     const provider = await vscode.window.showQuickPick(
       [
