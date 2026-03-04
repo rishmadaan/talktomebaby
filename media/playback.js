@@ -34,6 +34,15 @@
     return audioCtx;
   }
 
+  // AudioContext must be resumed from a user gesture within the webview.
+  // Eagerly resume on any click so it's ready when playAudio arrives.
+  document.addEventListener("click", function () {
+    var ctx = getAudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+  }, true);
+
   function setStatus(text) {
     statusEl.textContent = text;
     statusEl.style.color = "";
@@ -71,10 +80,10 @@
     startedAt = 0;
   }
 
-  function playBuffer(buffer, offset) {
+  async function playBuffer(buffer, offset) {
     const ctx = getAudioContext();
     if (ctx.state === "suspended") {
-      ctx.resume();
+      await ctx.resume();
     }
 
     stopCurrentAudio();
