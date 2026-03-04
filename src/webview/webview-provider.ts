@@ -7,6 +7,7 @@ export class PlaybackWebviewProvider
 
   private view: vscode.WebviewView | undefined;
   private pendingMessages: unknown[] = [];
+  private webviewReady = false;
   private messageHandler:
     | ((message: { command: string; [key: string]: unknown }) => void)
     | undefined;
@@ -28,6 +29,23 @@ export class PlaybackWebviewProvider
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
 
+    this.webviewReady = false;
+
+    // Listen for "ready" signal from webview script before flushing messages
+    const readyDisposable = webviewView.webview.onDidReceiveMessage(
+      (msg: { command: string }) => {
+        if (msg.command === "ready") {
+          this.webviewReady = true;
+          // Flush any messages that were queued before the webview script loaded
+          for (const pendingMsg of this.pendingMessages) {
+            webviewView.webview.postMessage(pendingMsg);
+          }
+          this.pendingMessages = [];
+          readyDisposable.dispose();
+        }
+      }
+    );
+
     // Re-register message handler if one was set before the view was resolved
     if (this.messageHandler) {
       this.messageDisposable?.dispose();
@@ -36,21 +54,17 @@ export class PlaybackWebviewProvider
       );
     }
 
-    // Flush any messages that were queued before the view was ready
-    for (const msg of this.pendingMessages) {
-      webviewView.webview.postMessage(msg);
-    }
-    this.pendingMessages = [];
-
     // Clean up on dispose
     webviewView.onDidDispose(() => {
       this.messageDisposable?.dispose();
+      readyDisposable.dispose();
       this.view = undefined;
+      this.webviewReady = false;
     });
   }
 
   postMessage(message: unknown) {
-    if (this.view) {
+    if (this.view && this.webviewReady) {
       this.view.webview.postMessage(message);
     } else {
       this.pendingMessages.push(message);
@@ -83,22 +97,10 @@ export class PlaybackWebviewProvider
 
   private getHtml(webview: vscode.Webview): string {
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this.extensionUri,
-        "src",
-        "webview",
-        "media",
-        "playback.css"
-      )
+      vscode.Uri.joinPath(this.extensionUri, "media", "playback.css")
     );
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(
-        this.extensionUri,
-        "src",
-        "webview",
-        "media",
-        "playback.js"
-      )
+      vscode.Uri.joinPath(this.extensionUri, "media", "playback.js")
     );
 
     const nonce = getNonce();

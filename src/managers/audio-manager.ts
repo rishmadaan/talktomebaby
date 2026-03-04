@@ -3,6 +3,8 @@ import { ITtsProvider, TtsOptions } from "../providers/tts-provider";
 import { AudioCache } from "../utils/cache";
 import { SentenceInfo } from "../utils/text-parser";
 
+const log = vscode.window.createOutputChannel("Read TTS", { log: true });
+
 export type PlaybackState = "idle" | "playing" | "paused" | "loading";
 
 interface PlaybackEvent {
@@ -64,15 +66,21 @@ export class AudioManager {
   }
 
   async playNextSentence() {
+    log.info(`playNextSentence: index=${this.currentIndex}, total=${this.sentences.length}, provider=${this.provider?.name}`);
     if (!this.provider || this.currentIndex >= this.sentences.length) {
+      log.info("playNextSentence: done (no provider or end of sentences)");
       this.setState("idle");
       this.currentIndex = -1;
       return;
     }
 
-    if (this.abortController?.signal.aborted) return;
+    if (this.abortController?.signal.aborted) {
+      log.info("playNextSentence: aborted");
+      return;
+    }
 
     const sentence = this.sentences[this.currentIndex];
+    log.info(`playNextSentence: sentence="${sentence.text.slice(0, 60)}..."`);
     this._onEvent.fire({
       type: "sentenceChange",
       sentenceIndex: this.currentIndex,
@@ -95,21 +103,29 @@ export class AudioManager {
       let result = this.cache.get(cacheKey);
 
       if (!result) {
+        log.info(`Calling ${this.provider.name} API for sentence ${this.currentIndex}...`);
         // Chunk text if it exceeds provider limit
         const text = sentence.text.slice(
           0,
           this.provider.maxCharsPerRequest
         );
         result = await this.provider.synthesize(text, options);
+        log.info(`API returned ${result.audioBuffer.length} bytes (${result.format})`);
         this.cache.set(cacheKey, result);
+      } else {
+        log.info(`Cache hit for sentence ${this.currentIndex}`);
       }
 
-      if (this.abortController?.signal.aborted) return;
+      if (this.abortController?.signal.aborted) {
+        log.info("playNextSentence: aborted after API call");
+        return;
+      }
 
       // Send audio to webview for playback
       this.setState("playing");
       const base64 = result.audioBuffer.toString("base64");
       const dataUrl = `data:audio/${result.format};base64,${base64}`;
+      log.info(`Sending playAudio to webview (${base64.length} chars base64)`);
 
       this.webviewProvider?.postMessage({
         command: "playAudio",
@@ -121,6 +137,7 @@ export class AudioManager {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : String(err);
+      log.error(`TTS Error: ${message}`);
       this._onEvent.fire({ type: "error", error: message });
       this.setState("idle");
       vscode.window.showErrorMessage(`TTS Error: ${message}`);

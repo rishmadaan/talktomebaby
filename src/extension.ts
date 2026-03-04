@@ -11,6 +11,7 @@ let audioManager: AudioManager;
 let highlightManager: HighlightManager;
 let apiKeyManager: ApiKeyManager;
 let webviewProvider: PlaybackWebviewProvider;
+let activeEditor: vscode.TextEditor | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   log.info("Read TTS extension activating...");
@@ -60,11 +61,10 @@ export function activate(context: vscode.ExtensionContext) {
         event.type === "sentenceChange" &&
         event.sentenceIndex !== undefined
       ) {
-        const editor = vscode.window.activeTextEditor;
         const sentences = audioManager.getSentences();
-        if (editor && sentences[event.sentenceIndex]) {
+        if (activeEditor && sentences[event.sentenceIndex]) {
           highlightManager.highlightSentence(
-            editor,
+            activeEditor,
             sentences[event.sentenceIndex]
           );
         }
@@ -153,13 +153,25 @@ async function ensureProvider(): Promise<boolean> {
 }
 
 async function handleSpeakDocument() {
+  log.info("handleSpeakDocument called");
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
+    log.warn("No active editor");
     vscode.window.showWarningMessage("No active editor");
     return;
   }
 
-  if (!(await ensureProvider())) return;
+  log.info(`Active editor: ${editor.document.fileName}`);
+
+  // Capture the editor reference before reveal() steals focus
+  activeEditor = editor;
+
+  log.info("Calling ensureProvider...");
+  if (!(await ensureProvider())) {
+    log.warn("ensureProvider returned false — no provider");
+    return;
+  }
+  log.info("Provider ready");
 
   const sentences = parseDocument(editor.document);
   log.info(`Parsed ${sentences.length} sentences from document`);
@@ -172,9 +184,12 @@ async function handleSpeakDocument() {
   }
 
   // Open the sidebar player panel
+  log.info("Revealing webview...");
   await webviewProvider.reveal();
+  log.info(`Webview revealed. Ready: ${webviewProvider.isReady()}`);
 
-  // Show progress while generating first sentence
+  // Start playback — withProgress closes when first sentence is sent
+  log.info("Starting playback...");
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
@@ -185,7 +200,12 @@ async function handleSpeakDocument() {
       token.onCancellationRequested(() => {
         audioManager.stop();
       });
-      await audioManager.startPlayback(sentences);
+      try {
+        await audioManager.startPlayback(sentences);
+        log.info("startPlayback resolved");
+      } catch (err) {
+        log.error(`startPlayback error: ${err}`);
+      }
     }
   );
 }
@@ -196,6 +216,8 @@ async function handleSpeakSelection() {
     vscode.window.showWarningMessage("No text selected");
     return;
   }
+
+  activeEditor = editor;
 
   if (!(await ensureProvider())) return;
 
@@ -219,6 +241,8 @@ async function handleStartFromCursor() {
     vscode.window.showWarningMessage("No active editor");
     return;
   }
+
+  activeEditor = editor;
 
   if (!(await ensureProvider())) return;
 

@@ -14,7 +14,20 @@ Supports **Sarvam AI** and **ElevenLabs** as TTS providers, with an architecture
 
 ## Installation
 
-### From Source (Development)
+### Install from VSIX (Recommended)
+
+1. Download the latest `.vsix` file from [Releases](https://github.com/YOUR_USERNAME/read-vscode-tts/releases)
+2. In VS Code, open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+3. Run **"Extensions: Install from VSIX..."**
+4. Select the downloaded `.vsix` file
+
+Or install from the terminal:
+
+```bash
+code --install-extension read-tts-0.1.0.vsix
+```
+
+### Build from Source
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/read-vscode-tts.git
@@ -23,15 +36,17 @@ npm install
 npm run compile
 ```
 
-Then open the project in VS Code and press `F5` to launch the Extension Development Host.
-
-### As a Packaged Extension
+**To package and install locally:**
 
 ```bash
-npm run build
-npx @vscode/vsce package
-code --install-extension read-vscode-tts-0.1.0.vsix
+npx @vscode/vsce package         # Creates read-tts-0.1.0.vsix
 ```
+
+Then install the `.vsix` using either method above.
+
+**To run in development mode:**
+
+Open the project in VS Code and press `F5` to launch the Extension Development Host.
 
 ## Setup
 
