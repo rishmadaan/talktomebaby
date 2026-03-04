@@ -1,0 +1,41 @@
+name: Bug Report
+description: Report a bug in Read TTS
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Open a .md file
+        2. Click the speaker icon
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: TTS Provider
+      options:
+        - Sarvam AI
+        - ElevenLabs
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment
+      placeholder: |
+        - VS Code: v1.XX.X
+        - OS: macOS / Windows / Linux
+        - Extension version: 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Error Output
+      description: Check Output panel > "Read TTS" for error logs
+      render: shell
