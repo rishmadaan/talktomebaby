@@ -1,4 +1,4 @@
-import { ITtsProvider, TtsOptions, AudioResult } from "./tts-provider";
+import { ITtsProvider, TtsOptions, AudioResult, VoiceInfo } from "./tts-provider";
 
 const SARVAM_API_URL = "https://api.sarvam.ai/text-to-speech";
 
@@ -6,6 +6,22 @@ export class SarvamProvider implements ITtsProvider {
   readonly name = "sarvam";
   readonly maxCharsPerRequest = 2500;
   readonly defaultVoice = "shubh";
+  readonly voices: VoiceInfo[] = [
+    { id: "shubh", label: "Shubh" },
+    { id: "aditya", label: "Aditya" },
+    { id: "ritu", label: "Ritu" },
+    { id: "priya", label: "Priya" },
+    { id: "neha", label: "Neha" },
+    { id: "rahul", label: "Rahul" },
+    { id: "pooja", label: "Pooja" },
+    { id: "rohan", label: "Rohan" },
+    { id: "simran", label: "Simran" },
+    { id: "kavya", label: "Kavya" },
+    { id: "amit", label: "Amit" },
+    { id: "dev", label: "Dev" },
+    { id: "ishita", label: "Ishita" },
+    { id: "shreya", label: "Shreya" },
+  ];
 
   private apiKey: string;
 

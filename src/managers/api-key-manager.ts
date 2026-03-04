@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { SarvamProvider } from "../providers/sarvam-provider";
 import { ElevenLabsProvider } from "../providers/elevenlabs-provider";
-import { ITtsProvider } from "../providers/tts-provider";
+import { ITtsProvider, VoiceInfo } from "../providers/tts-provider";
 
 const SECRET_KEY_SARVAM = "read-tts-sarvam-api-key";
 const SECRET_KEY_ELEVENLABS = "read-tts-elevenlabs-api-key";
@@ -128,6 +128,15 @@ export class ApiKeyManager {
         hasKey: await this.hasApiKey(p.name),
       }))
     );
+  }
+
+  async getVoicesForProvider(providerName?: string): Promise<VoiceInfo[]> {
+    const provider = await this.getProvider(providerName);
+    if (!provider) return [];
+    if (provider.fetchVoices) {
+      return provider.fetchVoices();
+    }
+    return provider.voices;
   }
 
   async selectProvider(): Promise<string | undefined> {

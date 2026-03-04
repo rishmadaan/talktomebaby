@@ -13,7 +13,7 @@ body {
 }
 
 .provider-section {
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
 .provider-label {
@@ -156,4 +156,53 @@ body {
   margin-top: 12px;
   font-size: 10px;
   color: var(--vscode-descriptionForeground);
+}
+
+.speed-controls {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.speed-btn {
+  flex: 1;
+  padding: 3px 0;
+  border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--vscode-font-family);
+}
+
+.speed-btn:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.speed-btn.active {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.voice-section {
+  margin-top: 8px;
+}
+
+.voice-select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.1));
+  border-radius: 4px;
+  background: var(--vscode-dropdown-background, var(--vscode-input-background));
+  color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+  cursor: pointer;
+  outline: none;
+}
+
+.voice-select:focus {
+  border-color: var(--vscode-focusBorder);
 }

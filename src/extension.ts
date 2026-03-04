@@ -74,6 +74,16 @@ export function activate(context: vscode.ExtensionContext) {
         await sendProviderStatus();
         break;
       }
+      case "selectVoiceFromWebview": {
+        const voiceId = msg.voice as string;
+        const voiceConfig = vscode.workspace.getConfiguration("read-tts");
+        await voiceConfig.update("voice", voiceId, vscode.ConfigurationTarget.Global);
+        audioManager.clearCache();
+        break;
+      }
+      case "seekPrevious":
+        audioManager.seekPrevious();
+        break;
       case "error":
         log.error(`Webview error: ${msg.message}`);
         break;
@@ -165,6 +175,14 @@ async function sendProviderStatus() {
     command: "updateProviderStatus",
     providers,
     activeProvider,
+  });
+  // Also send voice list for the active provider
+  const voices = await apiKeyManager.getVoicesForProvider(activeProvider);
+  const activeVoice = config.get<string>("voice") || "";
+  webviewProvider.postMessage({
+    command: "updateVoices",
+    voices,
+    activeVoice,
   });
 }
 

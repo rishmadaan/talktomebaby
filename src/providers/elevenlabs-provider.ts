@@ -1,4 +1,4 @@
-import { ITtsProvider, TtsOptions, AudioResult } from "./tts-provider";
+import { ITtsProvider, TtsOptions, AudioResult, VoiceInfo } from "./tts-provider";
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1";
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
@@ -7,11 +7,27 @@ export class ElevenLabsProvider implements ITtsProvider {
   readonly name = "elevenlabs";
   readonly maxCharsPerRequest = 5000;
   readonly defaultVoice = DEFAULT_VOICE_ID;
+  readonly voices: VoiceInfo[] = [
+    { id: "21m00Tcm4TlvDq8ikWAM", label: "Rachel" },
+  ];
 
   private apiKey: string;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  async fetchVoices(): Promise<VoiceInfo[]> {
+    try {
+      const response = await fetch(`${ELEVENLABS_API_URL}/voices`, {
+        headers: { "xi-api-key": this.apiKey },
+      });
+      if (!response.ok) return this.voices;
+      const data = (await response.json()) as { voices: { voice_id: string; name: string }[] };
+      return data.voices.map((v) => ({ id: v.voice_id, label: v.name }));
+    } catch {
+      return this.voices;
+    }
   }
 
   async synthesize(text: string, options: TtsOptions): Promise<AudioResult> {

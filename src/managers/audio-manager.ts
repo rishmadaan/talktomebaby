@@ -151,6 +151,14 @@ export class AudioManager {
     this.playNextSentence();
   }
 
+  seekPrevious() {
+    if (this.currentIndex > 0) {
+      this.currentIndex--;
+      this.webviewProvider?.postMessage({ command: "stop" });
+      this.playNextSentence();
+    }
+  }
+
   pauseResume() {
     if (this.state === "playing") {
       this.setState("paused");

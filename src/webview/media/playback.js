@@ -6,10 +6,14 @@
 
   const playPauseBtn = document.getElementById("play-pause");
   const stopBtn = document.getElementById("stop");
+  const seekBackBtn = document.getElementById("seek-back");
+  const seekForwardBtn = document.getElementById("seek-forward");
   const statusEl = document.getElementById("status");
   const sentenceEl = document.getElementById("sentence-text");
   const progressFill = document.getElementById("progress-fill");
   const providerOptionsEl = document.getElementById("provider-options");
+  const voiceSelectEl = document.getElementById("voice-select");
+  const speedControlsEl = document.getElementById("speed-controls");
 
   /** @type {AudioContext | null} */
   let audioCtx = null;
@@ -21,6 +25,7 @@
   let isPaused = false;
   let pausedAt = 0;
   let startedAt = 0;
+  let currentSpeed = 1.0;
 
   function getAudioContext() {
     if (!audioCtx) {
@@ -38,6 +43,15 @@
     statusEl.textContent = "Error: " + text;
     statusEl.style.color = "var(--vscode-errorForeground, red)";
     vscode.postMessage({ command: "error", message: text });
+  }
+
+  // Returns current playback position in seconds within the audio buffer
+  function getCurrentPosition() {
+    if (isPaused) return pausedAt;
+    if (isPlaying && audioCtx) {
+      return (audioCtx.currentTime - startedAt) * currentSpeed;
+    }
+    return 0;
   }
 
   function stopCurrentAudio() {
@@ -68,6 +82,7 @@
 
     sourceNode = ctx.createBufferSource();
     sourceNode.buffer = buffer;
+    sourceNode.playbackRate.value = currentSpeed;
     sourceNode.connect(ctx.destination);
 
     sourceNode.onended = function () {
@@ -78,9 +93,33 @@
     };
 
     sourceNode.start(0, offset);
-    startedAt = ctx.currentTime - offset;
+    startedAt = ctx.currentTime - offset / currentSpeed;
     isPlaying = true;
     isPaused = false;
+  }
+
+  function seekBy(seconds) {
+    if (!currentBuffer) return;
+    var pos = getCurrentPosition();
+    var newPos = pos + seconds;
+
+    if (newPos < 0) {
+      vscode.postMessage({ command: "seekPrevious" });
+      return;
+    }
+    if (newPos >= currentBuffer.duration) {
+      stopCurrentAudio();
+      isPlaying = false;
+      vscode.postMessage({ command: "audioEnded" });
+      return;
+    }
+
+    if (isPaused) {
+      pausedAt = newPos;
+    } else {
+      playBuffer(currentBuffer, newPos);
+      playPauseBtn.textContent = "\u23F8";
+    }
   }
 
   // Convert base64 to ArrayBuffer
@@ -114,6 +153,8 @@
           playPauseBtn.textContent = "\u23F8";
           playPauseBtn.disabled = false;
           stopBtn.disabled = false;
+          seekBackBtn.disabled = false;
+          seekForwardBtn.disabled = false;
           updateProgress(msg.sentenceIndex, msg.totalSentences);
 
           playBuffer(audioBuffer, 0);
@@ -124,7 +165,7 @@
 
       case "pause":
         if (isPlaying && !isPaused && sourceNode && audioCtx) {
-          pausedAt = audioCtx.currentTime - startedAt;
+          pausedAt = (audioCtx.currentTime - startedAt) * currentSpeed;
           // Stop source node without clearing all state
           try {
             sourceNode.onended = null;
@@ -144,6 +185,7 @@
           const ctx = getAudioContext();
           sourceNode = ctx.createBufferSource();
           sourceNode.buffer = currentBuffer;
+          sourceNode.playbackRate.value = currentSpeed;
           sourceNode.connect(ctx.destination);
           sourceNode.onended = function () {
             if (isPlaying && !isPaused) {
@@ -152,7 +194,7 @@
             }
           };
           sourceNode.start(0, pausedAt);
-          startedAt = ctx.currentTime - pausedAt;
+          startedAt = ctx.currentTime - pausedAt / currentSpeed;
           isPlaying = true;
           isPaused = false;
           playPauseBtn.textContent = "\u23F8";
@@ -166,6 +208,8 @@
         playPauseBtn.textContent = "\u25B6";
         playPauseBtn.disabled = true;
         stopBtn.disabled = true;
+        seekBackBtn.disabled = true;
+        seekForwardBtn.disabled = true;
         setStatus("Stopped");
         sentenceEl.textContent =
           "Open a .md or .txt file and click the speaker icon to start reading.";
@@ -175,6 +219,10 @@
 
       case "updateProviderStatus":
         renderProviders(msg.providers, msg.activeProvider);
+        break;
+
+      case "updateVoices":
+        renderVoices(msg.voices, msg.activeVoice);
         break;
 
       case "cacheStats":
@@ -194,6 +242,41 @@
   // Stop button
   stopBtn.addEventListener("click", () => {
     vscode.postMessage({ command: "stopPlayback" });
+  });
+
+  // Seek buttons
+  seekBackBtn.addEventListener("click", () => {
+    seekBy(-10);
+  });
+
+  seekForwardBtn.addEventListener("click", () => {
+    seekBy(10);
+  });
+
+  // Speed buttons
+  speedControlsEl.addEventListener("click", (e) => {
+    const btn = e.target.closest(".speed-btn");
+    if (!btn) return;
+    const newSpeed = parseFloat(btn.dataset.speed);
+
+    // Update active button
+    speedControlsEl.querySelectorAll(".speed-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Apply to current playback — get position before changing speed
+    if (sourceNode && isPlaying && audioCtx) {
+      var pos = (audioCtx.currentTime - startedAt) * currentSpeed;
+      currentSpeed = newSpeed;
+      sourceNode.playbackRate.value = newSpeed;
+      startedAt = audioCtx.currentTime - pos / newSpeed;
+    } else {
+      currentSpeed = newSpeed;
+    }
+  });
+
+  // Voice select
+  voiceSelectEl.addEventListener("change", () => {
+    vscode.postMessage({ command: "selectVoiceFromWebview", voice: voiceSelectEl.value });
   });
 
   function updateProgress(current, total) {
@@ -237,6 +320,26 @@
       });
 
       providerOptionsEl.appendChild(btn);
+    });
+  }
+
+  // --- Voice picker ---
+
+  function renderVoices(voices, activeVoice) {
+    voiceSelectEl.innerHTML = "";
+    var defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "Default";
+    voiceSelectEl.appendChild(defaultOpt);
+
+    voices.forEach(function (v) {
+      var opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.label;
+      if (v.id === activeVoice) {
+        opt.selected = true;
+      }
+      voiceSelectEl.appendChild(opt);
     });
   }
 

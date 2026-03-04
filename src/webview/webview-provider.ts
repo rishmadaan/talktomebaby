@@ -121,14 +121,19 @@ export class PlaybackWebviewProvider
 <body>
   <audio id="audio-player" preload="auto"></audio>
 
-  <div class="provider-section">
-    <label class="provider-label">Provider</label>
-    <div class="provider-options" id="provider-options"></div>
+  <div class="controls">
+    <button id="seek-back" disabled title="Back 10s">-10</button>
+    <button id="play-pause" disabled title="Play/Pause">&#9654;</button>
+    <button id="seek-forward" disabled title="Forward 10s">+10</button>
+    <button id="stop" disabled title="Stop">&#9632;</button>
   </div>
 
-  <div class="controls">
-    <button id="play-pause" disabled title="Play/Pause">&#9654;</button>
-    <button id="stop" disabled title="Stop">&#9632;</button>
+  <div class="speed-controls" id="speed-controls">
+    <button class="speed-btn active" data-speed="1">1x</button>
+    <button class="speed-btn" data-speed="1.25">1.25x</button>
+    <button class="speed-btn" data-speed="1.5">1.5x</button>
+    <button class="speed-btn" data-speed="1.75">1.75x</button>
+    <button class="speed-btn" data-speed="2">2x</button>
   </div>
 
   <div class="progress-bar">
@@ -142,6 +147,18 @@ export class PlaybackWebviewProvider
   </div>
 
   <div id="cache-info" class="cache-info"></div>
+
+  <div class="provider-section">
+    <label class="provider-label">Provider</label>
+    <div class="provider-options" id="provider-options"></div>
+  </div>
+
+  <div class="voice-section">
+    <label class="provider-label">Voice</label>
+    <select id="voice-select" class="voice-select">
+      <option value="">Default</option>
+    </select>
+  </div>
 
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
