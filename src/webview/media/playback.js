@@ -26,6 +26,9 @@
   let pausedAt = 0;
   let startedAt = 0;
   let currentSpeed = 1.0;
+  let currentPlaybackId = 0;
+  let currentSentenceIndex = -1;
+  let playRequestId = 0;
 
   function getAudioContext() {
     if (!audioCtx) {
@@ -80,14 +83,18 @@
     startedAt = 0;
   }
 
-  async function playBuffer(buffer, offset) {
+  async function playBuffer(buffer, offset, requestId) {
     const ctx = getAudioContext();
     if (ctx.state === "suspended") {
       await ctx.resume();
     }
+    if (requestId !== undefined && requestId !== playRequestId) {
+      return;
+    }
 
     stopCurrentAudio();
     currentBuffer = buffer;
+    const safeOffset = Math.max(0, Math.min(offset, buffer.duration));
 
     sourceNode = ctx.createBufferSource();
     sourceNode.buffer = buffer;
@@ -97,12 +104,16 @@
     sourceNode.onended = function () {
       if (isPlaying && !isPaused) {
         isPlaying = false;
-        vscode.postMessage({ command: "audioEnded" });
+        vscode.postMessage({
+          command: "audioEnded",
+          playbackId: currentPlaybackId,
+          sentenceIndex: currentSentenceIndex,
+        });
       }
     };
 
-    sourceNode.start(0, offset);
-    startedAt = ctx.currentTime - offset / currentSpeed;
+    sourceNode.start(0, safeOffset);
+    startedAt = ctx.currentTime - safeOffset / currentSpeed;
     isPlaying = true;
     isPaused = false;
   }
@@ -119,7 +130,11 @@
     if (newPos >= currentBuffer.duration) {
       stopCurrentAudio();
       isPlaying = false;
-      vscode.postMessage({ command: "audioEnded" });
+      vscode.postMessage({
+        command: "audioEnded",
+        playbackId: currentPlaybackId,
+        sentenceIndex: currentSentenceIndex,
+      });
       return;
     }
 
@@ -148,11 +163,18 @@
     switch (msg.command) {
       case "playAudio":
         try {
+          const requestId = ++playRequestId;
           const ctx = getAudioContext();
           // Extract base64 from data URL
-          const base64Data = msg.audioUrl.split(",")[1];
+          const base64Data = msg.audioBase64 || msg.audioUrl.split(",")[1];
           const arrayBuffer = base64ToArrayBuffer(base64Data);
           const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+          if (requestId !== playRequestId) {
+            return;
+          }
+
+          currentPlaybackId = msg.playbackId || 0;
+          currentSentenceIndex = msg.sentenceIndex;
 
           setStatus(
             `Sentence ${msg.sentenceIndex + 1} of ${msg.totalSentences}`
@@ -166,7 +188,7 @@
           seekForwardBtn.disabled = false;
           updateProgress(msg.sentenceIndex, msg.totalSentences);
 
-          playBuffer(audioBuffer, 0);
+          await playBuffer(audioBuffer, 0, requestId);
         } catch (e) {
           setError("Failed to decode audio: " + e.message);
         }
@@ -199,7 +221,11 @@
           sourceNode.onended = function () {
             if (isPlaying && !isPaused) {
               isPlaying = false;
-              vscode.postMessage({ command: "audioEnded" });
+              vscode.postMessage({
+                command: "audioEnded",
+                playbackId: currentPlaybackId,
+                sentenceIndex: currentSentenceIndex,
+              });
             }
           };
           sourceNode.start(0, pausedAt);
@@ -212,8 +238,11 @@
         break;
 
       case "stop":
+        playRequestId++;
         stopCurrentAudio();
         currentBuffer = null;
+        currentPlaybackId = 0;
+        currentSentenceIndex = -1;
         playPauseBtn.textContent = "\u25B6";
         playPauseBtn.disabled = true;
         stopBtn.disabled = true;

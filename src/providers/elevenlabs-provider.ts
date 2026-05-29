@@ -1,4 +1,5 @@
 import { ITtsProvider, TtsOptions, AudioResult, VoiceInfo } from "./tts-provider";
+import { fetchWithTimeout } from "./fetch-timeout";
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1";
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
@@ -19,7 +20,7 @@ export class ElevenLabsProvider implements ITtsProvider {
 
   async fetchVoices(): Promise<VoiceInfo[]> {
     try {
-      const response = await fetch(`${ELEVENLABS_API_URL}/voices`, {
+      const response = await fetchWithTimeout(`${ELEVENLABS_API_URL}/voices`, {
         headers: { "xi-api-key": this.apiKey },
       });
       if (!response.ok) return this.voices;
@@ -34,7 +35,7 @@ export class ElevenLabsProvider implements ITtsProvider {
     const voiceId = options.voice || this.defaultVoice;
     const url = `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,7 +61,7 @@ export class ElevenLabsProvider implements ITtsProvider {
 
   async validateKey(apiKey: string): Promise<boolean> {
     try {
-      const response = await fetch(`${ELEVENLABS_API_URL}/user`, {
+      const response = await fetchWithTimeout(`${ELEVENLABS_API_URL}/user`, {
         method: "GET",
         headers: {
           "xi-api-key": apiKey,

@@ -1,4 +1,5 @@
 import { ITtsProvider, TtsOptions, AudioResult, VoiceInfo } from "./tts-provider";
+import { fetchWithTimeout } from "./fetch-timeout";
 
 const SARVAM_API_URL = "https://api.sarvam.ai/text-to-speech";
 
@@ -30,7 +31,7 @@ export class SarvamProvider implements ITtsProvider {
   }
 
   async synthesize(text: string, options: TtsOptions): Promise<AudioResult> {
-    const response = await fetch(SARVAM_API_URL, {
+    const response = await fetchWithTimeout(SARVAM_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -69,7 +70,7 @@ export class SarvamProvider implements ITtsProvider {
 
   async validateKey(apiKey: string): Promise<boolean> {
     try {
-      const response = await fetch(SARVAM_API_URL, {
+      const response = await fetchWithTimeout(SARVAM_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

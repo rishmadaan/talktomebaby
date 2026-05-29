@@ -42,7 +42,10 @@ export function activate(context: vscode.ExtensionContext) {
         await sendProviderStatus();
         break;
       case "audioEnded":
-        audioManager.onAudioEnded();
+        audioManager.onAudioEnded(
+          msg.sentenceIndex as number | undefined,
+          msg.playbackId as number | undefined
+        );
         break;
       case "togglePauseResume":
         audioManager.pauseResume();
@@ -60,11 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
           audioManager.setProvider(provider);
           audioManager.clearCache();
         }
+        await config.update("voice", "", vscode.ConfigurationTarget.Global);
         await sendProviderStatus();
         break;
       }
       case "setApiKeyFromWebview": {
-        const success = await apiKeyManager.setApiKey();
+        const success = await apiKeyManager.setApiKey(msg.provider as string | undefined);
         if (success) {
           const provider = await apiKeyManager.getProvider();
           if (provider) {

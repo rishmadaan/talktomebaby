@@ -30,26 +30,26 @@ export class ApiKeyManager {
       : new SarvamProvider(apiKey);
   }
 
-  async setApiKey(): Promise<boolean> {
+  async setApiKey(providerName?: string): Promise<boolean> {
     const config = vscode.workspace.getConfiguration("read-tts");
-    const currentProvider =
-      config.get<string>("provider") || "sarvam";
+    const providerOptions = [
+      {
+        label: "Sarvam AI",
+        description: "Indian English TTS (free credits)",
+        value: "sarvam",
+      },
+      {
+        label: "ElevenLabs",
+        description: "Premium TTS (requires paid plan)",
+        value: "elevenlabs",
+      },
+    ];
 
-    const provider = await vscode.window.showQuickPick(
-      [
-        {
-          label: "Sarvam AI",
-          description: "Indian English TTS (free credits)",
-          value: "sarvam",
-        },
-        {
-          label: "ElevenLabs",
-          description: "Premium TTS (requires paid plan)",
-          value: "elevenlabs",
-        },
-      ],
-      { placeHolder: "Select TTS provider" }
-    );
+    const provider =
+      providerOptions.find((option) => option.value === providerName) ||
+      (await vscode.window.showQuickPick(providerOptions, {
+        placeHolder: "Select TTS provider",
+      }));
 
     if (!provider) return false;
 
@@ -164,7 +164,7 @@ export class ApiKeyManager {
         "Cancel"
       );
       if (setKey === "Set API Key") {
-        return (await this.setApiKey()) ? provider.value : undefined;
+        return (await this.setApiKey(provider.value)) ? provider.value : undefined;
       }
       return undefined;
     }

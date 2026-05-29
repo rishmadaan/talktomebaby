@@ -13,9 +13,14 @@ export class AudioCache {
   private cache = new Map<string, CacheEntry>();
   private totalSize = 0;
 
-  static makeKey(text: string, provider: string, voice: string): string {
+  static makeKey(
+    text: string,
+    provider: string,
+    voice: string,
+    speed: number
+  ): string {
     const hash = createHash("sha256")
-      .update(`${text}|${provider}|${voice}`)
+      .update(`${text}|${provider}|${voice}|${speed}`)
       .digest("hex")
       .slice(0, 16);
     return hash;
