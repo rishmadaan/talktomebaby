@@ -32,6 +32,10 @@ const FONT_MAX = 28;
 export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
   const panel = document.createElement("div");
   panel.id = "settings-panel";
+  // IMPORTANT: visibility is controlled exclusively via panel.hidden (the HTML
+  // `hidden` attribute). reader.css sets display:flex on #settings-panel, which
+  // would normally override the UA [hidden] rule — so reader.css MUST also
+  // include `#settings-panel[hidden] { display: none; }` to make this work.
   panel.hidden = true;
   // Insert before the player bar so it stacks directly above it.
   const playerBar = document.getElementById("player-bar")!;

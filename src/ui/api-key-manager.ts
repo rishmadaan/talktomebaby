@@ -17,7 +17,7 @@ export class ApiKeyManager {
     const name = KEY_NAMES[providerId];
     if (!name) return undefined;
     const value = await vscode.window.showInputBox({
-      prompt: `Enter your ${providerId} API key`,
+      prompt: `Enter your ${providerId} API key (stored securely in your OS keychain via VS Code SecretStorage — never written to settings or disk in plain text)`,
       password: true,
       ignoreFocusOut: true,
     });

@@ -10,6 +10,7 @@ import { SarvamProvider } from "./synthesis/sarvam";
 import { TtsProvider } from "./synthesis/provider";
 import { availableProviders } from "./synthesis/provider-catalog";
 import { VoiceCache } from "./synthesis/voice-cache";
+import { withTimeout } from "./synthesis/with-timeout";
 import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
 import { EditorSync } from "./ui/editor-sync";
 import { StatusBar } from "./ui/status-bar";
@@ -240,15 +241,31 @@ export function activate(context: vscode.ExtensionContext) {
   // Voices don't change mid-session, so cache per provider for the host lifetime.
   const voiceCache = new VoiceCache();
 
-  /** Fetch + cache a provider's voices (fire-and-forget safe). Failures are logged
-   *  and NOT cached, so a later request retries. */
+  /** Fetch + cache a provider's voices.
+   *  - Wraps the network call in a 4-second timeout so a hanging provider never
+   *    leaves "Loading voices…" onscreen forever.
+   *  - On timeout OR error: returns a minimal fallback (the active voice) and
+   *    CACHES that fallback so every subsequent gear-open is instant. A window
+   *    reload clears the in-memory cache and retries fresh. */
   async function fetchVoices(provider: TtsProvider): Promise<{ id: string; label: string }[]> {
+    // If already cached (including a previously cached fallback), return immediately.
+    const hit = voiceCache.get(provider.id);
+    if (hit) return hit;
+
+    const fallback = [{ id: provider.defaultVoice, label: provider.defaultVoice }];
+    let voices: { id: string; label: string }[];
     try {
-      return await voiceCache.resolve(provider.id, () => provider.listVoices());
+      // Race the fetch against a 4-second timer. If it hangs, we get the fallback.
+      voices = await withTimeout(provider.listVoices(), 4000, fallback);
     } catch (err) {
       log.error(`listVoices(${provider.id}) failed: ${err instanceof Error ? err.message : String(err)}`);
-      throw err;
+      voices = fallback;
     }
+    // Cache whatever we got — success, fallback-on-timeout, or fallback-on-error —
+    // so the next gear-open never waits again. voiceCache.resolve() would NOT cache
+    // errors, so we manage caching directly here.
+    voiceCache.set(provider.id, voices);
+    return voices;
   }
 
   async function startSession(doc: vscode.TextDocument): Promise<boolean> {
@@ -268,7 +285,8 @@ export function activate(context: vscode.ExtensionContext) {
     );
     session.panel.onDispose(() => { statusBar.hide(); session = undefined; });
     // Prefetch the active provider's voices so the first gear-open is instant.
-    void fetchVoices(provider).catch(() => {});
+    // fetchVoices() always resolves — no .catch() needed.
+    void fetchVoices(provider);
     return true;
   }
 
@@ -291,22 +309,18 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   /** Send settings data immediately (cache or loading), then — if voices weren't
-   *  cached — fetch them and push a follow-up settingsData with them filled in. */
+   *  cached — fetch them and push a follow-up settingsData with them filled in.
+   *  fetchVoices() always resolves (never throws): it caches success, fallback-
+   *  on-timeout, and fallback-on-error alike, so a second gear-open is always
+   *  instant. */
   async function pushSettingsData(active: ReadingSession): Promise<void> {
     active.panel.sendSettingsData(settingsSnapshot(active));
     if (voiceCache.has(active.provider.id)) return;
     const provider = active.provider;
-    try {
-      const voices = await fetchVoices(provider);
-      // Guard against a provider/session swap while the fetch was in flight.
-      if (session === active && active.provider === provider) {
-        active.panel.sendSettingsData({ ...settingsSnapshot(active), voices });
-      }
-    } catch {
-      if (session === active && active.provider === provider) {
-        // Fetch failed: surface the current voice so the dropdown isn't stuck loading.
-        active.panel.sendSettingsData({ ...settingsSnapshot(active), voices: [{ id: active.voice, label: active.voice }] });
-      }
+    const voices = await fetchVoices(provider);
+    // Guard against a provider/session swap while the fetch was in flight.
+    if (session === active && active.provider === provider) {
+      active.panel.sendSettingsData({ ...settingsSnapshot(active), voices });
     }
   }
 

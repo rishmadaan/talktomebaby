@@ -42,6 +42,9 @@ span[data-w]:hover { outline: 1px solid var(--vscode-focusBorder); }
   background: var(--vscode-sideBar-background); color: var(--vscode-editor-foreground);
   border-top: 1px solid var(--vscode-panel-border);
   box-shadow: 0 -10px 30px color-mix(in srgb, var(--vscode-widget-shadow, #000) 35%, transparent); }
+/* The hidden attribute must win over our display:flex (author display overrides
+   the UA [hidden] rule otherwise). This is why the panel "never closed". */
+#settings-panel[hidden] { display: none; }
 .settings-header { position: sticky; top: 0; display: flex; align-items: center;
   justify-content: space-between; padding: 0.6rem 0 0.5rem;
   background: var(--vscode-sideBar-background);
