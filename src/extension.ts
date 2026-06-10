@@ -20,6 +20,10 @@ let log: vscode.LogOutputChannel;
 
 const PROSE_EXTS = /\.(md|mdx|txt|rst|org|tex|adoc)$/i;
 
+const LAST_SESSION_KEY = "talktomebaby.lastSession";
+interface LastSession { uri: string; sentenceIndex: number; savedAt: number }
+let lastSaved = 0;
+
 async function resolveActiveDocument(): Promise<vscode.TextDocument | undefined> {
   const editor = vscode.window.activeTextEditor;
   if (editor) return editor.document;
@@ -288,6 +292,22 @@ export function activate(context: vscode.ExtensionContext) {
       provider, voice, cache, context.extensionUri,
       (s) => {
         statusBar.update(s.state, vscode.workspace.getConfiguration("talktomebaby").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
+        // Persist position (throttled to once per ~3s) so a reload can resume.
+        if (s.position.sentenceIndex >= 0) {
+          const now = Date.now();
+          if (now - lastSaved >= 3000) {
+            lastSaved = now;
+            void context.workspaceState.update(LAST_SESSION_KEY, {
+              uri: s.docUri.toString(),
+              sentenceIndex: s.position.sentenceIndex,
+              savedAt: now,
+            } satisfies LastSession);
+          }
+        }
+        // Clear persisted position when reading completes naturally.
+        if (s.state === "ended") {
+          void context.workspaceState.update(LAST_SESSION_KEY, undefined);
+        }
       },
       handleSettingsMessage
     );
@@ -441,7 +461,10 @@ export function activate(context: vscode.ExtensionContext) {
       if (idx !== undefined) session.jumpToWord(idx);
     }),
     vscode.commands.registerCommand("talktomebaby.pauseResume", () => session?.pauseResume()),
-    vscode.commands.registerCommand("talktomebaby.stop", () => { session?.dispose(); session = undefined; statusBar.hide(); }),
+    vscode.commands.registerCommand("talktomebaby.stop", () => {
+      void context.workspaceState.update(LAST_SESSION_KEY, undefined);
+      session?.dispose(); session = undefined; statusBar.hide();
+    }),
     vscode.commands.registerCommand("talktomebaby.openReader", () => session?.panel.reveal()),
     vscode.commands.registerCommand("talktomebaby.selectProvider", async () => {
       const activeId = cfg().get<string>("provider", "edge");
@@ -500,6 +523,39 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     { dispose() { session?.dispose(); } }
   );
+
+  // Offer to resume a session that was interrupted by a window reload.
+  const last = context.workspaceState.get<LastSession>(LAST_SESSION_KEY);
+  if (last && Date.now() - last.savedAt < 12 * 60 * 60 * 1000) {
+    const name = vscode.workspace.asRelativePath(vscode.Uri.parse(last.uri));
+    void vscode.window
+      .showInformationMessage(
+        `TalkToMeBaby: you were reading ${name} (sentence ${last.sentenceIndex + 1}). Resume?`,
+        "Resume",
+        "Dismiss"
+      )
+      .then(async (choice) => {
+        if (choice !== "Resume") {
+          await context.workspaceState.update(LAST_SESSION_KEY, undefined);
+          return;
+        }
+        let doc: vscode.TextDocument;
+        try {
+          doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(last.uri));
+        } catch {
+          void vscode.window.showWarningMessage(`TalkToMeBaby: couldn't reopen ${name} to resume.`);
+          await context.workspaceState.update(LAST_SESSION_KEY, undefined);
+          return;
+        }
+        await vscode.window.showTextDocument(doc, { preserveFocus: false });
+        if (!(await startSession(doc)) || !session) return;
+        const model = session.model;
+        const clampedIdx = Math.max(0, Math.min(model.sentences.length - 1, last.sentenceIndex));
+        const firstWord = model.sentences[clampedIdx]?.words[0];
+        if (firstWord) session.jumpToWord(firstWord.index);
+      });
+  }
+
   log.info("TalkToMeBaby activated");
 }
 

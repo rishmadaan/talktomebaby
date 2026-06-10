@@ -126,7 +126,7 @@ export class Engine {
       this.pendingJumpWord = null;
     }
     if (!this.playing) return; // primed but paused — loaded and seeked, do not play
-    void lc.audio.play();
+    lc.audio.play().catch(() => this.cb.onState("paused"));
     this.cb.onState("playing");
   }
 
@@ -143,7 +143,7 @@ export class Engine {
     const lc = this.loaded.get(next);
     if (lc && lc.timingsMs !== null) {
       lc.audio.currentTime = 0;
-      void lc.audio.play();
+      lc.audio.play().catch(() => this.cb.onState("paused"));
       this.cb.onState("playing");
     } else {
       this.cb.requestChunk(next, true);
@@ -177,7 +177,7 @@ export class Engine {
     if (lc && lc.timingsMs !== null) {
       const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
       lc.audio.currentTime = t ? t.start / 1000 : 0;
-      void lc.audio.play();
+      lc.audio.play().catch(() => this.cb.onState("paused"));
       this.cb.onState("playing");
       this.prefetch(chunkIndex + 1);
     } else {
