@@ -1,10 +1,10 @@
-# Speechly Rebuild Implementation Plan
+# SpeakItToMe Rebuild Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild read-vscode-tts as Speechly: a Speechify-parity VS Code extension with continuous TTS, word-level karaoke highlighting, click-to-jump, and pitch-preserved speed.
+**Goal:** Rebuild read-vscode-tts as SpeakItToMe: a Speechify-parity VS Code extension with continuous TTS, word-level karaoke highlighting, click-to-jump, and pitch-preserved speed.
 
-**Architecture:** Extension host owns the document model (blocks→sentences→words with source offsets), chunked synthesis with word timings, and a disk cache. A reader webview panel renders FROM the model and owns all playback state via a dual-`<audio>` handoff engine. Spec: `docs/superpowers/specs/2026-06-10-speechly-rebuild-design.md`.
+**Architecture:** Extension host owns the document model (blocks→sentences→words with source offsets), chunked synthesis with word timings, and a disk cache. A reader webview panel renders FROM the model and owns all playback state via a dual-`<audio>` handoff engine. Spec: `docs/superpowers/specs/2026-06-10-speakittome-rebuild-design.md`.
 
 **Tech Stack:** TypeScript, esbuild (two bundles: Node extension + IIFE webview), vitest + happy-dom for tests, `msedge-tts` (default provider), ElevenLabs `/with-timestamps`, macOS `say`, Sarvam.
 
@@ -15,7 +15,7 @@
 ## File Structure
 
 ```
-package.json                      # MODIFY: rename to speechly, new contributions, scripts
+package.json                      # MODIFY: rename to speakittome, new contributions, scripts
 vitest.config.ts                  # CREATE
 scripts/smoke-edge.ts             # CREATE: manual Edge TTS smoke test
 src/
@@ -124,8 +124,8 @@ Replace the entire file with:
 
 ```json
 {
-  "name": "speechly",
-  "displayName": "Speechly",
+  "name": "speakittome",
+  "displayName": "SpeakItToMe",
   "description": "Listen to your docs. Speechify-style reading for VS Code: word-level highlighting, click-to-jump, 2x speed without pitch shift.",
   "version": "0.2.0",
   "publisher": "rish",
@@ -138,33 +138,33 @@ Replace the entire file with:
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      { "command": "speechly.readDocument", "title": "Speechly: Read Document", "icon": "$(unmute)" },
-      { "command": "speechly.readSelection", "title": "Speechly: Read Selection" },
-      { "command": "speechly.readFromCursor", "title": "Speechly: Read from Here" },
-      { "command": "speechly.pauseResume", "title": "Speechly: Pause/Resume" },
-      { "command": "speechly.stop", "title": "Speechly: Stop" },
-      { "command": "speechly.openReader", "title": "Speechly: Open Reader" },
-      { "command": "speechly.setApiKey", "title": "Speechly: Set API Key" },
-      { "command": "speechly.selectProvider", "title": "Speechly: Select TTS Provider" },
-      { "command": "speechly.selectVoice", "title": "Speechly: Select Voice" }
+      { "command": "speakittome.readDocument", "title": "SpeakItToMe: Read Document", "icon": "$(unmute)" },
+      { "command": "speakittome.readSelection", "title": "SpeakItToMe: Read Selection" },
+      { "command": "speakittome.readFromCursor", "title": "SpeakItToMe: Read from Here" },
+      { "command": "speakittome.pauseResume", "title": "SpeakItToMe: Pause/Resume" },
+      { "command": "speakittome.stop", "title": "SpeakItToMe: Stop" },
+      { "command": "speakittome.openReader", "title": "SpeakItToMe: Open Reader" },
+      { "command": "speakittome.setApiKey", "title": "SpeakItToMe: Set API Key" },
+      { "command": "speakittome.selectProvider", "title": "SpeakItToMe: Select TTS Provider" },
+      { "command": "speakittome.selectVoice", "title": "SpeakItToMe: Select Voice" }
     ],
     "menus": {
       "editor/title": [
-        { "command": "speechly.readDocument", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
+        { "command": "speakittome.readDocument", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
       ],
       "editor/context": [
-        { "command": "speechly.readFromCursor", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" },
-        { "command": "speechly.readSelection", "when": "editorHasSelection && resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
+        { "command": "speakittome.readFromCursor", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" },
+        { "command": "speakittome.readSelection", "when": "editorHasSelection && resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
       ]
     },
     "keybindings": [
-      { "command": "speechly.pauseResume", "key": "ctrl+shift+r", "mac": "cmd+shift+r" }
+      { "command": "speakittome.pauseResume", "key": "ctrl+shift+r", "mac": "cmd+shift+r" }
     ],
     "configuration": {
       "type": "object",
-      "title": "Speechly",
+      "title": "SpeakItToMe",
       "properties": {
-        "speechly.provider": {
+        "speakittome.provider": {
           "type": "string", "default": "edge",
           "enum": ["edge", "elevenlabs", "say", "sarvam"],
           "enumDescriptions": [
@@ -175,16 +175,16 @@ Replace the entire file with:
           ],
           "description": "TTS provider"
         },
-        "speechly.voice.edge": { "type": "string", "default": "en-US-AriaNeural" },
-        "speechly.voice.elevenlabs": { "type": "string", "default": "21m00Tcm4TlvDq8ikWAM" },
-        "speechly.voice.say": { "type": "string", "default": "Samantha" },
-        "speechly.voice.sarvam": { "type": "string", "default": "shubh" },
-        "speechly.speed": { "type": "number", "default": 1.0, "minimum": 0.5, "maximum": 2.0, "description": "Playback speed (pitch preserved). Persisted from the player." },
-        "speechly.editorClickToJump": { "type": "boolean", "default": true, "description": "Alt+click in the source editor jumps playback there during a session." },
-        "speechly.readerFontSize": { "type": "number", "default": 16 },
-        "speechly.highlight.sentenceColor": { "type": "string", "default": "", "description": "Sentence band color. Empty = theme default." },
-        "speechly.highlight.wordColor": { "type": "string", "default": "", "description": "Current word color. Empty = theme default." },
-        "speechly.cacheSizeMB": { "type": "number", "default": 200 }
+        "speakittome.voice.edge": { "type": "string", "default": "en-US-AriaNeural" },
+        "speakittome.voice.elevenlabs": { "type": "string", "default": "21m00Tcm4TlvDq8ikWAM" },
+        "speakittome.voice.say": { "type": "string", "default": "Samantha" },
+        "speakittome.voice.sarvam": { "type": "string", "default": "shubh" },
+        "speakittome.speed": { "type": "number", "default": 1.0, "minimum": 0.5, "maximum": 2.0, "description": "Playback speed (pitch preserved). Persisted from the player." },
+        "speakittome.editorClickToJump": { "type": "boolean", "default": true, "description": "Alt+click in the source editor jumps playback there during a session." },
+        "speakittome.readerFontSize": { "type": "number", "default": 16 },
+        "speakittome.highlight.sentenceColor": { "type": "string", "default": "", "description": "Sentence band color. Empty = theme default." },
+        "speakittome.highlight.wordColor": { "type": "string", "default": "", "description": "Current word color. Empty = theme default." },
+        "speakittome.cacheSizeMB": { "type": "number", "default": 200 }
       }
     }
   },
@@ -238,19 +238,19 @@ Replace `src/extension.ts` entirely with:
 import * as vscode from "vscode";
 
 export function activate(context: vscode.ExtensionContext) {
-  const log = vscode.window.createOutputChannel("Speechly", { log: true });
+  const log = vscode.window.createOutputChannel("SpeakItToMe", { log: true });
   context.subscriptions.push(log);
   const todo = (name: string) => () =>
-    vscode.window.showInformationMessage(`Speechly: ${name} not implemented yet`);
+    vscode.window.showInformationMessage(`SpeakItToMe: ${name} not implemented yet`);
   for (const cmd of [
     "readDocument", "readSelection", "readFromCursor", "pauseResume",
     "stop", "openReader", "setApiKey", "selectProvider", "selectVoice",
   ]) {
     context.subscriptions.push(
-      vscode.commands.registerCommand(`speechly.${cmd}`, todo(cmd))
+      vscode.commands.registerCommand(`speakittome.${cmd}`, todo(cmd))
     );
   }
-  log.info("Speechly activated (scaffold)");
+  log.info("SpeakItToMe activated (scaffold)");
 }
 
 export function deactivate() {}
@@ -271,7 +271,7 @@ Expected: install succeeds, both esbuild bundles build, vitest reports "No test 
 
 ```bash
 git add -A
-git commit -m "chore: rename to speechly, clean slate scaffold with green build"
+git commit -m "chore: rename to speakittome, clean slate scaffold with green build"
 ```
 
 (`git add -A` is acceptable here only because this repo is the extension itself, not the Foundry.)
@@ -906,7 +906,7 @@ const audio = (n: number, fill = 65): ChunkAudio => ({
 
 describe("DiskCache", () => {
   let dir: string;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "speechly-cache-")); });
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "speakittome-cache-")); });
 
   it("round-trips audio and timings", async () => {
     const cache = new DiskCache(dir, 1024 * 1024);
@@ -1126,20 +1126,20 @@ import { parseDocument } from "../src/core/document-model";
 import { buildChunks } from "../src/core/chunker";
 
 const model = parseDocument(
-  "Speechly is a reading companion. It highlights every word as it speaks. Try it now!",
+  "SpeakItToMe is a reading companion. It highlights every word as it speaks. Try it now!",
   "smoke.txt", 1
 );
 const [chunk] = buildChunks(model);
 const provider = new EdgeProvider();
 const result = await provider.synthesize(chunk, provider.defaultVoice, new AbortController().signal);
-writeFileSync("/tmp/speechly-smoke.mp3", Buffer.from(result.audio));
+writeFileSync("/tmp/speakittome-smoke.mp3", Buffer.from(result.audio));
 console.log("audio bytes:", result.audio.byteLength);
 console.log("timings:", JSON.stringify(result.timings, null, 2));
 ```
 
 - [ ] **Step 3: Run the smoke test (network required)**
 
-Run: `npx tsx scripts/smoke-edge.ts && open /tmp/speechly-smoke.mp3`
+Run: `npx tsx scripts/smoke-edge.ts && open /tmp/speakittome-smoke.mp3`
 Expected: prints a nonzero byte count, prints `unit: "ms"` timings covering most words (Edge omits some punctuation-only tokens, fine), and the mp3 plays the sentence. If `getVoices`/event shapes differ from the README of the installed version, fix the parsing in `edge.ts` now.
 
 - [ ] **Step 4: Run full test suite, commit**
@@ -2083,7 +2083,7 @@ export class ReaderPanel {
 
   constructor(extensionUri: vscode.Uri, title: string) {
     this.panel = vscode.window.createWebviewPanel(
-      "speechly.reader", `Speechly — ${title}`, vscode.ViewColumn.Beside,
+      "speakittome.reader", `SpeakItToMe — ${title}`, vscode.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [extensionUri] }
     );
     const css = this.panel.webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "reader.css"));
@@ -2184,7 +2184,7 @@ class ReadingSession {
     this.panel.onMessage(async (msg) => {
       switch (msg.type) {
         case "ready": {
-          const cfg = vscode.workspace.getConfiguration("speechly");
+          const cfg = vscode.workspace.getConfiguration("speakittome");
           const settings: ReaderSettings = {
             speed: cfg.get("speed", 1.0),
             fontSize: cfg.get("readerFontSize", 16),
@@ -2216,7 +2216,7 @@ class ReadingSession {
           this.onEvent(this);
           break;
         case "speedChanged":
-          await vscode.workspace.getConfiguration("speechly")
+          await vscode.workspace.getConfiguration("speakittome")
             .update("speed", msg.rate, vscode.ConfigurationTarget.Global);
           break;
         case "error":
@@ -2239,9 +2239,9 @@ function makeProvider(): TtsProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  log = vscode.window.createOutputChannel("Speechly", { log: true });
+  log = vscode.window.createOutputChannel("SpeakItToMe", { log: true });
   context.subscriptions.push(log);
-  const cfg = () => vscode.workspace.getConfiguration("speechly");
+  const cfg = () => vscode.workspace.getConfiguration("speakittome");
 
   async function startSession(editor: vscode.TextEditor) {
     session?.dispose();
@@ -2258,16 +2258,16 @@ export function activate(context: vscode.ExtensionContext) {
 
   const needEditor = () => {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) void vscode.window.showWarningMessage("Speechly: no active editor");
+    if (!editor) void vscode.window.showWarningMessage("SpeakItToMe: no active editor");
     return editor;
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("speechly.readDocument", async () => {
+    vscode.commands.registerCommand("speakittome.readDocument", async () => {
       const editor = needEditor();
       if (editor) await startSession(editor);
     }),
-    vscode.commands.registerCommand("speechly.readFromCursor", async () => {
+    vscode.commands.registerCommand("speakittome.readFromCursor", async () => {
       const editor = needEditor();
       if (!editor) return;
       await startSession(editor);
@@ -2275,7 +2275,7 @@ export function activate(context: vscode.ExtensionContext) {
       const word = session!.model.words.find((w) => w.source.end > offset) ?? session!.model.words[0];
       if (word) session!.jumpToWord(word.index);
     }),
-    vscode.commands.registerCommand("speechly.readSelection", async () => {
+    vscode.commands.registerCommand("speakittome.readSelection", async () => {
       const editor = needEditor();
       if (!editor || editor.selection.isEmpty) return;
       await startSession(editor); // v1 parity: selection = start at selection, read on
@@ -2283,18 +2283,18 @@ export function activate(context: vscode.ExtensionContext) {
       const word = session!.model.words.find((w) => w.source.end > offset);
       if (word) session!.jumpToWord(word.index);
     }),
-    vscode.commands.registerCommand("speechly.pauseResume", () => session?.pauseResume()),
-    vscode.commands.registerCommand("speechly.stop", () => { session?.dispose(); session = undefined; }),
-    vscode.commands.registerCommand("speechly.openReader", () => session?.panel.reveal()),
-    vscode.commands.registerCommand("speechly.setApiKey", () =>
-      vscode.window.showInformationMessage("Speechly: key management arrives with premium providers (Task 18+)")),
-    vscode.commands.registerCommand("speechly.selectProvider", () =>
-      vscode.window.showInformationMessage("Speechly: provider picker arrives in Task 21")),
-    vscode.commands.registerCommand("speechly.selectVoice", () =>
-      vscode.window.showInformationMessage("Speechly: voice picker arrives in Task 21")),
+    vscode.commands.registerCommand("speakittome.pauseResume", () => session?.pauseResume()),
+    vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; }),
+    vscode.commands.registerCommand("speakittome.openReader", () => session?.panel.reveal()),
+    vscode.commands.registerCommand("speakittome.setApiKey", () =>
+      vscode.window.showInformationMessage("SpeakItToMe: key management arrives with premium providers (Task 18+)")),
+    vscode.commands.registerCommand("speakittome.selectProvider", () =>
+      vscode.window.showInformationMessage("SpeakItToMe: provider picker arrives in Task 21")),
+    vscode.commands.registerCommand("speakittome.selectVoice", () =>
+      vscode.window.showInformationMessage("SpeakItToMe: voice picker arrives in Task 21")),
     { dispose() { session?.dispose(); } }
   );
-  log.info("Speechly activated");
+  log.info("SpeakItToMe activated");
 }
 
 export function deactivate() {}
@@ -2307,7 +2307,7 @@ Expected: clean build, all tests PASS.
 
 - [ ] **Step 3: SMOKE CHECKPOINT (manual, F5 Extension Development Host)**
 
-Open the repo in VS Code, press F5, then in the dev host open a long markdown file and run "Speechly: Read Document". Verify ALL of:
+Open the repo in VS Code, press F5, then in the dev host open a long markdown file and run "SpeakItToMe: Read Document". Verify ALL of:
 
 1. Reader panel opens beside the editor with rendered prose (headings, paragraphs, dimmed code)
 2. Audio starts within ~2s and reads continuously across paragraph boundaries
@@ -2406,7 +2406,7 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
 
 - [ ] **Step 2: Compile, manual check, commit**
 
-Run: `npm run compile`, then F5: presets and slider change speed instantly with pitch preserved (verify by ear at 2x), speed persists across VS Code restart (stored via `speechly.speed`), prev/next sentence buttons jump.
+Run: `npm run compile`, then F5: presets and slider change speed instantly with pitch preserved (verify by ear at 2x), speed persists across VS Code restart (stored via `speakittome.speed`), prev/next sentence buttons jump.
 
 ```bash
 git add src/webview/player-bar.ts
@@ -2437,7 +2437,7 @@ export class EditorSync {
     private model: DocumentModel,
     onAltClick: (wordIndex: number) => void
   ) {
-    const cfg = vscode.workspace.getConfiguration("speechly");
+    const cfg = vscode.workspace.getConfiguration("speakittome");
     const sentenceColor = cfg.get<string>("highlight.sentenceColor") || undefined;
     const wordColor = cfg.get<string>("highlight.wordColor") || undefined;
     this.sentenceDeco = vscode.window.createTextEditorDecorationType({
@@ -2495,18 +2495,18 @@ export class EditorSync {
 }
 ```
 
-**Alt+click mechanism (the reliable way):** VS Code selection events don't expose modifier keys, and Alt+click is multi-cursor by default. The dependable approach is a command + keybinding on mouse position: register `speechly.jumpToCursor` and document `alt+cmd+j` (configurable) as the "jump playback to cursor" gesture, PLUS treat any plain mouse click as a jump only when the setting `speechly.editorClickToJump` is set to `"plain-click"` mode. Implement:
+**Alt+click mechanism (the reliable way):** VS Code selection events don't expose modifier keys, and Alt+click is multi-cursor by default. The dependable approach is a command + keybinding on mouse position: register `speakittome.jumpToCursor` and document `alt+cmd+j` (configurable) as the "jump playback to cursor" gesture, PLUS treat any plain mouse click as a jump only when the setting `speakittome.editorClickToJump` is set to `"plain-click"` mode. Implement:
 
 In `package.json` keybindings, add:
 
 ```json
-{ "command": "speechly.jumpToCursor", "key": "alt+j", "mac": "alt+j", "when": "editorTextFocus" }
+{ "command": "speakittome.jumpToCursor", "key": "alt+j", "mac": "alt+j", "when": "editorTextFocus" }
 ```
 
-Change the `speechly.editorClickToJump` setting to:
+Change the `speakittome.editorClickToJump` setting to:
 
 ```json
-"speechly.editorClickToJump": {
+"speakittome.editorClickToJump": {
   "type": "string", "default": "alt-j",
   "enum": ["off", "alt-j", "plain-click"],
   "description": "How to jump playback from the source editor: keyboard gesture on cursor (alt-j), any plain click while a session plays (plain-click), or off."
@@ -2516,7 +2516,7 @@ Change the `speechly.editorClickToJump` setting to:
 In `extension.ts` register:
 
 ```typescript
-    vscode.commands.registerCommand("speechly.jumpToCursor", () => {
+    vscode.commands.registerCommand("speakittome.jumpToCursor", () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor || !session) return;
       const idx = session.editorSync?.wordAtPosition(editor.document, editor.selection.active);
@@ -2538,12 +2538,12 @@ Document edit handling (spec: pause + re-anchor): in ReadingSession constructor 
         if (e.document.uri.toString() !== docUri.toString() || e.contentChanges.length === 0) return;
         this.panel.control("pause");
         void vscode.window
-          .showInformationMessage("Speechly: document changed — restart from current position?", "Restart here", "Stop")
+          .showInformationMessage("SpeakItToMe: document changed — restart from current position?", "Restart here", "Stop")
           .then((choice) => {
             if (choice === "Restart here") {
-              void vscode.commands.executeCommand("speechly.readFromCursor");
+              void vscode.commands.executeCommand("speakittome.readFromCursor");
             } else if (choice === "Stop") {
-              void vscode.commands.executeCommand("speechly.stop");
+              void vscode.commands.executeCommand("speakittome.stop");
             }
           });
       })
@@ -2579,13 +2579,13 @@ export class StatusBar {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    this.item.command = "speechly.pauseResume";
+    this.item.command = "speakittome.pauseResume";
   }
 
   update(state: "playing" | "paused" | "ended", speed: number, sentence: number, total: number) {
     const icon = state === "playing" ? "$(debug-pause)" : "$(play)";
     this.item.text = `${icon} ${speed}x · ${sentence + 1}/${total}`;
-    this.item.tooltip = "Speechly: click to pause/resume";
+    this.item.tooltip = "SpeakItToMe: click to pause/resume";
     this.item.show();
   }
 
@@ -2599,7 +2599,7 @@ export class StatusBar {
 Create one `StatusBar` in `activate` (push to subscriptions). In the session `onEvent` callback (constructor argument used in `position`/`state` cases), call:
 
 ```typescript
-    statusBar.update(s.state, vscode.workspace.getConfiguration("speechly").get("speed", 1), s.position.sentenceIndex, s.model.sentences.length);
+    statusBar.update(s.state, vscode.workspace.getConfiguration("speakittome").get("speed", 1), s.position.sentenceIndex, s.model.sentences.length);
 ```
 
 On session dispose / stop: `statusBar.hide()`.
@@ -2625,8 +2625,8 @@ git commit -m "feat: status bar playback indicator"
 import * as vscode from "vscode";
 
 const KEY_NAMES: Record<string, string> = {
-  elevenlabs: "speechly.key.elevenlabs",
-  sarvam: "speechly.key.sarvam",
+  elevenlabs: "speakittome.key.elevenlabs",
+  sarvam: "speakittome.key.sarvam",
 };
 
 export class ApiKeyManager {
@@ -2818,7 +2818,7 @@ export class SayProvider implements TtsProvider {
   }
 
   async synthesize(chunk: Chunk, voice: string, signal: AbortSignal): Promise<ChunkAudio> {
-    const out = join(tmpdir(), `speechly-say-${Date.now()}-${chunk.index}.wav`);
+    const out = join(tmpdir(), `speakittome-say-${Date.now()}-${chunk.index}.wav`);
     try {
       await run(
         "say",
@@ -2929,12 +2929,12 @@ import { SarvamProvider } from "./synthesis/sarvam";
 import { ApiKeyManager } from "./ui/api-key-manager";
 
 async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
-  const id = vscode.workspace.getConfiguration("speechly").get<string>("provider", "edge");
+  const id = vscode.workspace.getConfiguration("speakittome").get<string>("provider", "edge");
   switch (id) {
     case "edge": return new EdgeProvider();
     case "say":
       if (process.platform !== "darwin") {
-        void vscode.window.showWarningMessage("Speechly: macOS say is only available on macOS");
+        void vscode.window.showWarningMessage("SpeakItToMe: macOS say is only available on macOS");
         return undefined;
       }
       return new SayProvider();
@@ -2961,7 +2961,7 @@ In `activate`: `const keys = new ApiKeyManager(context.secrets);` and `startSess
 - [ ] **Step 2: Implement the three commands**
 
 ```typescript
-    vscode.commands.registerCommand("speechly.selectProvider", async () => {
+    vscode.commands.registerCommand("speakittome.selectProvider", async () => {
       const items = [
         { id: "edge", label: "Edge TTS", description: "free · word-level timing" },
         { id: "elevenlabs", label: "ElevenLabs", description: "premium · word-level timing · key required" },
@@ -2969,10 +2969,10 @@ In `activate`: `const keys = new ApiKeyManager(context.secrets);` and `startSess
           ? [{ id: "say", label: "macOS say", description: "offline · estimated timing" }] : []),
         { id: "sarvam", label: "Sarvam AI", description: "Indian English · estimated timing · key required" },
       ];
-      const pick = await vscode.window.showQuickPick(items, { placeHolder: "Speechly TTS provider" });
+      const pick = await vscode.window.showQuickPick(items, { placeHolder: "SpeakItToMe TTS provider" });
       if (pick) await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
     }),
-    vscode.commands.registerCommand("speechly.selectVoice", async () => {
+    vscode.commands.registerCommand("speakittome.selectVoice", async () => {
       const provider = await makeProvider(keys);
       if (!provider) return;
       const voices = await provider.listVoices();
@@ -2982,7 +2982,7 @@ In `activate`: `const keys = new ApiKeyManager(context.secrets);` and `startSess
       );
       if (pick) await cfg().update(`voice.${provider.id}`, pick.description, vscode.ConfigurationTarget.Global);
     }),
-    vscode.commands.registerCommand("speechly.setApiKey", async () => {
+    vscode.commands.registerCommand("speakittome.setApiKey", async () => {
       const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });
       if (pick) await keys.promptAndStore(pick);
     }),
@@ -3008,14 +3008,14 @@ git commit -m "feat: provider/voice pickers, key prompts, full provider wiring"
 
 - [ ] **Step 1: Rewrite README.md**
 
-Cover, in this order: what Speechly is (one paragraph + the four core features), install (VSIX for now), quick start (open a markdown file → "Speechly: Read Document"), the reader panel (click any word to jump, scroll freely + return pill), speed (presets + slider, pitch preserved), providers table (edge/elevenlabs/say/sarvam with timing quality and key requirements), editor surface (`alt+j` jump-to-cursor, `speechly.editorClickToJump` modes), all settings with defaults, keybindings (`cmd+shift+r`, `alt+j`), and a troubleshooting section (Edge TTS needs network; say is macOS-only; ElevenLabs free tier may 401 on TTS).
+Cover, in this order: what SpeakItToMe is (one paragraph + the four core features), install (VSIX for now), quick start (open a markdown file → "SpeakItToMe: Read Document"), the reader panel (click any word to jump, scroll freely + return pill), speed (presets + slider, pitch preserved), providers table (edge/elevenlabs/say/sarvam with timing quality and key requirements), editor surface (`alt+j` jump-to-cursor, `speakittome.editorClickToJump` modes), all settings with defaults, keybindings (`cmd+shift+r`, `alt+j`), and a troubleshooting section (Edge TTS needs network; say is macOS-only; ElevenLabs free tier may 401 on TTS).
 
 - [ ] **Step 2: Update CHANGELOG.md**
 
 ```markdown
-## 0.2.0 — Speechly
+## 0.2.0 — SpeakItToMe
 
-Ground-up rebuild. Renamed read-vscode-tts → Speechly.
+Ground-up rebuild. Renamed read-vscode-tts → SpeakItToMe.
 
 - Reader panel: rendered reading view with word-level karaoke highlighting
 - Click any word to jump playback (alt+j from the source editor)
@@ -3051,20 +3051,20 @@ Run every line; all must pass:
 - [ ] **Step 4: Run full test suite + package**
 
 Run: `npm test && npm run package`
-Expected: all tests pass; `speechly-0.2.0.vsix` produced. Install it (`code --install-extension speechly-0.2.0.vsix`) and spot-check items 1–3 in regular VS Code (catches CSP/packaging issues the dev host hides).
+Expected: all tests pass; `speakittome-0.2.0.vsix` produced. Install it (`code --install-extension speakittome-0.2.0.vsix`) and spot-check items 1–3 in regular VS Code (catches CSP/packaging issues the dev host hides).
 
 - [ ] **Step 5: Final commit**
 
 ```bash
 git add README.md CHANGELOG.md
-git commit -m "docs: Speechly 0.2.0 README + changelog; E2E pass; package VSIX"
+git commit -m "docs: SpeakItToMe 0.2.0 README + changelog; E2E pass; package VSIX"
 ```
 
 ---
 
 ## Deferred (explicitly out of scope, matches spec)
 
-- Repo folder rename `read-vscode-tts` → `speechly` (do after the plan completes, it breaks paths mid-work)
+- Repo folder rename `read-vscode-tts` → `speakittome` (do after the plan completes, it breaks paths mid-work)
 - Marketplace publish (trademark check first)
 - OpenAI/Azure/Kokoro providers, cross-document queue, audio export
 - Full exponential backoff on 429s (the spec mentions it; Task 8 implements retry-once, which is enough for Edge/say and typical ElevenLabs use — add backoff only if rate limits bite in practice)

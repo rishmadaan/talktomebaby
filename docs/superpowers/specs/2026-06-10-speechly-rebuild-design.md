@@ -1,4 +1,4 @@
-# Speechly — Ground-Up Rebuild Design
+# SpeakItToMe — Ground-Up Rebuild Design
 
 **Date:** 2026-06-10
 **Status:** Approved by user
@@ -6,7 +6,7 @@
 
 ## Goal
 
-Rebuild read-vscode-tts as **Speechly**, a VS Code extension with Speechify-parity reading:
+Rebuild read-vscode-tts as **SpeakItToMe**, a VS Code extension with Speechify-parity reading:
 
 1. Smooth, continuous spoken reading (no per-sentence gaps, natural prosody)
 2. Word-level highlight that sweeps with the voice, inside a sentence band
@@ -32,11 +32,11 @@ Everything else is replaced.
 
 | Decision | Choice |
 |---|---|
-| Name | `speechly` (renamed in place, git history kept). Known trademark collision with the Roblox-acquired Speechly; acceptable for a local extension, revisit before Marketplace publish. |
+| Name | `speakittome` / "SpeakItToMe" (renamed in place, git history kept). Chosen over the earlier "speechly" candidate, which collides with the Roblox-acquired Speechly trademark. |
 | Default provider | Edge TTS (free, no key, real word timestamps) |
 | Premium provider | ElevenLabs `/with-timestamps` |
 | Offline provider | macOS `say` (estimated word timing); Sarvam carried over (estimated timing) |
-| Primary surface | Custom **Speechly Reader** webview panel (rendered view, native click-to-jump) |
+| Primary surface | Custom **SpeakItToMe Reader** webview panel (rendered view, native click-to-jump) |
 | Secondary surface | Source editor: decorations + Alt+click to jump |
 | Highlight style | Sentence band + moving word emphasis (dual highlight) |
 | File scope | Prose files: md, mdx, txt, rst, org, tex, adoc (code files excluded) |
@@ -161,16 +161,16 @@ Audio crosses the bridge as `Uint8Array` (VS Code postMessage supports it), not 
 ### Caching
 
 - Disk cache at `context.globalStorageUri/audio-cache/`: `{hash}.mp3` + `{hash}.json` (timings), where `hash = sha256(text | providerId | voiceId)`.
-- LRU by total bytes, default cap 200 MB (`speechly.cacheSizeMB`), eviction on write, index file for access times.
+- LRU by total bytes, default cap 200 MB (`speakittome.cacheSizeMB`), eviction on write, index file for access times.
 - In-memory layer on top for the active session.
 - Re-reading a document after reload costs zero API calls.
 
 ### Commands, settings, keybindings
 
-Commands (all `speechly.*`): `readDocument` (opens reader + plays), `readSelection`, `readFromCursor`, `pauseResume`, `stop`, `openReader`, `setApiKey`, `selectProvider`, `selectVoice`.
+Commands (all `speakittome.*`): `readDocument` (opens reader + plays), `readSelection`, `readFromCursor`, `pauseResume`, `stop`, `openReader`, `setApiKey`, `selectProvider`, `selectVoice`.
 Menus: editor title icon + context menu entries on prose files (`md, mdx, txt, rst, org, tex, adoc`).
 Keybindings: `cmd/ctrl+shift+r` pause/resume (carried over).
-Settings: `speechly.provider`, `speechly.voice.{edge|elevenlabs|say|sarvam}`, `speechly.speed` (persisted playback rate), `speechly.editorClickToJump` (Alt+click toggle, default on), `speechly.highlight.sentenceColor`, `speechly.highlight.wordColor`, `speechly.readerFontSize`, `speechly.cacheSizeMB`.
+Settings: `speakittome.provider`, `speakittome.voice.{edge|elevenlabs|say|sarvam}`, `speakittome.speed` (persisted playback rate), `speakittome.editorClickToJump` (Alt+click toggle, default on), `speakittome.highlight.sentenceColor`, `speakittome.highlight.wordColor`, `speakittome.readerFontSize`, `speakittome.cacheSizeMB`.
 Old `read-tts.*` settings are dropped (no migration; v1 had no meaningful installed base).
 
 ### Error handling
@@ -190,7 +190,7 @@ Old `read-tts.*` settings are dropped (no migration; v1 had no meaningful instal
 
 ### Rename and repo mechanics
 
-- In-place rename, git history preserved. `package.json`: name `speechly`, displayName "Speechly", publisher unchanged, version `0.2.0`, all contribution IDs `speechly.*`.
+- In-place rename, git history preserved. `package.json`: name `speakittome`, displayName "SpeakItToMe", publisher unchanged, version `0.2.0`, all contribution IDs `speakittome.*`.
 - New `src/` layout:
 
 ```
@@ -219,7 +219,7 @@ src/
 
 - Webview sources bundled by esbuild (second entry point) into `media/` at build time; the v1 duplicate-media-dir problem goes away because `media/` becomes build output only.
 - v1 files removed: `audio-manager.ts`, `playback.js`, old `webview-provider.ts`, per-sentence prefetch logic, `read-tts.*` config.
-- Directory rename of the repo folder itself (`read-vscode-tts` → `speechly`) deferred to the end of implementation so paths stay stable while working.
+- Directory rename of the repo folder itself (`read-vscode-tts` → `speakittome`) deferred to the end of implementation so paths stay stable while working.
 
 ### Build phases (high level; implementation plan will detail)
 
@@ -237,4 +237,4 @@ src/
 - Reading code files / docstrings
 - Cross-document queue ("read my whole folder")
 - Export to audio file
-- Marketplace publishing (revisit the Speechly trademark question then)
+- Marketplace publishing (revisit the SpeakItToMe trademark question then)
