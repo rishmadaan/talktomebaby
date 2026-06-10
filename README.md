@@ -14,7 +14,21 @@ Supported file types: `.md`, `.mdx`, `.txt`, `.rst`, `.org`, `.tex`, `.adoc`
 
 ## Install
 
-### From VSIX (current)
+### From the VS Code Marketplace
+
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby), or from VS Code:
+
+1. Open the Extensions view
+2. Search for **TalkToMeBaby**
+3. Click **Install**
+
+You can also install it from the command line:
+
+```bash
+code --install-extension rishmadaan.talktomebaby
+```
+
+### From VSIX
 
 ```bash
 code --install-extension talktomebaby-0.3.0.vsix
@@ -27,7 +41,6 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 ```bash
 git clone https://github.com/rishmadaan/talktomebaby.git
 cd talktomebaby
-git checkout speakittome-rebuild
 npm install
 npm run package   # produces talktomebaby-0.3.0.vsix
 code --install-extension talktomebaby-0.3.0.vsix
@@ -128,7 +141,7 @@ While a session is active, the source editor stays in sync with the reader:
 
 ## Privacy and API keys
 
-Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See [docs/provider-architecture.md](docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
+Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See the [provider architecture notes](https://github.com/rishmadaan/talktomebaby/blob/main/docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
 
 ## Keybindings
 
@@ -183,6 +196,14 @@ Reloading the VS Code window or restarting the extension host always ends the ac
 **Resume after reload:** If VS Code reloads (window reload, extension host restart, OS sleep/wake), TalkToMeBaby saves your position automatically (every ~3 seconds while playing). When the extension reactivates, it offers a "Resume?" toast if a session was saved within the last 12 hours. Choosing Resume re-opens the document and jumps straight to your last sentence. Dismissing clears the saved position. The position is also cleared when you press Stop or when a document finishes naturally.
 
 Note: a reload kills the active audio session — there is no way to resume mid-sentence. Resume starts from the beginning of the sentence you were on.
+
+---
+
+## Contributing and security
+
+Contributions are welcome; see [CONTRIBUTING.md](https://github.com/rishmadaan/talktomebaby/blob/main/CONTRIBUTING.md) for local setup, test commands, and architectural invariants to preserve. Please follow the [Code of Conduct](https://github.com/rishmadaan/talktomebaby/blob/main/CODE_OF_CONDUCT.md).
+
+For vulnerability reports or sensitive security issues, see [SECURITY.md](https://github.com/rishmadaan/talktomebaby/blob/main/SECURITY.md). Do not open public issues that contain API keys, tokens, or private document contents.
 
 ---
 

@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.3.0 — TalkToMeBaby
+## [0.3.0] - 2026-06-10 — TalkToMeBaby
 
 Renamed SpeakItToMe → TalkToMeBaby.
 
+- Published to the VS Code Marketplace as `rishmadaan.talktomebaby`
+- Added Marketplace icon and public package metadata
 - In-reader settings panel (primary settings surface): Provider and Voice sections split into separate areas; font size, highlight colors — all accessible from the gear icon in the player bar
 - Instant voice loading with session cache: voices are prefetched on read start so the first gear-open is usually instant; fallback voice lists are never cached (ensures the next fetch retries the real list)
 - No-auto-play-on-switch policy: changing provider or voice re-primes the session paused at the current sentence; press play when ready

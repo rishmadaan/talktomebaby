@@ -3,9 +3,13 @@
   "displayName": "TalkToMeBaby",
   "description": "Listen to your docs. Speechify-style reading for VS Code: word-level highlighting, click-to-jump, 2x speed without pitch shift.",
   "version": "0.3.0",
-  "publisher": "rish",
+  "publisher": "rishmadaan",
+  "icon": "icon.png",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/rishmadaan/talktomebaby" },
+  "homepage": "https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby",
+  "bugs": { "url": "https://github.com/rishmadaan/talktomebaby/issues" },
+  "galleryBanner": { "color": "#101828", "theme": "dark" },
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "keywords": ["tts", "text-to-speech", "read-aloud", "speechify", "highlight"],
@@ -82,11 +86,11 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.28.0",
+    "happy-dom": "^20.10.2",
+    "tsx": "^4.0.0",
     "typescript": "^5.3.0",
-    "vitest": "^3.0.0",
-    "happy-dom": "^15.0.0",
-    "tsx": "^4.0.0"
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "msedge-tts": "^2.0.5"

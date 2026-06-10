@@ -10,7 +10,7 @@ Thanks for your interest in contributing to TalkToMeBaby!
 4. Press `F5` to launch the Extension Development Host
 5. Make changes and test in the dev host
 
-See [CLAUDE.md](CLAUDE.md) for the full source layout and key invariants — read it before making structural changes.
+See [AGENTS.md](AGENTS.md) for the full source layout and key invariants — read it before making structural changes.
 
 ## Build & Test
 
@@ -39,3 +39,8 @@ Use the GitHub issue template. Include:
 - Steps to reproduce
 - VS Code version, OS, and extension version
 - Check Output panel > "TalkToMeBaby" for error logs
+
+## Security and Conduct
+
+- Please follow the [Code of Conduct](CODE_OF_CONDUCT.md)
+- Report sensitive security issues privately; see [SECURITY.md](SECURITY.md)
