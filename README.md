@@ -1,151 +1,156 @@
-# Read — Text to Speech for VS Code
+# SpeakItToMe
 
-A VS Code extension that reads your documents aloud while highlighting each sentence in the editor as it's spoken. Think audiobook mode for your Markdown and text files.
+SpeakItToMe reads your prose files aloud inside VS Code with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with Edge TTS (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
 
-You bring your own TTS API key (Sarvam AI or ElevenLabs), and the extension handles the rest — sentence parsing, audio playback, caching, and synchronized highlighting that follows along in the editor.
+Core features:
+- **Reader panel** - rendered reading view with dual-layer highlighting: sentence band + moving word sweep
+- **Click any word** to jump playback there instantly; `alt+j` jumps from the source editor to the cursor
+- **Speed 0.5-2x** with pitch preserved, no re-synthesis; presets + fine slider, persisted across sessions
+- **Disk cache** (default 200 MB) so re-reads cost no API credits
 
-## Why
+Supported file types: `.md`, `.mdx`, `.txt`, `.rst`, `.org`, `.tex`, `.adoc`
 
-Reading your own writing aloud is one of the best ways to catch awkward phrasing, run-on sentences, and flow issues. But switching between an editor and a separate TTS tool breaks concentration. This extension keeps everything in one place — you hear your text and see exactly which sentence is playing, right in VS Code.
+---
 
-## Features
+## Install
 
-- **Sentence highlighting** — the current sentence is highlighted in the editor and auto-scrolls to stay visible
-- **Full playback controls** — play, pause, resume, stop — in the sidebar panel and via `Cmd+Shift+R`
-- **Start from anywhere** — right-click to start reading from any point in the document
-- **Smart caching** — audio is cached per-sentence in memory, so re-reading costs zero API calls
-- **Multiple providers** — switch between Sarvam AI and ElevenLabs from the sidebar, or add your own
-- **Markdown-aware** — strips formatting before speaking, so you hear clean prose, not syntax
-
-## Installation
-
-### Install from VSIX (Recommended)
-
-1. Download the latest `.vsix` file from [Releases](https://github.com/rishmadaan/read-vscode-tts/releases)
-2. In VS Code, open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-3. Run **"Extensions: Install from VSIX..."**
-4. Select the downloaded `.vsix` file
-
-Or install from the terminal:
+### From VSIX (current)
 
 ```bash
-code --install-extension read-tts-0.1.0.vsix
+code --install-extension speakittome-0.2.0.vsix
 ```
 
-### Build from Source
+Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
+
+### Build from source
 
 ```bash
 git clone https://github.com/rishmadaan/read-vscode-tts.git
 cd read-vscode-tts
+git checkout speakittome-rebuild
 npm install
-npm run compile
+npm run package   # produces speakittome-0.2.0.vsix
+code --install-extension speakittome-0.2.0.vsix
 ```
 
-**To package and install locally:**
+---
 
-```bash
-npx @vscode/vsce package         # Creates read-tts-0.1.0.vsix
-```
+## Quick start
 
-Then install the `.vsix` using either method above.
+1. Open any `.md`, `.txt`, or other supported prose file
+2. `Cmd+Shift+P` > **SpeakItToMe: Read Document**
+3. The Reader panel opens; reading starts from the beginning
 
-**To run in development mode:**
+To start from a specific point: place your cursor, then use **SpeakItToMe: Read from Here** (right-click menu or command palette).
 
-Open the project in VS Code and press `F5` to launch the Extension Development Host.
+---
 
-## Setup
+## Reader panel
 
-1. Open the Command Palette (`Cmd+Shift+P`)
-2. Run **"Read: Set API Key"**
-3. Select your TTS provider and paste your API key
-4. Open any `.md` or `.txt` file
-5. Click the speaker icon in the editor title bar
+The Reader panel renders your document as a clean reading view. Each word is individually clickable.
 
-### Getting API Keys
+- **Click any word** to jump playback there and resume from that word
+- **Scroll freely** - auto-scroll follows playback while you don't interact; scroll away and a **Return to playback** pill appears in the corner; click it to snap back and re-engage auto-scroll
+- The **player bar** at the bottom has speed presets, a fine slider, pause/resume, and stop
 
-**Sarvam AI** (recommended for getting started):
-- Sign up at [sarvam.ai](https://www.sarvam.ai/) — you get Rs.1000 in free credits
-- Go to Dashboard > API Keys > Create
-- Supports Indian English with 45+ natural voices
+---
 
-**ElevenLabs**:
-- Sign up at [elevenlabs.io](https://elevenlabs.io/)
-- Go to Settings > API Keys > Create
-- Note: requires a paid plan ($5/mo starter) for API access
+## Speed
 
-## Usage
+Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0x. The fine slider covers the full 0.5-2.0 range. Pitch is preserved at all speeds using `preservesPitch`. The chosen speed is persisted globally and restored on the next read.
 
-| Action | How |
-|--------|-----|
-| Read entire document | Click speaker icon in title bar, or `Cmd+Shift+P` > "Read: Speak Document" |
-| Read selected text | Select text, right-click > "Read: Speak Selection" |
-| Start from a sentence | Place cursor, right-click > "Read: Start from Here" |
-| Pause / Resume | `Cmd+Shift+R` or click pause in sidebar |
-| Stop | Click stop in sidebar, or `Cmd+Shift+P` > "Read: Stop" |
-| Switch provider | `Cmd+Shift+P` > "Read: Select TTS Provider" |
+---
+
+## Providers
+
+| Provider | Quality | Word timing | Key required | Notes |
+|---|---|---|---|---|
+| Edge TTS (default) | Good | Word-level | No | Free. Requires internet. Many voices. |
+| ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
+| macOS say | Basic | Estimated | No | Offline. macOS only. |
+| Sarvam AI | Good | Estimated | Yes | Indian English focus. |
+
+Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider**
+
+Set API key: `Cmd+Shift+P` > **SpeakItToMe: Set API Key**
+
+Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice**
+
+---
+
+## Editor surface
+
+While a session is active, the source editor stays in sync with the reader:
+
+- **Sentence decoration** - the sentence currently being spoken is highlighted in the source editor
+- **alt+j** (in the source editor) - jumps playback to the word at cursor; always starts playback even if paused
+- **editorClickToJump setting** - controls whether a plain click in the editor also triggers a jump (see settings table below)
+- **Document edits** - if you edit the file mid-read, playback pauses and a prompt offers to restart from the current position or stop
+
+---
 
 ## Settings
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `read-tts.provider` | `sarvam` | TTS provider (`sarvam` or `elevenlabs`) |
-| `read-tts.voice` | _(provider default)_ | Voice name/ID. Sarvam: `shubh`, `priya`, `ritu`, etc. ElevenLabs: voice ID |
-| `read-tts.speed` | `1.0` | Speech speed (0.5 to 2.0) |
-| `read-tts.highlightColor` | _(theme-aware yellow)_ | Custom highlight color, e.g. `#FFFF0033` |
+|---|---|---|
+| `speakittome.provider` | `edge` | TTS provider: `edge`, `elevenlabs`, `say`, `sarvam` |
+| `speakittome.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
+| `speakittome.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
+| `speakittome.voice.say` | `Samantha` | Voice for macOS say |
+| `speakittome.voice.sarvam` | `shubh` | Voice for Sarvam AI |
+| `speakittome.speed` | `1.0` | Playback speed (0.5-2.0). Updated automatically when changed in the player. |
+| `speakittome.editorClickToJump` | `alt-j` | Jump trigger in the source editor: `off`, `alt-j` (keyboard shortcut only), `plain-click` (any click during a session) |
+| `speakittome.readerFontSize` | `16` | Reader panel font size in px |
+| `speakittome.highlight.sentenceColor` | `""` | Sentence band highlight color. Empty uses the theme default. |
+| `speakittome.highlight.wordColor` | `""` | Current word highlight color. Empty uses the theme default. |
+| `speakittome.cacheSizeMB` | `200` | Disk cache size limit in MB. Audio is cached under `globalStorageUri/audio-cache`. |
 
-## How It Works
+---
 
-1. Your document is parsed into sentences (markdown formatting is stripped)
-2. Each sentence is sent to the TTS API and the audio is cached in memory
-3. As each sentence plays, it's highlighted in the editor with auto-scroll
-4. Cached sentences replay instantly — no API call needed on re-reads
-5. Cache is session-only (cleared when VS Code reloads)
+## Keybindings
 
-## Architecture
+| Key | Command |
+|---|---|
+| `cmd+shift+r` / `ctrl+shift+r` | Pause / Resume |
+| `alt+j` (editor focus) | Jump playback to cursor |
 
-```
-src/
-├── providers/          # TTS provider interface + implementations
-│   ├── tts-provider.ts       # ITtsProvider interface
-│   ├── sarvam-provider.ts    # Sarvam AI
-│   └── elevenlabs-provider.ts
-├── managers/           # Core logic
-│   ├── audio-manager.ts      # Playback orchestration + caching
-│   ├── highlight-manager.ts  # Editor text decorations
-│   └── api-key-manager.ts    # Secure key storage
-├── utils/
-│   ├── text-parser.ts        # Sentence splitting + markdown stripping
-│   └── cache.ts              # LRU in-memory cache (100MB cap)
-├── webview/            # Sidebar playback panel
-│   ├── webview-provider.ts
-│   └── media/
-│       ├── playback.js       # Web Audio API playback
-│       └── playback.css
-└── extension.ts        # Entry point
-```
+---
 
-### Adding a New TTS Provider
+## Commands
 
-Implement the `ITtsProvider` interface:
+| Command | Description |
+|---|---|
+| SpeakItToMe: Read Document | Open Reader and read the active file from the beginning |
+| SpeakItToMe: Read from Here | Open Reader and read from the cursor position |
+| SpeakItToMe: Read Selection | Open Reader and read from the start of the current selection |
+| SpeakItToMe: Open Reader | Reveal the Reader panel if already open |
+| SpeakItToMe: Pause/Resume | Toggle playback |
+| SpeakItToMe: Stop | Stop playback and close the session |
+| SpeakItToMe: Jump Playback to Cursor | Jump to the word at cursor in the source editor |
+| SpeakItToMe: Select TTS Provider | Pick a provider from a quick-pick list |
+| SpeakItToMe: Select Voice | Pick a voice for the active provider |
+| SpeakItToMe: Set API Key | Store an API key for ElevenLabs or Sarvam |
 
-```typescript
-interface ITtsProvider {
-  readonly name: string;
-  readonly maxCharsPerRequest: number;
-  readonly defaultVoice: string;
-  synthesize(text: string, options: TtsOptions): Promise<AudioResult>;
-  validateKey(apiKey: string): Promise<boolean>;
-}
-```
+---
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+## Troubleshooting
 
-## Known Limitations
+**Edge TTS produces no audio / connection error**
+Edge TTS requires an internet connection to Microsoft's speech service. If you are offline, switch to macOS say (`speakittome.provider: say`) or a cached document.
 
-- Highlighting is sentence-level, not word-level (TTS APIs don't return word timestamps in their REST endpoints)
-- Supported file types: `.md` and `.txt` only
-- ElevenLabs free tier does not support API access — a paid plan is required
-- Audio is cached in memory only (cleared on VS Code reload)
+**macOS say not available**
+The `say` provider only works on macOS. On other platforms it is hidden from the provider picker.
+
+**ElevenLabs returns 401**
+ElevenLabs free accounts may be blocked from the TTS API. A paid plan (Starter tier or higher) is recommended for API access.
+
+**First read of a long document is slow**
+Audio is synthesized in chunks as you read - subsequent sentences are prefetched in the background. Once a chunk is cached to disk, replaying it is instant and costs no API credits.
+
+**Playback highlight is off after editing**
+If you edit the document while reading, the session model becomes stale. Use the prompt that appears to restart from your current position.
+
+---
 
 ## License
 
