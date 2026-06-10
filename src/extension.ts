@@ -7,6 +7,7 @@ import { EdgeProvider } from "./synthesis/edge";
 import { TtsProvider } from "./synthesis/provider";
 import { ReaderPanel, ReaderSettings } from "./ui/reader-panel";
 import { EditorSync } from "./ui/editor-sync";
+import { StatusBar } from "./ui/status-bar";
 
 let log: vscode.LogOutputChannel;
 
@@ -131,6 +132,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(log);
   const cfg = () => vscode.workspace.getConfiguration("speakittome");
 
+  const statusBar = new StatusBar();
+  context.subscriptions.push(statusBar);
+
   async function startSession(editor: vscode.TextEditor) {
     session?.dispose();
     const provider = makeProvider();
@@ -139,9 +143,12 @@ export function activate(context: vscode.ExtensionContext) {
     const cache = new DiskCache(cacheDir, cfg().get<number>("cacheSizeMB", 200)! * 1024 * 1024);
     session = new ReadingSession(
       editor.document.uri, editor.document.getText(), editor.document.version,
-      provider, voice, cache, context.extensionUri, () => { /* Task 16/17 hook */ }
+      provider, voice, cache, context.extensionUri,
+      (s) => {
+        statusBar.update(s.state, vscode.workspace.getConfiguration("speakittome").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
+      }
     );
-    session.panel.onDispose(() => { session = undefined; });
+    session.panel.onDispose(() => { statusBar.hide(); session = undefined; });
   }
 
   const needEditor = () => {
@@ -179,7 +186,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (idx !== undefined) session.jumpToWord(idx);
     }),
     vscode.commands.registerCommand("speakittome.pauseResume", () => session?.pauseResume()),
-    vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; }),
+    vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; statusBar.hide(); }),
     vscode.commands.registerCommand("speakittome.openReader", () => session?.panel.reveal()),
     vscode.commands.registerCommand("speakittome.setApiKey", () =>
       vscode.window.showInformationMessage("SpeakItToMe: key management arrives with premium providers (Task 18+)")),
