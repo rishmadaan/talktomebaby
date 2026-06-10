@@ -52,6 +52,8 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
 
   const gear = btn("⚙", opts.onSettings, "Settings");
   gear.id = "settings-toggle";
+  gear.setAttribute("aria-label", "Settings");
+  gear.setAttribute("aria-expanded", "false");
 
   setSpeedUI(opts.initialSpeed);
 

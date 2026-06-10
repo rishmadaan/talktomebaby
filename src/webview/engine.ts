@@ -57,6 +57,31 @@ export class Engine {
     this.prefetch(chunkIndex + 1);
   }
 
+  /**
+   * Load (and seek to) a word without playing. Used after a reconfigure when the
+   * session was paused: we want the new voice primed at the same spot so a later
+   * resume/play picks up exactly where the listener left off, but we must NOT
+   * auto-play. Sets currentWord so resume() and currentSentence resolve correctly,
+   * and reports "paused" so the UI shows a play (not pause) affordance.
+   */
+  primeAt(wordIndex: number) {
+    const chunkIndex = this.wordToChunk.get(wordIndex);
+    if (chunkIndex === undefined) return;
+    this.currentChunk = chunkIndex;
+    this.currentWord = wordIndex;
+    this.playing = false;
+    const lc = this.loaded.get(chunkIndex);
+    if (lc && lc.timingsMs !== null) {
+      const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
+      lc.audio.currentTime = t ? t.start / 1000 : 0;
+    } else {
+      this.pendingJumpWord = wordIndex;
+      this.cb.requestChunk(chunkIndex, true);
+    }
+    this.prefetch(chunkIndex + 1);
+    this.cb.onState("paused");
+  }
+
   private prefetch(from: number) {
     for (let i = from; i < Math.min(from + PREFETCH, this.chunks.length); i++) {
       if (!this.loaded.has(i)) this.cb.requestChunk(i, false);
@@ -90,14 +115,17 @@ export class Engine {
   }
 
   private maybeStartChunk(chunkIndex: number) {
-    if (!this.playing || chunkIndex !== this.currentChunk) return;
+    if (chunkIndex !== this.currentChunk) return;
     const lc = this.loaded.get(chunkIndex);
     if (!lc || lc.timingsMs === null) return;
+    // Apply a pending seek whether we're going to play or just prime-in-place,
+    // so a paused prime still lands the audio at the right word.
     if (this.pendingJumpWord !== null) {
       const t = lc.timingsMs.find((w) => w.wordIndex === this.pendingJumpWord);
       lc.audio.currentTime = t ? t.start / 1000 : 0;
       this.pendingJumpWord = null;
     }
+    if (!this.playing) return; // primed but paused — loaded and seeked, do not play
     void lc.audio.play();
     this.cb.onState("playing");
   }

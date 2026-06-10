@@ -9,6 +9,7 @@ import { SayProvider } from "./synthesis/say";
 import { SarvamProvider } from "./synthesis/sarvam";
 import { TtsProvider } from "./synthesis/provider";
 import { availableProviders } from "./synthesis/provider-catalog";
+import { VoiceCache } from "./synthesis/voice-cache";
 import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
 import { EditorSync } from "./ui/editor-sync";
 import { StatusBar } from "./ui/status-bar";
@@ -42,18 +43,27 @@ class ReadingSession {
   private editPrompted = false;
   state: "playing" | "paused" | "ended" = "paused";
   position = { wordIndex: -1, sentenceIndex: -1 };
+  // provider/voice are mutable so an in-place reconfigure can swap them without
+  // tearing down the webview. Read via the getters below.
+  private _provider: TtsProvider;
+  private _voice: string;
+
+  get provider(): TtsProvider { return this._provider; }
+  get voice(): string { return this._voice; }
 
   constructor(
     readonly docUri: vscode.Uri,
     text: string,
     version: number,
-    readonly provider: TtsProvider,
-    readonly voice: string,
-    cache: DiskCache,
+    provider: TtsProvider,
+    voice: string,
+    private readonly cache: DiskCache,
     extensionUri: vscode.Uri,
     private onEvent: (s: ReadingSession) => void,
     private onSettingsMessage: (msg: ViewMsg, session: ReadingSession) => Promise<void>
   ) {
+    this._provider = provider;
+    this._voice = voice;
     this.model = parseDocument(text, docUri.toString(), version);
     this.chunks = buildChunks(this.model);
     this.synthesis = new SynthesisService(provider, voice, cache);
@@ -140,6 +150,40 @@ class ReadingSession {
 
   pauseResume() { this.panel.control(this.state === "playing" ? "pause" : "resume"); }
   jumpToWord(wordIndex: number) { this.panel.seekToWord(wordIndex); }
+
+  /**
+   * Swap the TTS provider/voice in place WITHOUT tearing down the webview. Aborts
+   * the old synthesis pipeline, builds a fresh one, and re-inits the SAME webview
+   * at the current sentence — preserving play state (autoplay only if we were
+   * playing) and the open settings panel. Used for live provider/voice changes on
+   * the same document; document/new-document reads still go through startSession.
+   */
+  async reconfigure(provider: TtsProvider, voice: string): Promise<void> {
+    // Capture position + play state BEFORE we change anything.
+    const wasPlaying = this.state === "playing";
+    const sentenceCount = this.model.sentences.length;
+    const idx = Math.max(0, Math.min(sentenceCount - 1, this.position.sentenceIndex));
+    const firstWord = this.model.sentences[idx]?.words[0];
+    const startAtWord = firstWord ? firstWord.index : 0;
+
+    // Tear down only the audio pipeline; reuse the same DiskCache instance.
+    this.synthesis.abortAll();
+    this._provider = provider;
+    this._voice = voice;
+    this.synthesis = new SynthesisService(provider, voice, this.cache);
+
+    const cfg = vscode.workspace.getConfiguration("speakittome");
+    const settings: ReaderSettings = {
+      speed: cfg.get("speed", 1.0),
+      fontSize: cfg.get("readerFontSize", 16),
+      sentenceColor: cfg.get("highlight.sentenceColor", ""),
+      wordColor: cfg.get("highlight.wordColor", ""),
+    };
+    // Re-init the SAME webview. main.ts init() tears down its prior engine and
+    // (because the settings panel lives outside #content) keeps the panel open.
+    this.panel.sendInit(this.model, this.chunks.length, settings, startAtWord, wasPlaying);
+  }
+
   dispose() {
     this.synthesis.abortAll();
     this.editorSync.dispose();
@@ -151,8 +195,8 @@ class ReadingSession {
 let session: ReadingSession | undefined;
 let restarting = false;
 
-async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
-  const id = vscode.workspace.getConfiguration("speakittome").get<string>("provider", "edge");
+/** Build a provider instance for a given id, prompting for a key if required. */
+async function makeProviderById(id: string, keys: ApiKeyManager): Promise<TtsProvider | undefined> {
   switch (id) {
     case "edge": return new EdgeProvider();
     case "say":
@@ -173,6 +217,11 @@ async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefine
   }
 }
 
+async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
+  const id = vscode.workspace.getConfiguration("speakittome").get<string>("provider", "edge");
+  return makeProviderById(id, keys);
+}
+
 export function activate(context: vscode.ExtensionContext) {
   log = vscode.window.createOutputChannel("SpeakItToMe", { log: true });
   context.subscriptions.push(log);
@@ -182,6 +231,19 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(statusBar);
 
   const keys = new ApiKeyManager(context.secrets);
+  // Voices don't change mid-session, so cache per provider for the host lifetime.
+  const voiceCache = new VoiceCache();
+
+  /** Fetch + cache a provider's voices (fire-and-forget safe). Failures are logged
+   *  and NOT cached, so a later request retries. */
+  async function fetchVoices(provider: TtsProvider): Promise<{ id: string; label: string }[]> {
+    try {
+      return await voiceCache.resolve(provider.id, () => provider.listVoices());
+    } catch (err) {
+      log.error(`listVoices(${provider.id}) failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
+    }
+  }
 
   async function startSession(doc: vscode.TextDocument): Promise<boolean> {
     const provider = await makeProvider(keys);
@@ -199,54 +261,66 @@ export function activate(context: vscode.ExtensionContext) {
       handleSettingsMessage
     );
     session.panel.onDispose(() => { statusBar.hide(); session = undefined; });
+    // Prefetch the active provider's voices so the first gear-open is instant.
+    void fetchVoices(provider).catch(() => {});
     return true;
   }
 
-  /** Build the settings snapshot the panel renders. Reuses the active session's
-   *  provider instance (which holds any prompted key) to list voices. */
-  async function buildSettingsData(active: ReadingSession): Promise<SettingsData> {
+  /** Static + current-settings snapshot, with voices from cache or `null` (loading).
+   *  Sent IMMEDIATELY on a settingsRequest — no network on the open path. */
+  function settingsSnapshot(active: ReadingSession): SettingsData {
     const activeId = active.provider.id;
     const providers = availableProviders(process.platform).map((p) => ({
       id: p.id, label: p.label, description: p.description,
       requiresKey: p.requiresKey, active: p.id === activeId,
     }));
-    let voices: { id: string; label: string }[] = [];
-    try {
-      voices = await active.provider.listVoices();
-    } catch (err) {
-      log.error(`listVoices failed: ${err instanceof Error ? err.message : String(err)}`);
-      voices = [{ id: active.voice, label: active.voice }];
-    }
     return {
-      providers, voices, activeVoice: active.voice,
+      providers,
+      voices: voiceCache.get(activeId) ?? null, // null = still loading
+      activeVoice: active.voice,
       fontSize: cfg().get<number>("readerFontSize", 16),
       sentenceColor: cfg().get<string>("highlight.sentenceColor", ""),
       wordColor: cfg().get<string>("highlight.wordColor", ""),
     };
   }
 
-  /** Restart the active session on the same document, resuming at the start of
-   *  the sentence that was playing. Used after a live provider/voice change. */
-  async function restartSessionAtCurrentPosition(): Promise<void> {
+  /** Send settings data immediately (cache or loading), then — if voices weren't
+   *  cached — fetch them and push a follow-up settingsData with them filled in. */
+  async function pushSettingsData(active: ReadingSession): Promise<void> {
+    active.panel.sendSettingsData(settingsSnapshot(active));
+    if (voiceCache.has(active.provider.id)) return;
+    const provider = active.provider;
+    try {
+      const voices = await fetchVoices(provider);
+      // Guard against a provider/session swap while the fetch was in flight.
+      if (session === active && active.provider === provider) {
+        active.panel.sendSettingsData({ ...settingsSnapshot(active), voices });
+      }
+    } catch {
+      if (session === active && active.provider === provider) {
+        // Fetch failed: surface the current voice so the dropdown isn't stuck loading.
+        active.panel.sendSettingsData({ ...settingsSnapshot(active), voices: [{ id: active.voice, label: active.voice }] });
+      }
+    }
+  }
+
+  /** Reconfigure the active session in place (same webview), preserving position
+   *  and play state. Replaces the old dispose-and-recreate restart. */
+  async function reconfigureActive(provider: TtsProvider, voice: string): Promise<void> {
     if (restarting) return;
     restarting = true;
     try {
       if (!session) return;
-      const uri = session.docUri;
-      const sentenceCount = session.model.sentences.length;
-      const idx = Math.max(0, Math.min(sentenceCount - 1, session.position.sentenceIndex));
-      let doc: vscode.TextDocument;
+      const active = session;
       try {
-        doc = await vscode.workspace.openTextDocument(uri);
+        await active.reconfigure(provider, voice);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        void vscode.window.showWarningMessage("SpeakItToMe: couldn't restart playback — " + message);
+        void vscode.window.showWarningMessage("SpeakItToMe: couldn't apply the change — " + message);
         return;
       }
-      if (!(await startSession(doc)) || !session) return;
-      const sentence = session.model.sentences[idx];
-      const firstWord = sentence?.words[0];
-      if (firstWord) session.jumpToWord(firstWord.index);
+      // Push fresh settings data so the open panel reflects the new provider/voice.
+      await pushSettingsData(active);
     } finally {
       restarting = false;
     }
@@ -257,29 +331,28 @@ export function activate(context: vscode.ExtensionContext) {
     if (session !== current) return; // stale panel from a disposed session
     switch (msg.type) {
       case "settingsRequest":
-        current.panel.sendSettingsData(await buildSettingsData(current));
+        await pushSettingsData(current);
         break;
       case "setProvider": {
         if (msg.id === current.provider.id) break;
         const desc = availableProviders(process.platform).find((p) => p.id === msg.id);
         if (!desc) break;
-        // Ensure a key exists for key-required providers before committing.
-        if (desc.requiresKey && !(await keys.getKey(msg.id))) {
-          const stored = await keys.promptAndStore(msg.id);
-          if (!stored) {
-            // Cancelled — snap the UI back to reality.
-            current.panel.sendSettingsData(await buildSettingsData(current));
-            break;
-          }
+        const provider = await makeProviderById(msg.id, keys);
+        if (!provider) {
+          // Cancelled key prompt or unavailable — snap the UI back to reality.
+          await pushSettingsData(current);
+          break;
         }
+        const voice = cfg().get<string>(`voice.${provider.id}`) || provider.defaultVoice;
         await cfg().update("provider", msg.id, vscode.ConfigurationTarget.Global);
-        await restartSessionAtCurrentPosition();
+        await reconfigureActive(provider, voice);
         break;
       }
       case "setVoice": {
         if (msg.id === current.voice) break;
         await cfg().update(`voice.${current.provider.id}`, msg.id, vscode.ConfigurationTarget.Global);
-        await restartSessionAtCurrentPosition();
+        // Reuse the same provider instance (holds any prompted key); just swap voice.
+        await reconfigureActive(current.provider, msg.id);
         break;
       }
       case "setSetting":
@@ -350,19 +423,21 @@ export function activate(context: vscode.ExtensionContext) {
       const pick = await vscode.window.showQuickPick(items, { placeHolder: "SpeakItToMe TTS provider" });
       if (!pick || pick.id === activeId) return;
       const desc = availableProviders(process.platform).find((p) => p.id === pick.id)!;
-      if (desc.requiresKey && !(await keys.getKey(pick.id))) {
-        if (!(await keys.promptAndStore(pick.id))) return; // cancelled — no change
-      }
+      const provider = await makeProviderById(pick.id, keys);
+      if (!provider) return; // cancelled key prompt — no change
       await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
       void vscode.window.showInformationMessage(`SpeakItToMe: Provider set to ${desc.label}.`);
-      await restartSessionAtCurrentPosition();
+      if (session) {
+        const voice = cfg().get<string>(`voice.${provider.id}`) || provider.defaultVoice;
+        await reconfigureActive(provider, voice);
+      }
     }),
     vscode.commands.registerCommand("speakittome.selectVoice", async () => {
       const provider = session?.provider ?? (await makeProvider(keys));
       if (!provider) return;
       const activeVoice = session?.voice
         ?? cfg().get<string>(`voice.${provider.id}`) ?? provider.defaultVoice;
-      const voices = await provider.listVoices();
+      const voices = await fetchVoices(provider);
       const pick = await vscode.window.showQuickPick(
         voices.map((v) => ({
           label: `${v.id === activeVoice ? "$(check) " : ""}${v.label}`,
@@ -375,7 +450,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!pick || pick.id === activeVoice) return;
       await cfg().update(`voice.${provider.id}`, pick.id, vscode.ConfigurationTarget.Global);
       void vscode.window.showInformationMessage(`SpeakItToMe: Voice set to ${pick.voiceLabel}.`);
-      await restartSessionAtCurrentPosition();
+      if (session) await reconfigureActive(session.provider, pick.id);
     }),
     vscode.commands.registerCommand("speakittome.setApiKey", async () => {
       const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });

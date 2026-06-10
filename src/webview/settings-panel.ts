@@ -13,6 +13,10 @@ export interface SettingsPanel {
   showData(data: SettingsData): void;
   /** Toggle visibility; requests fresh data when opening. */
   toggle(): void;
+  /** Close the panel (no-op if already closed). Used by Esc. */
+  close(): void;
+  /** Re-apply the gear's active styling after the player bar is rebuilt. */
+  syncToggleState(): void;
 }
 
 const FONT_MIN = 12;
@@ -33,6 +37,20 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
   const playerBar = document.getElementById("player-bar")!;
   playerBar.parentElement!.insertBefore(panel, playerBar);
 
+  // Header with title + a close (×) button so the panel reads as intentional.
+  const header = document.createElement("div");
+  header.className = "settings-header";
+  const headerTitle = document.createElement("div");
+  headerTitle.className = "settings-title";
+  headerTitle.textContent = "Settings";
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "settings-close";
+  closeBtn.setAttribute("aria-label", "Close settings");
+  closeBtn.title = "Close (Esc)";
+  closeBtn.textContent = "✕";
+  header.append(headerTitle, closeBtn);
+  panel.appendChild(header);
+
   const section = (title: string): HTMLDivElement => {
     const wrap = document.createElement("div");
     wrap.className = "settings-section";
@@ -44,21 +62,29 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
     return wrap;
   };
 
-  // ── Provider section ──────────────────────────────────────────────────────
-  const providerSection = section("Provider");
+  // ── Voice section (provider rows + voice dropdown) ────────────────────────
+  const voiceSection = section("Voice");
   const providerList = document.createElement("div");
   providerList.id = "settings-providers";
-  providerSection.appendChild(providerList);
+  voiceSection.appendChild(providerList);
 
-  // ── Voice section ─────────────────────────────────────────────────────────
-  const voiceSection = section("Voice");
+  const voiceLabel = document.createElement("label");
+  voiceLabel.className = "settings-field-label";
+  voiceLabel.textContent = "Voice";
+  voiceLabel.htmlFor = "settings-voice";
   const voiceSelect = document.createElement("select");
   voiceSelect.id = "settings-voice";
-  voiceSelect.addEventListener("change", () => opts.onVoice(voiceSelect.value));
-  voiceSection.appendChild(voiceSelect);
+  voiceSelect.addEventListener("change", () => { if (voiceSelect.value) opts.onVoice(voiceSelect.value); });
+  voiceSection.append(voiceLabel, voiceSelect);
 
-  // ── Font size section ─────────────────────────────────────────────────────
-  const fontSection = section("Font size");
+  // ── Appearance section (font size + highlight colors + reset) ─────────────
+  const appearanceSection = section("Appearance");
+
+  const fontFieldLabel = document.createElement("div");
+  fontFieldLabel.className = "settings-field-label";
+  fontFieldLabel.textContent = "Font size";
+  appearanceSection.appendChild(fontFieldLabel);
+
   const fontRow = document.createElement("div");
   fontRow.className = "settings-stepper";
   const dec = document.createElement("button");
@@ -70,7 +96,7 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
   inc.textContent = "+";
   inc.title = "Larger";
   fontRow.append(dec, fontValue, inc);
-  fontSection.appendChild(fontRow);
+  appearanceSection.appendChild(fontRow);
 
   let fontSize = 16;
   const clampFont = (n: number) => Math.max(FONT_MIN, Math.min(FONT_MAX, Math.round(n)));
@@ -85,8 +111,12 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
   dec.addEventListener("click", () => applyFont(fontSize - 1));
   inc.addEventListener("click", () => applyFont(fontSize + 1));
 
-  // ── Highlight colors section ──────────────────────────────────────────────
-  const colorSection = section("Highlight colors");
+  // ── Highlight colors (within Appearance) ──────────────────────────────────
+  const colorFieldLabel = document.createElement("div");
+  colorFieldLabel.className = "settings-field-label";
+  colorFieldLabel.textContent = "Highlight colors";
+  appearanceSection.appendChild(colorFieldLabel);
+
   const colorRow = document.createElement("div");
   colorRow.className = "settings-colors";
 
@@ -121,7 +151,7 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
     opts.onSetting("highlight.sentenceColor", "");
     opts.onSetting("highlight.wordColor", "");
   });
-  colorSection.append(colorRow, resetColors);
+  appearanceSection.append(colorRow, resetColors);
 
   // A color <input> can't show "empty" — fall back to a neutral swatch so the
   // control is usable, while the persisted value stays "" until the user picks.
@@ -163,16 +193,28 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
       providerList.appendChild(row);
     }
 
-    // Voices.
+    // Voices. null = still loading (network fetch in flight): show a single
+    // disabled "Loading voices…" option until a follow-up settingsData arrives.
     voiceSelect.textContent = "";
-    for (const v of data.voices) {
-      const opt = document.createElement("option");
-      opt.value = v.id;
-      opt.textContent = v.label;
-      if (v.id === data.activeVoice) opt.selected = true;
-      voiceSelect.appendChild(opt);
+    if (data.voices === null) {
+      const loading = document.createElement("option");
+      loading.textContent = "Loading voices…";
+      loading.value = "";
+      loading.disabled = true;
+      loading.selected = true;
+      voiceSelect.appendChild(loading);
+      voiceSelect.disabled = true;
+    } else {
+      voiceSelect.disabled = false;
+      for (const v of data.voices) {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = v.label;
+        if (v.id === data.activeVoice) opt.selected = true;
+        voiceSelect.appendChild(opt);
+      }
+      voiceSelect.value = data.activeVoice;
     }
-    voiceSelect.value = data.activeVoice;
 
     // Font size (reflect persisted truth; do not re-emit onSetting).
     fontSize = clampFont(data.fontSize);
@@ -196,13 +238,30 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
     }
   }
 
+  const syncGear = () => {
+    const gear = document.getElementById("settings-toggle");
+    gear?.classList.toggle("active", !panel.hidden);
+    gear?.setAttribute("aria-expanded", String(!panel.hidden));
+  };
+
+  const open = () => {
+    if (!panel.hidden) return;
+    panel.hidden = false;
+    syncGear();
+    opts.requestData();
+  };
+  const close = () => {
+    if (panel.hidden) return;
+    panel.hidden = true;
+    syncGear();
+  };
+
+  closeBtn.addEventListener("click", close);
+
   return {
     showData,
-    toggle() {
-      panel.hidden = !panel.hidden;
-      const gear = document.getElementById("settings-toggle");
-      gear?.classList.toggle("active", !panel.hidden);
-      if (!panel.hidden) opts.requestData();
-    },
+    toggle() { panel.hidden ? open() : close(); },
+    close,
+    syncToggleState: syncGear,
   };
 }

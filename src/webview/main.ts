@@ -19,7 +19,13 @@ let tickTimer: ReturnType<typeof setInterval> | null = null;
 
 const FORMAT_MIME: Record<string, string> = { mp3: "audio/mpeg", wav: "audio/wav" };
 
-function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; fontSize: number; sentenceColor: string; wordColor: string }) {
+function init(
+  model: DocumentModel,
+  chunks: Chunk[],
+  settings: { speed: number; fontSize: number; sentenceColor: string; wordColor: string },
+  startAtWord = 0,
+  autoplay = true
+) {
   if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
   engine?.stop();
   highlight?.destroy();
@@ -33,12 +39,18 @@ function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; 
   renderModel(root, model);
   highlight = new HighlightController(root);
 
-  settingsPanel = initSettingsPanel({
-    onProvider: (id) => vscode.postMessage({ type: "setProvider", id }),
-    onVoice: (id) => vscode.postMessage({ type: "setVoice", id }),
-    onSetting: (key, value) => vscode.postMessage({ type: "setSetting", key, value }),
-    requestData: () => vscode.postMessage({ type: "settingsRequest" }),
-  });
+  // The settings panel lives in the player-bar area (outside #content), so it
+  // survives a reconfigure that re-renders the document. Build it once; on
+  // reconfigure, reuse the existing instance (and its open/closed state) instead
+  // of stacking a second panel into the DOM.
+  if (!settingsPanel) {
+    settingsPanel = initSettingsPanel({
+      onProvider: (id) => vscode.postMessage({ type: "setProvider", id }),
+      onVoice: (id) => vscode.postMessage({ type: "setVoice", id }),
+      onSetting: (key, value) => vscode.postMessage({ type: "setSetting", key, value }),
+      requestData: () => vscode.postMessage({ type: "settingsRequest" }),
+    });
+  }
 
   playerBar = initPlayerBar({
     initialSpeed: settings.speed,
@@ -87,7 +99,22 @@ function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; 
   }
 
   tickTimer = setInterval(() => engine?.tick(), 100);
-  engine.start(0);
+
+  const clamped = Math.max(0, Math.min(model.words.length - 1, startAtWord));
+  const startWord = model.words[clamped];
+  if (!autoplay && startWord) {
+    // Reconfigure of a paused session: prime the new voice at the same spot,
+    // do not play. A later resume/play picks up from here.
+    engine.primeAt(startWord.index);
+  } else if (startWord && clamped > 0) {
+    engine.jumpToWord(startWord.index); // autoplay, but resume at the prior position
+  } else {
+    engine.start(0);                    // fresh read from the top
+  }
+
+  // The player bar was rebuilt above, resetting the gear's active styling.
+  // If the settings panel is open, restore the gear's active state.
+  settingsPanel.syncToggleState();
 }
 
 window.addEventListener("message", (event) => {
@@ -95,7 +122,7 @@ window.addEventListener("message", (event) => {
   switch (msg.type) {
     case "init": {
       const chunks = buildChunks(msg.model);
-      init(msg.model, chunks, msg.settings);
+      init(msg.model, chunks, msg.settings, msg.startAtWord ?? 0, msg.autoplay ?? true);
       break;
     }
     case "chunkAudio":
@@ -121,6 +148,11 @@ window.addEventListener("message", (event) => {
       if (msg.action === "stop") { engine?.stop(); highlight?.clear(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } }
       break;
   }
+});
+
+// Esc closes the settings panel when it's open.
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") settingsPanel?.close();
 });
 
 vscode.postMessage({ type: "ready" });

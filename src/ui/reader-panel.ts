@@ -9,7 +9,9 @@ export type SettingKey = "readerFontSize" | "highlight.sentenceColor" | "highlig
 
 export interface SettingsData {
   providers: { id: string; label: string; description: string; requiresKey: boolean; active: boolean }[];
-  voices: { id: string; label: string }[];
+  /** null = voices are still loading (network fetch in flight); render a disabled
+   *  "Loading voices…" option until a follow-up settingsData arrives with them. */
+  voices: { id: string; label: string }[] | null;
   activeVoice: string;
   fontSize: number;
   sentenceColor: string;
@@ -67,8 +69,12 @@ export class ReaderPanel {
     else this.pending.push(msg);
   }
 
-  sendInit(model: DocumentModel, chunkCount: number, settings: ReaderSettings) {
-    this.post({ type: "init", model, chunkCount, settings });
+  /**
+   * @param startAtWord first word to begin/prime at (clamped by the caller). 0 for a fresh read.
+   * @param autoplay    true = play immediately; false = prime paused at startAtWord (reconfigure of a paused session).
+   */
+  sendInit(model: DocumentModel, chunkCount: number, settings: ReaderSettings, startAtWord = 0, autoplay = true) {
+    this.post({ type: "init", model, chunkCount, settings, startAtWord, autoplay });
   }
   sendChunk(chunkIndex: number, audio: Uint8Array, format: string, timings: ChunkTimings) {
     this.post({ type: "chunkAudio", chunkIndex, audio, format, timings });

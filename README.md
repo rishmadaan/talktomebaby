@@ -73,23 +73,27 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 
 ### Switching provider and voice
 
-The primary way to change provider, voice, and reader appearance is the **settings panel inside the Reader**: click the gear (⚙) at the right end of the player bar. It opens a panel above the player bar with:
+**The settings panel inside the Reader is the primary way to change everything.** Click the gear (⚙) in the player bar to open it; click the gear again, press **Esc**, or hit the **✕** to close it. The gear shows a pressed state while the panel is open. The panel slides in above the player bar with two sections:
 
-- **Provider** — one row per available provider, showing a short description, a "key required" badge where relevant, and a check (✓) on the active one. Click a row to switch. (macOS say only appears on macOS.)
-- **Voice** — a dropdown of the active provider's voices, with the current one selected.
-- **Font size** — a +/- stepper (12-28px) that applies instantly and persists.
-- **Highlight colors** — sentence-band and current-word color pickers that apply instantly, plus **Reset to theme** to clear both back to the theme default.
+- **Voice**
+  - **Provider rows** — one per available provider, each with a short description, a "key required" badge where relevant, and a check (✓) on the active one. Click a row to switch. (macOS say only appears on macOS.)
+  - **Voice** — a dropdown of the active provider's voices, with the current one selected.
+- **Appearance**
+  - **Font size** — a +/- stepper (12-28px) that applies instantly and persists.
+  - **Highlight colors** — sentence-band and current-word color pickers that apply instantly, plus **Reset to theme** to clear both back to the theme default.
 
 (Speed lives in the player bar, not the settings panel.)
 
-**Live restart:** if you change the provider or voice while a session is playing, the session restarts automatically from the **current sentence** with the new provider/voice. Opening or closing the settings panel does not pause playback.
+**Instant open:** the panel opens immediately. Voices are cached per provider for the session and prefetched when a read starts, so the first open is usually instant; if a provider's voices are still loading you'll briefly see a disabled "Loading voices…" option, then the list fills in.
+
+**Switching keeps your place and your play state:** changing provider or voice reconfigures the reader **in place** — the Reader is not torn down and rebuilt. Playback resumes from the **current sentence** with the new voice. If you were playing, it keeps playing; if you were paused, it stays paused (primed at the same spot, ready to resume). The settings panel stays open across the switch.
 
 If a key-required provider has no stored key, switching to it prompts for the key first; cancel and the selection snaps back to the current provider.
 
-**Command palette (alternative):**
+**Command palette (alternative, mirrors the gear panel):**
 
-- Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider** — marks the active provider with ✓ / "(current)", and live-restarts on change.
-- Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice** — same active marker and live-restart.
+- Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider** — marks the active provider with ✓ / "(current)", and reconfigures in place on change.
+- Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice** — same active marker; reconfigures in place.
 - Set API key: `Cmd+Shift+P` > **SpeakItToMe: Set API Key**
 
 ---

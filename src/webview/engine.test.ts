@@ -107,6 +107,43 @@ describe("Engine", () => {
     expect(audios[0].playbackRate).toBe(1.75);
   });
 
+  it("primeAt loads and seeks the target word but does NOT play (paused start)", () => {
+    const { engine, audios, cb } = setup();
+    engine.primeAt(2); // word 2 lives in chunk 1
+    expect(cb.requestChunk).toHaveBeenCalledWith(1, true);
+    expect(cb.onState).toHaveBeenLastCalledWith("paused");
+    engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3", timings: msTimings2 });
+    const a = audios[audios.length - 1];
+    a._loaded(1.0);
+    expect(a.paused).toBe(true);          // primed, not playing
+    expect(a.currentTime).toBe(0);        // seeked to word 2 (starts at 0ms)
+    expect(engine.isPlaying).toBe(false);
+    expect(engine.currentSentence).toBe(1);
+  });
+
+  it("primeAt then resume plays from the primed word's sentence", () => {
+    const { engine, audios, cb } = setup();
+    engine.primeAt(2);
+    engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3", timings: msTimings2 });
+    const a = audios[audios.length - 1];
+    a._loaded(1.0);
+    expect(a.paused).toBe(true);
+    engine.resume();                      // resume from the primed position
+    expect(a.paused).toBe(false);
+    expect(a.currentTime).toBe(0);        // sentence 1 starts at word 2 (0ms)
+    expect(cb.onState).toHaveBeenLastCalledWith("playing");
+  });
+
+  it("primeAt seeks to a mid-chunk word and primes paused there", () => {
+    const { engine, audios } = setup();
+    engine.primeAt(3); // word 3 in chunk 1, starts at 500ms
+    engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3", timings: msTimings2 });
+    const a = audios[audios.length - 1];
+    a._loaded(1.0);
+    expect(a.paused).toBe(true);
+    expect(a.currentTime).toBeCloseTo(0.5); // 500ms
+  });
+
   it("resolves fraction timings to ms once duration is known", () => {
     const { engine, audios, cb } = setup();
     const frac: ChunkTimings = { unit: "fraction", words: [
