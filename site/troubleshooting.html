@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Troubleshooting — TalkToMeBaby</title>
+  <meta name="description" content="Solutions to common TalkToMeBaby problems: Edge TTS no audio, macOS say on Windows/Linux, ElevenLabs 401, slow first read, stale highlighting, and session resume after a VS Code reload.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html" aria-current="page">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Troubleshooting</h1>
+  <p class="muted">TalkToMeBaby v0.3.2 — common problems and their fixes.</p>
+
+  <!-- ── Edge TTS: no audio ──────────────────────────────────── -->
+  <h2 id="edge-no-audio">Edge TTS produces no audio or a connection error</h2>
+  <p>
+    Edge TTS requires an internet connection to Microsoft's speech service. It uses an
+    unofficial, best-effort endpoint — there is no service-level agreement and it can be
+    unavailable without notice.
+  </p>
+  <p>If you are offline or the endpoint is unreachable, you have two options:</p>
+  <ul>
+    <li>Switch to a <a href="providers.html">cached document</a> — if you have already read the document before, the audio may be served from the disk cache and no network call is needed.</li>
+    <li>On macOS, switch to the built-in <code>say</code> provider: open Settings (<code>Cmd+,</code>), search for <strong>TalkToMeBaby: Provider</strong>, and set it to <code>say</code>. The <code>say</code> provider is fully offline and never sends text to a network service.</li>
+  </ul>
+  <div class="callout">
+    <p><strong>Edge TTS is unofficial.</strong> It is free and requires no API key, but it uses an endpoint with no public SLA. If it stops working, switching to a key-based provider such as ElevenLabs is the most reliable alternative. See <a href="providers.html">Providers</a> for a comparison.</p>
+  </div>
+
+  <!-- ── macOS say not available ─────────────────────────────── -->
+  <h2 id="say-not-available">macOS say is not available on my machine</h2>
+  <p>
+    The <code>say</code> provider uses the official macOS speech synthesis command. It only
+    works on macOS and is hidden from the provider picker on Windows and Linux.
+  </p>
+  <p>
+    On Windows and Linux, TalkToMeBaby defaults to Edge TTS, which is free and requires no
+    key. If you want a guaranteed-available alternative with a formal API, set up
+    <a href="providers.html">ElevenLabs</a> or Sarvam AI via
+    <code>Cmd+Shift+P</code> &gt; <strong>TalkToMeBaby: Set API Key</strong>.
+  </p>
+
+  <!-- ── ElevenLabs 401 ──────────────────────────────────────── -->
+  <h2 id="elevenlabs-401">ElevenLabs returns a 401 error</h2>
+  <p>
+    ElevenLabs free accounts may be blocked from the TTS API. A paid plan (Starter tier or
+    higher) is recommended for API access.
+  </p>
+  <p>Steps to check:</p>
+  <ol>
+    <li>Confirm your API key is stored correctly: <code>Cmd+Shift+P</code> &gt; <strong>TalkToMeBaby: Set API Key</strong>, select ElevenLabs, and re-enter your key.</li>
+    <li>Verify the key is valid in the <a href="https://elevenlabs.io" rel="noopener noreferrer">ElevenLabs dashboard</a>. Keys stored by TalkToMeBaby are kept in VS Code SecretStorage (OS keychain — never written to <code>settings.json</code> and never synced).</li>
+    <li>If your account is on the free tier, upgrade to a paid plan to unlock TTS API access.</li>
+  </ol>
+
+  <!-- ── Slow first read ─────────────────────────────────────── -->
+  <h2 id="slow-first-read">The first read of a long document is slow</h2>
+  <p>
+    Audio is synthesized in chunks as you read — subsequent sentences are prefetched in the
+    background while the current one plays. The first chunk must be synthesized before audio
+    can start, which takes a moment for longer documents or slower connections.
+  </p>
+  <p>
+    Once a chunk is written to the disk cache, replaying it is instant and costs no API
+    credits. The cache limit is 200 MB by default (LRU eviction); you can adjust it with the
+    <code>talktomebaby.cacheSizeMB</code> setting.
+  </p>
+  <div class="callout">
+    <p>The warm-up delay is most noticeable on the very first read. Subsequent reads of the same document are served from cache and start immediately.</p>
+  </div>
+
+  <!-- ── Highlighting off after editing ──────────────────────── -->
+  <h2 id="highlight-stale">Playback highlight is off after I edited the file mid-read</h2>
+  <p>
+    If you edit the document while reading, the session model becomes stale — the word and
+    sentence offsets no longer match the current file contents. TalkToMeBaby detects the
+    change, pauses playback, and shows a prompt offering to restart from your current
+    position or stop.
+  </p>
+  <p>
+    Use the prompt to restart. Dismissing it and continuing without restarting may result
+    in misaligned highlighting until you restart the session.
+  </p>
+
+  <!-- ── Playback stopped after VS Code reload ───────────────── -->
+  <h2 id="reload-resume">Playback stopped after a VS Code window reload</h2>
+  <p>
+    Reloading the VS Code window or restarting the extension host always ends the active
+    session — audio is not preserved across reloads.
+  </p>
+  <p>
+    TalkToMeBaby saves your position automatically (approximately every 3 seconds while
+    playing). When the extension reactivates, it offers a <strong>"Resume?"</strong> toast
+    if a session was saved within the last 12 hours. Choosing Resume re-opens the document
+    and jumps straight to your last sentence. Dismissing clears the saved position.
+  </p>
+  <div class="callout">
+    <p><strong>Resume starts at the beginning of the sentence, not mid-sentence.</strong> Because audio is not preserved across reloads, there is no way to resume at the exact word. The position is also cleared when you press Stop or when a document finishes naturally.</p>
+  </div>
+  <p>The saved position is also cleared when you:</p>
+  <ul>
+    <li>Press <strong>Stop</strong> in the player bar.</li>
+    <li>Let the document finish reading naturally.</li>
+    <li>Dismiss the "Resume?" toast.</li>
+  </ul>
+
+  <!-- ── Still stuck ─────────────────────────────────────────── -->
+  <h2 id="still-stuck">Still stuck?</h2>
+  <p>
+    If none of the above resolves your issue, open a bug report on
+    <a href="https://github.com/rishmadaan/talktomebaby/issues">GitHub Issues</a>. Include
+    your OS, VS Code version, TalkToMeBaby version (0.3.2), and the active provider. Do not
+    include API keys, tokens, or the text content of private documents in your report.
+  </p>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

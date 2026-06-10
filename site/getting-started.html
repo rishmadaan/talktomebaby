@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started — TalkToMeBaby</title>
+  <meta name="description" content="Install TalkToMeBaby for VS Code from the Marketplace, a VSIX, or from source — then read your first document aloud in under a minute.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html" aria-current="page">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Getting started</h1>
+  <p class="muted">TalkToMeBaby v0.3.2 — install in under a minute, then start listening.</p>
+
+  <!-- ── Install: Marketplace ───────────────────────────────── -->
+  <section aria-labelledby="install-marketplace">
+    <h2 id="install-marketplace">Install from the Marketplace</h2>
+    <p>The easiest way to install is directly from the
+      <a href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">VS Code Marketplace ↗</a>.
+    </p>
+    <ol>
+      <li>Open the <strong>Extensions</strong> view in VS Code (<code>Cmd+Shift+X</code> / <code>Ctrl+Shift+X</code>)</li>
+      <li>Search for <strong>TalkToMeBaby</strong></li>
+      <li>Click <strong>Install</strong></li>
+    </ol>
+    <p>Or install from the command line:</p>
+    <pre><code>code --install-extension rishmadaan.talktomebaby</code></pre>
+  </section>
+
+  <!-- ── Install: VSIX ──────────────────────────────────────── -->
+  <section aria-labelledby="install-vsix">
+    <h2 id="install-vsix">Install from VSIX</h2>
+    <p>Download the <code>.vsix</code> file from the
+      <a href="https://github.com/rishmadaan/talktomebaby/releases">GitHub Releases page ↗</a>,
+      then install it with the CLI:</p>
+    <pre><code>code --install-extension talktomebaby-0.3.2.vsix</code></pre>
+    <p>Or via the UI: <kbd>Cmd+Shift+P</kbd> / <kbd>Ctrl+Shift+P</kbd> → <strong>Extensions: Install from VSIX…</strong> → select the file.</p>
+  </section>
+
+  <!-- ── Install: Build from source ────────────────────────── -->
+  <section aria-labelledby="install-source">
+    <h2 id="install-source">Build from source</h2>
+    <pre><code>git clone https://github.com/rishmadaan/talktomebaby.git
+cd talktomebaby
+npm install
+npm run package   # produces talktomebaby-0.3.2.vsix
+code --install-extension talktomebaby-0.3.2.vsix</code></pre>
+  </section>
+
+  <!-- ── Quick start ────────────────────────────────────────── -->
+  <section aria-labelledby="quick-start">
+    <h2 id="quick-start">Quick start</h2>
+    <ol>
+      <li>Open any <code>.md</code>, <code>.txt</code>, or other supported prose file</li>
+      <li><kbd>Cmd+Shift+P</kbd> / <kbd>Ctrl+Shift+P</kbd> → <strong>TalkToMeBaby: Read Document</strong></li>
+      <li>The Reader panel opens and reading starts from the beginning</li>
+    </ol>
+
+    <h3>Read from here / Read selection</h3>
+    <p>To start from a specific point, place your cursor and run
+      <strong>TalkToMeBaby: Read from Here</strong> from the right-click menu or command palette.
+      To read a highlighted passage, select text first and run
+      <strong>TalkToMeBaby: Read Selection</strong>.
+    </p>
+  </section>
+
+  <!-- ── Supported file types ───────────────────────────────── -->
+  <section aria-labelledby="file-types">
+    <h2 id="file-types">Supported file types</h2>
+    <div class="works-with" style="justify-content:flex-start;">
+      <span class="ext-pill">.md</span>
+      <span class="ext-pill">.mdx</span>
+      <span class="ext-pill">.txt</span>
+      <span class="ext-pill">.rst</span>
+      <span class="ext-pill">.org</span>
+      <span class="ext-pill">.tex</span>
+      <span class="ext-pill">.adoc</span>
+    </div>
+  </section>
+
+  <!-- ── Default provider note ──────────────────────────────── -->
+  <div class="callout">
+    <p><strong>No API key needed to start.</strong>
+      On <strong>macOS</strong>, TalkToMeBaby defaults to the built-in <code>say</code> command — fully offline, official Apple CLI, no data leaves your machine.
+      On <strong>Windows and Linux</strong>, it defaults to the free Edge TTS provider, which uses an <strong>unofficial</strong> Microsoft endpoint (no SLA; requires internet).
+      Any provider can be switched at any time from the gear menu in the Reader panel.</p>
+  </div>
+
+  <!-- ── Next step ──────────────────────────────────────────── -->
+  <p style="margin-top:2.5rem;">
+    Ready to explore the Reader panel controls, speed presets, and click-to-jump navigation?
+    <a href="reader.html">Reader panel →</a>
+  </p>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Providers — TalkToMeBaby</title>
+  <meta name="description" content="Compare TTS providers for TalkToMeBaby: macOS say, Edge TTS, ElevenLabs, and Sarvam AI — quality, word timing, key requirements, offline support, and honest fragility notes.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html" aria-current="page">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Providers</h1>
+  <p>TalkToMeBaby works out of the box on every platform — no API key required to start. The <code>talktomebaby.provider</code> setting defaults to <code>auto</code>: on macOS that resolves to the built-in <code>say</code> provider (official, fully offline); on Windows and Linux it resolves to Edge TTS (free, no key needed). An explicitly chosen provider is always respected.</p>
+
+  <!-- ── Comparison table ────────────────────────────────────── -->
+  <section aria-labelledby="comparison-heading">
+    <h2 id="comparison-heading">Provider comparison</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Quality</th>
+          <th>Word timing</th>
+          <th>Key required</th>
+          <th>Offline</th>
+          <th>Fragility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS say</td>
+          <td>Decent (Enhanced voices)</td>
+          <td>Estimated</td>
+          <td>No</td>
+          <td>Yes</td>
+          <td>Official Apple CLI, stable. macOS only.</td>
+        </tr>
+        <tr>
+          <td>Edge TTS</td>
+          <td>Neural, very good</td>
+          <td>Exact (word boundaries)</td>
+          <td>No</td>
+          <td>No</td>
+          <td><strong>Unofficial endpoint.</strong> Uses the same endpoint Edge's "Read Aloud" feature uses, via the <code>msedge-tts</code> package. Microsoft offers no contract; it has broken before and could change or get gated at any time. That is the price of free.</td>
+        </tr>
+        <tr>
+          <td>ElevenLabs</td>
+          <td>Best-in-class</td>
+          <td>Exact (char alignment)</td>
+          <td>Yes</td>
+          <td>No</td>
+          <td>Official API, stable. Paid.</td>
+        </tr>
+        <tr>
+          <td>Sarvam AI</td>
+          <td>Good (Indian English)</td>
+          <td>Estimated</td>
+          <td>Yes</td>
+          <td>No</td>
+          <td>Official API.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="muted">Word timing controls how precisely the word-by-word karaoke highlight tracks speech. Exact timing uses data from the provider; estimated timing is inferred from character offsets and synthesis duration.</p>
+  </section>
+
+  <!-- ── Per-provider setup ──────────────────────────────────── -->
+  <section aria-labelledby="setup-heading">
+    <h2 id="setup-heading">Per-provider setup</h2>
+
+    <!-- macOS say -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <h3>macOS say — default on macOS</h3>
+      <p>Uses the official Apple <code>say</code> command-line tool built into macOS. Audio is synthesized entirely on your machine — no text leaves your device. Nothing to configure: if you are on macOS and leave the provider setting at <code>auto</code>, <code>say</code> is already active.</p>
+      <p>Novelty voices (Zarvox, Boing, and similar) are filtered out of the voice list. Enhanced voices (downloadable in System Settings → Accessibility → Spoken Content) give noticeably better quality. The <code>say</code> provider is hidden on Windows and Linux.</p>
+    </div>
+
+    <!-- Edge TTS -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <h3>Edge TTS — default on Windows and Linux</h3>
+      <p>Uses the same speech endpoint that Microsoft Edge's built-in "Read Aloud" feature uses. Free, no API key needed, many voices. Requires an internet connection to Microsoft's speech service.</p>
+      <p>Default voice: <code>en-US-AriaNeural</code>. You can change it from the gear panel or via <strong>TalkToMeBaby: Select Voice</strong> in the command palette.</p>
+      <div class="callout">
+        <p><strong>Unofficial endpoint.</strong> Edge TTS uses an undocumented Microsoft endpoint. There is no SLA, no public support channel, and it has broken before — the extension already had to migrate from <code>msedge-tts</code> v1 to v2 due to an upstream change. If it breaks again, Windows and Linux users will lose audio until a fix ships. See <a href="roadmap.html">Roadmap</a> for the plan to replace this with a bundled local TTS engine.</p>
+      </div>
+    </div>
+
+    <!-- ElevenLabs -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <h3>ElevenLabs</h3>
+      <p>High-quality neural voices. Requires an ElevenLabs API key.</p>
+      <p><strong>To set your key:</strong> <code>Cmd+Shift+P</code> → <strong>TalkToMeBaby: Set API Key</strong> → select ElevenLabs → paste your key. The key is stored via the VS Code SecretStorage API (macOS Keychain, Windows Credential Manager, or libsecret on Linux) — never written to <code>settings.json</code>, never synced, never logged.</p>
+      <p>Default voice ID: <code>21m00Tcm4TlvDq8ikWAM</code>. Change it from the gear panel or via <strong>TalkToMeBaby: Select Voice</strong>.</p>
+      <div class="callout">
+        <p><strong>Free tier note.</strong> ElevenLabs free accounts may be blocked from the TTS API and return a 401 error. A paid plan (Starter tier or higher) is recommended for API access.</p>
+      </div>
+    </div>
+
+    <!-- Sarvam AI -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <h3>Sarvam AI</h3>
+      <p>Indian English focus. Requires a Sarvam AI API key.</p>
+      <p><strong>To set your key:</strong> <code>Cmd+Shift+P</code> → <strong>TalkToMeBaby: Set API Key</strong> → select Sarvam AI → paste your key. Stored the same way as ElevenLabs — SecretStorage, never in settings. Default voice: <code>shubh</code>.</p>
+    </div>
+  </section>
+
+  <!-- ── Switching provider / voice ─────────────────────────── -->
+  <section aria-labelledby="switching-heading">
+    <h2 id="switching-heading">Switching provider and voice</h2>
+
+    <p><strong>The gear panel inside the Reader is the primary way to change everything.</strong> Click the gear (⚙) at the right end of the player bar to open it. The panel slides in above the player bar with:</p>
+    <ul>
+      <li><strong>Provider</strong> — one row per available provider, each with a short description, a "key required" badge where relevant, and a check (✓) on the active one. Click a row to switch. (macOS say only appears on macOS.)</li>
+      <li><strong>Voice</strong> — a dropdown of the active provider's voices, with the current one selected.</li>
+      <li><strong>Appearance</strong> — font size stepper (12–28 px) and sentence-band / current-word color pickers, with a Reset to theme option.</li>
+    </ul>
+
+    <p><strong>Switching keeps your place and never auto-plays.</strong> Changing provider or voice reconfigures the reader in place — the Reader is not torn down and rebuilt. The session re-primes paused at your current sentence with the new voice; press play when you're ready. No surprise audio. The settings panel stays open across the switch.</p>
+
+    <p>If a key-required provider has no stored key, switching to it prompts for the key first; cancel and the selection snaps back to the current provider.</p>
+
+    <p><strong>Command palette (mirrors the gear panel):</strong></p>
+    <ul>
+      <li><strong>TalkToMeBaby: Select TTS Provider</strong> — pick from a quick-pick list; marks the active provider with ✓ / "(current)". Reconfigures in place on change.</li>
+      <li><strong>TalkToMeBaby: Select Voice</strong> — pick a voice for the active provider; same active marker.</li>
+      <li><strong>TalkToMeBaby: Set API Key</strong> — store or update an API key for ElevenLabs or Sarvam AI.</li>
+    </ul>
+  </section>
+
+  <!-- ── The honest part callout ────────────────────────────── -->
+  <section aria-labelledby="honest-heading">
+    <h2 id="honest-heading">The honest part</h2>
+
+    <div class="callout">
+      <p><strong>Edge TTS has no SLA and has broken before.</strong> It is the default on Windows and Linux because it is the best free option available right now — good voice quality, exact word timing, no sign-up required. But it runs on an undocumented Microsoft endpoint. The extension already had to migrate between two versions of the underlying package when Microsoft changed the endpoint. If it breaks again and you need audio immediately, your options are: switch to ElevenLabs or Sarvam AI (both have official APIs), or move to macOS.</p>
+      <p>The real fix is a bundled local neural TTS engine — no unofficial endpoints, no API keys, true offline support on every platform. See <a href="roadmap.html">Roadmap</a> for the current plan (Piper / Kokoro via ONNX).</p>
+    </div>
+  </section>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

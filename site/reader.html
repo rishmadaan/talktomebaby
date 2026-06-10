@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reader — TalkToMeBaby</title>
+  <meta name="description" content="How the TalkToMeBaby Reader panel works: dual-layer highlighting, click-to-jump, auto-scroll, player bar, in-reader settings, and editor sync.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html" aria-current="page">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>The Reader panel</h1>
+  <p>The Reader panel is TalkToMeBaby's primary reading surface. It renders your document as a clean reading view where every word is individually clickable — separate from the source editor so you can listen and follow along without staring at code.</p>
+
+  <!-- ── Dual-layer highlighting ─────────────────────────────── -->
+  <section aria-labelledby="highlighting-heading">
+    <h2 id="highlighting-heading">Dual-layer highlighting</h2>
+    <p>Two highlight layers work together so you always know exactly where you are:</p>
+    <ul>
+      <li><strong>Sentence band</strong> — a background highlight spans the full sentence currently being spoken.</li>
+      <li><strong>Word sweep</strong> — a moving highlight on top of the sentence band tracks the exact word being spoken as playback advances.</li>
+    </ul>
+    <p>The colors for both layers can be customized from the in-reader settings panel (gear button). See <a href="#settings-panel">In-reader settings panel</a> below.</p>
+  </section>
+
+  <!-- ── Click-to-jump ──────────────────────────────────────── -->
+  <section aria-labelledby="click-to-jump-heading">
+    <h2 id="click-to-jump-heading">Click-to-jump</h2>
+    <p>Click any word in the Reader panel to jump playback there and resume from that word immediately. No need to stop and restart — the jump is instant.</p>
+    <div class="callout">
+      <p><strong>From the source editor:</strong> press <code>alt+j</code> while the source editor has focus to jump playback to the word at your cursor. This always starts playback even if the reader is currently paused.</p>
+    </div>
+  </section>
+
+  <!-- ── Auto-scroll + return pill ─────────────────────────── -->
+  <section aria-labelledby="autoscroll-heading">
+    <h2 id="autoscroll-heading">Auto-scroll and Return to playback</h2>
+    <p>Auto-scroll follows playback as long as you have not scrolled the Reader panel yourself. The moment you scroll away — to look something up, re-read a passage, or copy text — auto-scroll disengages.</p>
+    <p>A <strong>Return to playback</strong> pill appears in the corner of the Reader whenever you have scrolled away from the active position. Click it to snap back to the currently playing sentence and re-engage auto-scroll.</p>
+  </section>
+
+  <!-- ── Player bar & speed ─────────────────────────────────── -->
+  <section aria-labelledby="player-bar-heading">
+    <h2 id="player-bar-heading">Player bar and speed</h2>
+    <p>The player bar sits at the bottom of the Reader panel and contains:</p>
+    <ul>
+      <li><strong>Speed presets</strong> — 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, and 2.0×.</li>
+      <li><strong>Fine slider</strong> — covers the full 0.5–2.0 range for any value in between.</li>
+      <li><strong>Pause/Resume</strong> — toggle playback without leaving the Reader.</li>
+      <li><strong>Stop</strong> — stops playback and ends the session.</li>
+      <li><strong>Gear (⚙)</strong> — opens the in-reader settings panel (see below).</li>
+    </ul>
+    <p>Pitch is preserved at all speeds — no chipmunk effect at 2×, no unnatural deepening at 0.5×. Speed is applied locally (no re-synthesis), so changes are instant. The chosen speed is persisted globally and restored on the next read.</p>
+    <p>Speed is not inside the settings panel; it lives in the player bar.</p>
+  </section>
+
+  <!-- ── In-reader settings panel ──────────────────────────── -->
+  <section aria-labelledby="settings-panel-heading">
+    <h2 id="settings-panel-heading">In-reader settings panel</h2>
+    <p>Click the gear (⚙) at the right end of the player bar to open the settings panel. Click the gear again, press <kbd>Esc</kbd>, or click the <strong>✕</strong> to close it. The gear shows a pressed state while the panel is open.</p>
+    <p>The panel slides in above the player bar with three sections:</p>
+
+    <h3>Provider</h3>
+    <p>One row per available provider, each with a short description, a "key required" badge where relevant, and a check mark (✓) on the active one. Click a row to switch.</p>
+    <ul>
+      <li>macOS <code>say</code> only appears on macOS — it is hidden on Windows and Linux.</li>
+      <li>If a key-required provider has no stored key, switching to it prompts for the key first; cancel and the selection snaps back to the current provider.</li>
+    </ul>
+
+    <h3>Voice</h3>
+    <p>A dropdown of the active provider's voices, with the current voice selected. Voices are cached per provider for the session and prefetched when a read starts, so the first open is usually instant. If a provider's voices are still loading you will briefly see a disabled "Loading voices…" option; the list fills in automatically.</p>
+
+    <h3>Appearance</h3>
+    <ul>
+      <li><strong>Font size</strong> — a +/− stepper (12–28 px) that applies instantly and persists across sessions.</li>
+      <li><strong>Highlight colors</strong> — separate color pickers for the sentence band and the current word. Changes apply instantly. <strong>Reset to theme</strong> clears both back to the theme default.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>Switching keeps your place and never auto-plays.</strong> Changing provider or voice reconfigures the reader in place — the Reader is not torn down and rebuilt. The session re-primes <em>paused</em> at your current sentence with the new voice. Press play when you are ready. No surprise audio. The settings panel stays open across the switch.</p>
+    </div>
+
+    <h3>Command palette alternative</h3>
+    <p>The settings panel is the primary way to change provider and voice, but the command palette mirrors it:</p>
+    <ul>
+      <li><strong>TalkToMeBaby: Select TTS Provider</strong> — marks the active provider with ✓ / "(current)"; reconfigures in place on change.</li>
+      <li><strong>TalkToMeBaby: Select Voice</strong> — same active marker; reconfigures in place.</li>
+      <li><strong>TalkToMeBaby: Set API Key</strong> — store an API key for ElevenLabs or Sarvam AI.</li>
+    </ul>
+  </section>
+
+  <!-- ── Editor sync ────────────────────────────────────────── -->
+  <section aria-labelledby="editor-sync-heading">
+    <h2 id="editor-sync-heading">Editor sync</h2>
+    <p>While a session is active, the source editor stays in sync with the Reader:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Sentence decoration</td>
+          <td>The sentence currently being spoken is highlighted in the source editor, so you can glance at the raw file and know exactly where you are.</td>
+        </tr>
+        <tr>
+          <td><code>alt+j</code></td>
+          <td>Press <code>alt+j</code> with the source editor focused to jump playback to the word at cursor. Always starts playback even if paused.</td>
+        </tr>
+        <tr>
+          <td><code>editorClickToJump</code> setting</td>
+          <td>Controls whether a plain click in the source editor triggers a jump. Values: <code>off</code>, <code>alt-j</code> (keyboard shortcut only, the default), or <code>plain-click</code> (any click during an active session).</td>
+        </tr>
+        <tr>
+          <td>Document edits mid-read</td>
+          <td>If you edit the file while reading, playback pauses and a prompt appears offering to restart from the current position or stop. The session model becomes stale the moment the document changes.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Next steps ─────────────────────────────────────────── -->
+  <div class="cta-band">
+    <h2>Next: Providers</h2>
+    <p>Learn about the built-in TTS providers — which is the default on your platform, what each one requires, and how word timing works.</p>
+    <a class="btn" href="providers.html">Compare providers →</a>
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

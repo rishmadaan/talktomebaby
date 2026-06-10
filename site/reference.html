@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reference — TalkToMeBaby</title>
+  <meta name="description" content="Complete command, settings, keybinding, and menu reference for TalkToMeBaby v0.3.2.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html" aria-current="page">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Reference</h1>
+  <p class="muted">TalkToMeBaby v0.3.2 — authoritative source: <code>package.json</code> <code>contributes</code>.</p>
+
+  <!-- ── Commands ──────────────────────────────────────────────── -->
+  <section aria-labelledby="commands-heading">
+    <h2 id="commands-heading">Commands</h2>
+    <p>All commands are available from the Command Palette (<code>Cmd+Shift+P</code> / <code>Ctrl+Shift+P</code>).</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Command ID</th>
+          <th>Title</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>talktomebaby.readDocument</td>
+          <td>TalkToMeBaby: Read Document</td>
+          <td>Open the Reader panel and read the active file from the beginning.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.readSelection</td>
+          <td>TalkToMeBaby: Read Selection</td>
+          <td>Open the Reader panel and read from the start of the current selection.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.readFromCursor</td>
+          <td>TalkToMeBaby: Read from Here</td>
+          <td>Open the Reader panel and read from the cursor position.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.jumpToCursor</td>
+          <td>TalkToMeBaby: Jump Playback to Cursor</td>
+          <td>Jump playback to the word at the cursor in the source editor. Always starts playback, even when paused. Default keybinding: <code>alt+j</code> (editor focus required).</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.pauseResume</td>
+          <td>TalkToMeBaby: Pause/Resume</td>
+          <td>Toggle playback between paused and playing. Default keybinding: <code>Cmd+Shift+R</code> / <code>Ctrl+Shift+R</code>.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.stop</td>
+          <td>TalkToMeBaby: Stop</td>
+          <td>Stop playback and close the active reading session.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.openReader</td>
+          <td>TalkToMeBaby: Open Reader</td>
+          <td>Reveal the Reader panel if it is already open (does not start a new read).</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.setApiKey</td>
+          <td>TalkToMeBaby: Set API Key</td>
+          <td>Store an API key for ElevenLabs or Sarvam AI. Keys are saved in VS Code SecretStorage (OS credential store) and never written to settings.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.selectProvider</td>
+          <td>TalkToMeBaby: Select TTS Provider</td>
+          <td>Pick a TTS provider from a quick-pick list. The active provider is marked with ✓. Reconfigures the reader in place — no auto-play.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.selectVoice</td>
+          <td>TalkToMeBaby: Select Voice</td>
+          <td>Pick a voice for the active provider from a quick-pick list. Reconfigures the reader in place — no auto-play.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Settings ──────────────────────────────────────────────── -->
+  <section aria-labelledby="settings-heading">
+    <h2 id="settings-heading">Settings</h2>
+    <p>All settings live under <code>talktomebaby.*</code> in VS Code settings (<code>settings.json</code> or the Settings UI). Most can also be changed live from the <a href="reader.html">Reader panel</a> gear menu.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>talktomebaby.provider</td>
+          <td>string</td>
+          <td><code>"auto"</code></td>
+          <td>
+            TTS provider. Allowed values:
+            <ul>
+              <li><code>"auto"</code> — macOS <code>say</code> on macOS (offline, official); Edge TTS elsewhere (free, unofficial endpoint).</li>
+              <li><code>"edge"</code> — Edge TTS: unofficial Microsoft endpoint, free, no key, word-level timing. Requires internet.</li>
+              <li><code>"elevenlabs"</code> — ElevenLabs: premium neural voices, word-level timing. Requires an ElevenLabs API key.</li>
+              <li><code>"say"</code> — macOS <code>say</code>: fully offline, official Apple CLI, estimated timing. macOS only.</li>
+              <li><code>"sarvam"</code> — Sarvam AI: Indian English focus, estimated timing. Requires a Sarvam AI API key.</li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td>talktomebaby.voice.edge</td>
+          <td>string</td>
+          <td><code>"en-US-AriaNeural"</code></td>
+          <td>Voice ID for Edge TTS. Use <strong>TalkToMeBaby: Select Voice</strong> to browse all available voices.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.voice.elevenlabs</td>
+          <td>string</td>
+          <td><code>"21m00Tcm4TlvDq8ikWAM"</code></td>
+          <td>Voice ID for ElevenLabs. Use <strong>TalkToMeBaby: Select Voice</strong> to browse voices from your account.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.voice.say</td>
+          <td>string</td>
+          <td><code>"Samantha"</code></td>
+          <td>Voice for macOS <code>say</code>. Novelty voices (Zarvox, Boing, etc.) are filtered from the picker. macOS only.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.voice.sarvam</td>
+          <td>string</td>
+          <td><code>"shubh"</code></td>
+          <td>Voice for Sarvam AI. Use <strong>TalkToMeBaby: Select Voice</strong> to browse available voices.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.speed</td>
+          <td>number</td>
+          <td><code>1.0</code></td>
+          <td>Playback speed multiplier (0.5–2.0). Pitch is preserved at all speeds. Updated automatically when changed in the player bar; persisted across sessions.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.editorClickToJump</td>
+          <td>string</td>
+          <td><code>"alt-j"</code></td>
+          <td>
+            How to jump playback from the source editor. Allowed values:
+            <ul>
+              <li><code>"off"</code> — editor jumping disabled.</li>
+              <li><code>"alt-j"</code> — jump only via the <code>alt+j</code> keyboard shortcut (cursor must be in the editor).</li>
+              <li><code>"plain-click"</code> — any plain mouse click in the editor during an active session triggers a jump.</li>
+            </ul>
+            Jumping always starts playback from the target word, even when paused.
+          </td>
+        </tr>
+        <tr>
+          <td>talktomebaby.readerFontSize</td>
+          <td>number</td>
+          <td><code>16</code></td>
+          <td>Reader panel font size in px. Adjustable from the Reader gear panel (12–28 px stepper).</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.highlight.sentenceColor</td>
+          <td>string</td>
+          <td><code>""</code></td>
+          <td>Sentence band highlight color. Empty string uses the theme default. Set from the Reader gear panel's Appearance section.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.highlight.wordColor</td>
+          <td>string</td>
+          <td><code>""</code></td>
+          <td>Current word highlight color. Empty string uses the theme default. Set from the Reader gear panel's Appearance section.</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.cacheSizeMB</td>
+          <td>number</td>
+          <td><code>200</code></td>
+          <td>Disk cache size limit in MB. Synthesized audio is stored under <code>globalStorageUri/audio-cache</code> with LRU eviction. Increase for large libraries; decrease to conserve disk space.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Keybindings ───────────────────────────────────────────── -->
+  <section aria-labelledby="keybindings-heading">
+    <h2 id="keybindings-heading">Keybindings</h2>
+    <p>Default keybindings. Override any binding in <strong>Preferences: Open Keyboard Shortcuts</strong>.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Command ID</th>
+          <th>Windows / Linux</th>
+          <th>macOS</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>talktomebaby.pauseResume</td>
+          <td><code>Ctrl+Shift+R</code></td>
+          <td><code>Cmd+Shift+R</code></td>
+          <td>Always</td>
+        </tr>
+        <tr>
+          <td>talktomebaby.jumpToCursor</td>
+          <td><code>Alt+J</code></td>
+          <td><code>Alt+J</code></td>
+          <td>Editor text focus (<code>editorTextFocus</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Menus ──────────────────────────────────────────────────── -->
+  <section aria-labelledby="menus-heading">
+    <h2 id="menus-heading">Menus</h2>
+    <p>TalkToMeBaby adds entries to two VS Code menus. Both are gated to supported file types (<code>.md</code>, <code>.mdx</code>, <code>.txt</code>, <code>.rst</code>, <code>.org</code>, <code>.tex</code>, <code>.adoc</code>).</p>
+
+    <h3>Editor title bar (<code>editor/title</code>)</h3>
+    <p>A button appears in the editor title bar (the icon row at the top-right of a file tab) when the active file is a supported type.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>Icon</th>
+          <th>Group</th>
+          <th>When (plain English)</th>
+          <th>When clause</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>talktomebaby.readDocument</td>
+          <td><code>$(unmute)</code> (speaker icon)</td>
+          <td>navigation</td>
+          <td>The active file's extension is one of: <code>.md</code>, <code>.mdx</code>, <code>.txt</code>, <code>.rst</code>, <code>.org</code>, <code>.tex</code>, <code>.adoc</code></td>
+          <td><code>resourceExtname =~ /\.(md|mdx|txt|rst|org|tex|adoc)$/</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Editor right-click context menu (<code>editor/context</code>)</h3>
+    <p>Two entries appear in the right-click context menu when the active file is a supported type.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>Group</th>
+          <th>When (plain English)</th>
+          <th>When clause</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>talktomebaby.readFromCursor</td>
+          <td>navigation</td>
+          <td>The active file's extension is a supported type</td>
+          <td><code>resourceExtname =~ /\.(md|mdx|txt|rst|org|tex|adoc)$/</code></td>
+        </tr>
+        <tr>
+          <td>talktomebaby.readSelection</td>
+          <td>navigation</td>
+          <td>The active file is a supported type <em>and</em> the editor has a non-empty selection</td>
+          <td><code>editorHasSelection &amp;&amp; resourceExtname =~ /\.(md|mdx|txt|rst|org|tex|adoc)$/</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <p><strong>Note:</strong> <code>talktomebaby.readDocument</code> is also the editor title button; <code>talktomebaby.readSelection</code> only appears in the context menu when text is selected. <code>talktomebaby.readFromCursor</code> is context-menu only — it has no title-bar button.</p>
+    </div>
+  </section>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy — TalkToMeBaby</title>
+  <meta name="description" content="How TalkToMeBaby handles your text, API keys, and audio cache — what leaves your machine and what stays local.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html" aria-current="page">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Privacy</h1>
+  <p>TalkToMeBaby is a local VS Code extension for reading prose files aloud. It does not include analytics, telemetry, tracking pixels, or a remote service operated by this project.</p>
+
+  <!-- ── What leaves your machine ─────────────────────────────── -->
+  <section aria-labelledby="data-flow-heading">
+    <h2 id="data-flow-heading">What leaves your machine</h2>
+    <p>When you start reading, TalkToMeBaby turns the current document or selection into text chunks and asks the active text-to-speech provider to synthesize audio. Whether that text leaves your machine depends entirely on which provider is selected.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Text leaves your machine?</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS <code>say</code></td>
+          <td>No — fully local</td>
+          <td>Runs locally through Apple's official <code>say</code> command. No text is sent to any network TTS provider. <strong>macOS only.</strong></td>
+        </tr>
+        <tr>
+          <td>Edge TTS</td>
+          <td>Yes</td>
+          <td>Uses an unofficial Microsoft endpoint (the same service family used by Edge Read Aloud, via the <code>msedge-tts</code> package). Microsoft offers no contract for this; it may change or stop working. No API key required.</td>
+        </tr>
+        <tr>
+          <td>ElevenLabs</td>
+          <td>Yes</td>
+          <td>Uses ElevenLabs' official API with your API key.</td>
+        </tr>
+        <tr>
+          <td>Sarvam AI</td>
+          <td>Yes</td>
+          <td>Uses Sarvam AI's official API with your API key.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>On macOS, the default provider is <code>say</code> — fully offline, no text leaves your machine. On Windows and Linux, the default is Edge TTS, which is a cloud provider using an unofficial endpoint.</p>
+    <p>Only the text needed for the requested audio chunk is sent. TalkToMeBaby does not intentionally send file paths, repository names, workspace names, API keys, or editor metadata to TTS providers.</p>
+
+    <div class="callout">
+      <p><strong>Your responsibility:</strong> Do not use a network TTS provider for documents you are not allowed to send to that provider. This includes confidential work files, private client data, regulated data, or third-party copyrighted content where transmission to a cloud service is not permitted. See <a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md">DISCLAIMER.md</a> for broader warranty, liability, and acceptable-use notes.</p>
+    </div>
+  </section>
+
+  <!-- ── Where API keys live ───────────────────────────────────── -->
+  <section aria-labelledby="api-keys-heading">
+    <h2 id="api-keys-heading">Where API keys live</h2>
+    <p>ElevenLabs and Sarvam AI keys are stored through the <strong>VS Code SecretStorage API</strong>, which is backed by the operating system's encrypted credential store:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>OS</th>
+          <th>Backing store</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>macOS</td>
+          <td>Keychain (the same encrypted store Safari uses for passwords)</td>
+        </tr>
+        <tr>
+          <td>Windows</td>
+          <td>Windows Credential Manager</td>
+        </tr>
+        <tr>
+          <td>Linux</td>
+          <td>libsecret (GNOME Keyring / KWallet)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── What never happens ────────────────────────────────────── -->
+  <section aria-labelledby="never-heading">
+    <h2 id="never-heading">What never happens</h2>
+    <ul>
+      <li>Keys are <strong>never written to <code>settings.json</code></strong> — they are not stored as plain settings values.</li>
+      <li>Keys are <strong>never synced</strong> by VS Code Settings Sync.</li>
+      <li>Keys are <strong>never logged</strong> by the extension.</li>
+      <li>Keys are <strong>not visible to other extensions</strong> — SecretStorage is namespaced per extension; other extensions cannot read TalkToMeBaby's secrets.</li>
+      <li>The extension has <strong>no analytics, telemetry, or tracking</strong>. If telemetry is added in a future release, it will respect VS Code's telemetry controls and be documented here before release.</li>
+    </ul>
+    <p>A key lives in memory only while a provider instance is active (during a reading session or a voice-list fetch). Deleting the extension removes access; the OS credential store can also be inspected or cleared directly by the user (for example, via Keychain Access on macOS).</p>
+  </section>
+
+  <!-- ── Audio cache ───────────────────────────────────────────── -->
+  <section aria-labelledby="cache-heading">
+    <h2 id="cache-heading">Audio cache</h2>
+    <p>TalkToMeBaby stores synthesized audio chunks on disk so that re-reading the same document costs no additional API credits.</p>
+    <ul>
+      <li><strong>Location:</strong> VS Code extension global storage — <code>globalStorageUri/audio-cache</code>. This directory is local to your machine and is not synced.</li>
+      <li><strong>Size limit:</strong> controlled by <code>talktomebaby.cacheSizeMB</code>, default <strong>200 MB</strong>. LRU eviction runs on write when the limit is reached.</li>
+      <li><strong>Contents:</strong> cached audio may contain spoken versions of text you asked the extension to read.</li>
+    </ul>
+    <p>The extension also stores the last reading position in VS Code workspace state so it can offer resume-after-reload. This data never leaves your machine.</p>
+  </section>
+
+  <!-- ── Version note ──────────────────────────────────────────── -->
+  <p class="muted">This page describes TalkToMeBaby v0.3.2. For full details see <a href="https://github.com/rishmadaan/talktomebaby/blob/main/PRIVACY.md">PRIVACY.md</a> in the repository.</p>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

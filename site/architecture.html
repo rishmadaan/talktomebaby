@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture — TalkToMeBaby</title>
+  <meta name="description" content="How TalkToMeBaby is built: extension host / webview split, document model, key invariants, and how to add a new TTS provider.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html" aria-current="page">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Architecture</h1>
+  <p class="muted">v0.3.2 — last updated June 2026</p>
+
+  <!-- ── How it's built ──────────────────────────────────────── -->
+  <section aria-labelledby="how-built-heading">
+    <h2 id="how-built-heading">How it's built</h2>
+    <p>
+      TalkToMeBaby is a VS Code extension split across two isolated runtimes: the
+      <strong>extension host</strong> and the <strong>webview</strong>. The two sides
+      communicate exclusively by message passing — they share no memory and have no
+      direct function calls between them.
+    </p>
+    <p>
+      The extension host owns VS Code APIs: it reads the active document, manages
+      synthesis (queuing audio chunks, calling TTS providers, maintaining the disk
+      cache), persists state across reloads, and wires commands to keyboard shortcuts.
+      The webview owns everything the user sees and hears: it renders word spans,
+      drives playback through the Web Audio API, and streams <code>position</code> and
+      <code>state</code> messages back to the host so the status bar and editor
+      decorations can stay in sync.
+    </p>
+
+    <h3>The document model as single source of truth</h3>
+    <p>
+      When a read session starts, the extension host builds a <code>DocumentModel</code>
+      from the raw document text. The model is built once and never mutated — all offsets
+      (word positions, sentence ranges) are bounding boxes into the original text. The
+      <code>Chunker</code> derives audio chunks from the model deterministically, using
+      the same algorithm on both the host and the webview. Because both sides run the
+      same chunker against the same model, they always agree on chunk boundaries without
+      any round-trip negotiation.
+    </p>
+    <p>
+      The serialized model is posted to the webview at session start; the webview uses it
+      to build word spans in the DOM and to drive the playback engine. The host never
+      needs to re-derive positions from the DOM — the model is the authority.
+    </p>
+  </section>
+
+  <!-- ── Source layout ───────────────────────────────────────── -->
+  <section aria-labelledby="source-layout-heading">
+    <h2 id="source-layout-heading">Source layout</h2>
+<pre><code>src/
+  extension.ts          # Entry point — wires all subsystems; handles commands + resume-after-reload
+  core/
+    document-model.ts   # Parses raw text → DocumentModel (sentences → words with source bounding boxes)
+    chunker.ts          # Groups sentences into audio chunks; deterministic on both host and webview
+    timing.ts           # Merges word-boundary timings from providers into chunk-level offsets
+  synthesis/
+    provider.ts         # TtsProvider interface
+    provider-catalog.ts # availableProviders(platform) — filters say on non-darwin
+    edge.ts             # Edge TTS (msedge-tts, unofficial endpoint, exact word timing)
+    elevenlabs.ts       # ElevenLabs API (exact char-alignment timing)
+    say.ts              # macOS say (estimated timing)
+    sarvam.ts           # Sarvam AI (estimated timing)
+    synthesis-service.ts# Priority queue + dual-audio handoff; calls provider, applies cache
+    disk-cache.ts       # LRU disk cache (globalStorageUri/audio-cache, default 200 MB)
+    voice-cache.ts      # In-memory session cache for voice lists (never caches fallback lists)
+    api-key-manager.ts  # SecretStorage read/write for ElevenLabs + Sarvam keys
+    with-timeout.ts     # Race a promise against a timeout, return fallback value
+  ui/
+    reader-panel.ts     # ReaderPanel — webview lifecycle, message routing, post() buffer
+    editor-sync.ts      # Editor decorations (sentence band) + click-to-jump listeners
+    status-bar.ts       # Status bar item (sentence N/total, speed)
+  webview/
+    main.ts             # Webview entry — Engine, PlayerBar, SettingsPanel, Renderer
+    engine.ts           # Playback engine: chunk queue, dual AudioBuffer handoff, word sweep
+    renderer.ts         # DOM renderer — builds word spans from DocumentModel
+    player-bar.ts       # Speed presets, slider, pause/resume, stop, gear button
+    settings-panel.ts   # Settings slide-in: Provider / Voice / Appearance sections</code></pre>
+    <p>
+      Tests live alongside the files they test (<code>*.test.ts</code> co-located in
+      <code>src/</code>). Vitest runs them in a happy-dom environment — no VS Code
+      runtime is needed to run the test suite.
+    </p>
+  </section>
+
+  <!-- ── Key invariants ──────────────────────────────────────── -->
+  <section aria-labelledby="invariants-heading">
+    <h2 id="invariants-heading">The five key invariants</h2>
+    <p>
+      These rules govern every structural decision in the codebase. If a change would
+      break any of them, reconsider the change.
+    </p>
+
+    <h3>1. Document model is the single source of truth</h3>
+    <p>
+      <code>DocumentModel</code> is built once from raw text and never mutated. All
+      offsets (word positions, sentence ranges) are bounding boxes into the original
+      text. The chunker derives chunks deterministically from the model, so the host and
+      the webview always agree on chunk boundaries.
+    </p>
+
+    <h3>2. Webview owns playback state</h3>
+    <p>
+      The webview engine drives <code>position</code> and <code>state</code> messages;
+      the extension host updates the status bar and persists position in response. The
+      host never assumes playback state — it reads it from messages.
+    </p>
+
+    <h3>3. Reconfigure in place; never auto-play</h3>
+    <p>
+      Provider and voice switches call <code>ReadingSession.reconfigure()</code>. That
+      method aborts the old synthesis pipeline, builds a new one, and re-initialises the
+      same webview paused at the current sentence. The user presses play when ready.
+      There is no surprise audio after a settings change.
+    </p>
+
+    <h3>4. Never cache fallback voice lists</h3>
+    <p>
+      <code>VoiceCache</code> stores only real provider voice lists (length &gt; 1). If
+      <code>listVoices()</code> times out, the fallback — a list containing only the
+      default voice — is returned for display but not stored. This ensures the next fetch
+      retries the real list. Caching the fallback would pin the provider to a single
+      voice for the whole session.
+    </p>
+
+    <h3>5. Disk cache uses <code>globalStorageUri</code></h3>
+    <p>
+      <code>DiskCache</code> writes synthesised audio to
+      <code>context.globalStorageUri/audio-cache</code>. The size limit is controlled by
+      the <code>talktomebaby.cacheSizeMB</code> setting (default 200 MB). Eviction is
+      LRU, triggered on write.
+    </p>
+  </section>
+
+  <!-- ── Adding a TTS provider ───────────────────────────────── -->
+  <section aria-labelledby="add-provider-heading">
+    <h2 id="add-provider-heading">Adding a TTS provider</h2>
+    <p>
+      The synthesis layer is provider-agnostic. Adding a new voice engine takes five
+      steps:
+    </p>
+    <ol>
+      <li>
+        Create <code>src/synthesis/your-provider.ts</code> implementing
+        <code>TtsProvider</code> (see <code>src/synthesis/provider.ts</code> for the
+        interface).
+      </li>
+      <li>
+        Add an entry to <code>src/synthesis/provider-catalog.ts</code> — supply
+        <code>id</code>, <code>label</code>, <code>description</code>,
+        <code>requiresKey</code>, and <code>defaultVoice</code>.
+      </li>
+      <li>
+        Register the provider in <code>extension.ts</code> inside the
+        <code>makeProviderById()</code> switch.
+      </li>
+      <li>
+        Add the config key <code>talktomebaby.voice.your-provider</code> to
+        <code>package.json</code>.
+      </li>
+      <li>
+        If the provider requires an API key, add handling in
+        <code>src/ui/api-key-manager.ts</code>.
+      </li>
+    </ol>
+    <p>
+      For a worked example, compare <code>edge.ts</code> (exact word timing) with
+      <code>say.ts</code> (estimated timing). See <a href="providers.html">Providers</a>
+      for end-user documentation on the built-in providers.
+    </p>
+  </section>
+
+  <!-- ── Contributing ────────────────────────────────────────── -->
+  <section aria-labelledby="contributing-heading">
+    <h2 id="contributing-heading">Contributing</h2>
+
+    <h3>Dev environment</h3>
+    <p>
+      Fork and clone the repo, run <code>npm install</code>, open the project in VS Code,
+      and press <kbd>F5</kbd> to launch the Extension Development Host. VS Code runs
+      <code>npm: watch</code> as the default build task, so the extension rebuilds
+      incrementally as you save. Reload the dev host window to pick up changes.
+    </p>
+
+    <h3>Running the tests</h3>
+    <p>
+      The test suite runs with <a href="https://vitest.dev">Vitest</a> in a happy-dom
+      environment — no VS Code runtime is needed:
+    </p>
+<pre><code>npm run compile   # dev build: esbuild ext (→ out/extension.js) + webview (→ media/reader.js)
+npm test          # vitest run — no VS Code runtime needed</code></pre>
+    <p>
+      Tests are co-located with the source files they cover (<code>*.test.ts</code>
+      inside <code>src/</code>).
+    </p>
+
+    <h3>PR expectations</h3>
+    <ul>
+      <li>Open an issue first to discuss non-trivial changes.</li>
+      <li>Keep PRs focused — one feature or fix per PR.</li>
+      <li>
+        Add <code>*.test.ts</code> tests for any new core or synthesis logic (the test
+        suite runs without a VS Code runtime).
+      </li>
+      <li>
+        No API keys in code — keys go through VS Code SecretStorage via
+        <code>ApiKeyManager</code>.
+      </li>
+      <li>Run <code>npm run compile</code> and <code>npm test</code> — both must pass.</li>
+      <li>Update <code>CHANGELOG.md</code> if adding features or fixing bugs.</li>
+    </ul>
+    <p>
+      For bug reports, use the GitHub issue template and include your VS Code version, OS,
+      extension version, and the relevant output from the Output panel &gt;
+      "TalkToMeBaby".
+    </p>
+    <p>
+      Full contributing guide:
+      <a href="https://github.com/rishmadaan/talktomebaby/blob/main/CONTRIBUTING.md">CONTRIBUTING.md on GitHub ↗</a>
+    </p>
+  </section>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

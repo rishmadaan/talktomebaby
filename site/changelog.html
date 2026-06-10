@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog — TalkToMeBaby</title>
+  <meta name="description" content="Release notes and version history for TalkToMeBaby, the read-aloud extension for VS Code.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html" aria-current="page">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Changelog</h1>
+
+  <h2>[0.3.2] - 2026-06-10</h2>
+  <ul>
+    <li>New <code>auto</code> provider default: macOS now defaults to the built-in <code>say</code> voice (official, fully offline); Windows/Linux keep Edge TTS. Explicit provider choices are unchanged and always respected.</li>
+  </ul>
+
+  <h2>[0.3.1] - 2026-06-10</h2>
+  <ul>
+    <li>Added explicit privacy/data-flow disclosure for network TTS providers</li>
+    <li>Added expanded user-responsibility, warranty, provider, content-rights, and liability disclaimers</li>
+    <li>Added third-party runtime dependency notices for packaged builds</li>
+    <li>Restored Speechify-inspired positioning with an independence/no-affiliation disclaimer</li>
+  </ul>
+
+  <h2>[0.3.0] - 2026-06-10 — TalkToMeBaby</h2>
+  <p>Renamed SpeakItToMe → TalkToMeBaby.</p>
+  <ul>
+    <li>Published to the VS Code Marketplace as <code>rishmadaan.talktomebaby</code></li>
+    <li>Added Marketplace icon and public package metadata</li>
+    <li>In-reader settings panel (primary settings surface): Provider and Voice sections split into separate areas; font size, highlight colors — all accessible from the gear icon in the player bar</li>
+    <li>Instant voice loading with session cache: voices are prefetched on read start so the first gear-open is usually instant; fallback voice lists are never cached (ensures the next fetch retries the real list)</li>
+    <li>No-auto-play-on-switch policy: changing provider or voice re-primes the session paused at the current sentence; press play when ready</li>
+    <li>Resume after reload: position is persisted to workspaceState (throttled ~3s); on activation a "Resume?" toast is offered if a session was saved within 12 hours</li>
+    <li>Playback failures surfaced: chunk synthesis errors are sent to the webview and reported in the Output channel rather than silently dropped</li>
+    <li>Provider architecture docs: see docs/provider-architecture.md for full provider design, fragility notes, and roadmap</li>
+    <li>Reader panel: rendered reading view with word-level karaoke highlighting</li>
+    <li>Click any word to jump playback (alt+j from the source editor)</li>
+    <li>Continuous chunked audio (no more per-sentence gaps)</li>
+    <li>Speed 0.5-2x, pitch preserved, instant, persisted</li>
+    <li>Resume restarts the current sentence</li>
+    <li>Providers: Edge TTS (default, free), ElevenLabs, macOS say, Sarvam</li>
+    <li>Persistent disk cache (default 200 MB), re-reads cost no API credits</li>
+    <li>Editor decorations stay in sync; auto-scroll with return-to-playback pill</li>
+  </ul>
+
+  <h2>[0.1.0] - 2026-03-04</h2>
+  <h3>Added</h3>
+  <ul>
+    <li>Sentence-level text highlighting while reading aloud</li>
+    <li>Play/pause/stop playback controls in sidebar panel</li>
+    <li>"Start from Here" — right-click any sentence to begin reading from that point</li>
+    <li>In-memory session caching to save API credits on re-reads</li>
+    <li>Sarvam AI TTS provider (Indian English, 45+ voices)</li>
+    <li>ElevenLabs TTS provider (multilingual, requires paid plan)</li>
+    <li>Provider-agnostic architecture — switch providers via settings</li>
+    <li>Keyboard shortcut: <code>Cmd+Shift+R</code> / <code>Ctrl+Shift+R</code> for pause/resume</li>
+    <li>Configurable highlight color, voice, and speech speed</li>
+  </ul>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

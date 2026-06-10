@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Dark rounded-square background -->
+  <rect width="256" height="256" rx="52" ry="52" fill="#0e0c12"/>
+
+  <!-- Speech bubble body -->
+  <path d="
+    M 60 52
+    Q 60 44 68 44
+    L 188 44
+    Q 196 44 196 52
+    L 196 162
+    Q 196 170 188 170
+    L 100 170
+    L 76 196
+    L 76 170
+    L 68 170
+    Q 60 170 60 162
+    Z
+  " fill="#f3ede2"/>
+
+  <!-- Top text line (short left segment + gap + short right segment) -->
+  <rect x="80" y="82" width="60" height="10" rx="5" fill="#2c2638"/>
+  <rect x="148" y="82" width="28" height="10" rx="5" fill="#2c2638"/>
+
+  <!-- Middle line: amber highlighter band (full width) -->
+  <rect x="80" y="108" width="96" height="14" rx="4" fill="#ffb347"/>
+  <!-- Middle line: coral word on top of the band (shorter, left side) -->
+  <rect x="80" y="110" width="38" height="10" rx="4" fill="#ff5470"/>
+  <!-- Middle line: remaining word to right of coral on band (dark text simulation) -->
+  <rect x="124" y="110" width="52" height="10" rx="4" fill="#1a1200"/>
+
+  <!-- Bottom text line -->
+  <rect x="80" y="138" width="44" height="10" rx="5" fill="#2c2638"/>
+  <rect x="132" y="138" width="36" height="10" rx="5" fill="#2c2638"/>
+</svg>

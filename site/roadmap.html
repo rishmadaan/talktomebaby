@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmap — TalkToMeBaby</title>
+  <meta name="description" content="Where TalkToMeBaby is headed: closing the Windows/Linux offline gap with bundled local neural TTS, and the sequencing to get there.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html" aria-current="page">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <h1>Roadmap</h1>
+  <p class="muted">Last updated v0.3.2 — 2026-06-10</p>
+
+  <!-- ── Where things stand ──────────────────────────────────── -->
+  <section aria-labelledby="status-heading">
+    <h2 id="status-heading">Where things stand</h2>
+    <p>
+      v0.3.2 made a meaningful change to the default provider story: <strong>macOS now
+      defaults to the official <code>say</code> provider</strong> — the Apple speech synthesis
+      CLI that ships with every Mac. It's fully offline, no API key required, and no
+      data leaves your machine. That removes one long-standing rough edge for macOS users.
+    </p>
+    <p>
+      Windows and Linux still default to <strong>Edge TTS</strong> — free, no key needed,
+      and neural quality. But Edge TTS is built on an unofficial Microsoft endpoint
+      (the same one Edge's "Read Aloud" feature uses, via the <code>msedge-tts</code> package).
+      Microsoft offers no contract for it; it has already changed once (a migration from
+      package v1 to v2 was required) and could break or get gated at any time. That is
+      the price of free.
+    </p>
+    <p>
+      Two structural gaps remain.
+    </p>
+  </section>
+
+  <!-- ── Structural gaps ─────────────────────────────────────── -->
+  <section aria-labelledby="gaps-heading">
+    <h2 id="gaps-heading">Structural gaps</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>Unofficial default on Windows &amp; Linux</h3>
+        <p>
+          macOS defaults to the official <code>say</code> provider. Windows and Linux
+          still default to Edge TTS — unofficial, best-effort. If the Edge endpoint
+          breaks upstream, those users lose audio until a fix ships or they configure
+          a key-based provider. Mitigation today: three alternative providers
+          (ElevenLabs, Sarvam, and <code>say</code> on macOS). Real mitigation: gap 2.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Offline reading is macOS-only</h3>
+        <p>
+          The only provider that works without network access and without an API key is
+          macOS <code>say</code>. Windows and Linux users have no offline or no-key
+          option except Edge TTS — which requires network anyway. There is currently no
+          path to offline reading on those platforms.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The plan ────────────────────────────────────────────── -->
+  <section aria-labelledby="plan-heading">
+    <h2 id="plan-heading">The plan: bundled local neural TTS</h2>
+    <p>
+      The obvious fix would be per-OS system voices: Windows SAPI via PowerShell and
+      Linux <code>espeak-ng</code> / <code>speech-dispatcher</code> alongside macOS <code>say</code>.
+      That means three separate integrations, three different quality levels
+      (<code>espeak-ng</code> in particular sounds robotic), three maintenance surfaces —
+      and still only estimated word timing on all of them.
+    </p>
+    <p>
+      The better path is <strong>one bundled local neural TTS engine that runs
+      identically on every OS</strong>. Two candidates from the ONNX ecosystem:
+    </p>
+
+    <h3>Candidates</h3>
+    <ul>
+      <li>
+        <strong>Piper</strong> — small (~50–100 MB per voice), fast on CPU, MIT-licensed,
+        good quality, runs via <code>onnxruntime</code>. The primary candidate and strongest
+        fit for this use case.
+      </li>
+      <li>
+        <strong>Kokoro</strong> — higher quality (~82M params), also ONNX-runnable; heavier
+        than Piper.
+      </li>
+    </ul>
+
+    <h3>What it buys</h3>
+    <ul>
+      <li>A true offline default that works the same on macOS, Windows, and Linux.</li>
+      <li>No API keys and no unofficial endpoints in the default path.</li>
+      <li>
+        <strong>Phoneme timestamps from the engine itself</strong> — better-than-estimated
+        word highlighting, closer to the exact timing ElevenLabs and Edge TTS provide.
+      </li>
+    </ul>
+
+    <h3>What it costs</h3>
+    <ul>
+      <li>
+        <strong>Model download flow.</strong> Bundling a voice model in the VSIX would
+        bloat the install. The likely design is a one-time "download voice (~60 MB)"
+        prompt on first use of the local provider.
+      </li>
+      <li>
+        <strong><code>onnxruntime-node</code> as a native dependency.</strong> Native
+        modules in VS Code extensions require careful packaging and platform-specific
+        binaries — non-trivial engineering work.
+      </li>
+    </ul>
+  </section>
+
+  <!-- ── Sequencing ──────────────────────────────────────────── -->
+  <section aria-labelledby="sequencing-heading">
+    <h2 id="sequencing-heading">Sequencing</h2>
+    <p>
+      macOS already uses <code>say</code> as the zero-config default as of v0.3.2.
+      The next step is the <strong>Piper provider for Windows and Linux</strong>:
+      when Piper lands, it becomes the offline default on those platforms — closing
+      both structural gaps in a single move.
+    </p>
+    <p>
+      The macOS default stays as <code>say</code> until Piper quality is confirmed
+      comparable or better. If it is, Piper can become the single default across
+      all three platforms, unifying the experience entirely.
+    </p>
+
+    <div class="callout">
+      <p>
+        <strong>Current default summary:</strong> macOS → <code>say</code> (official,
+        offline). Windows &amp; Linux → Edge TTS (unofficial, requires network). The
+        roadmap replaces Edge TTS as the Windows/Linux default with a Piper-based
+        local provider.
+      </p>
+    </div>
+
+    <p>
+      See <a href="providers.html">Providers</a> for detail on the current provider
+      landscape, including fragility notes and how API keys are stored. See
+      <a href="architecture.html">Architecture</a> for how providers plug into the
+      synthesis pipeline.
+    </p>
+  </section>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>
