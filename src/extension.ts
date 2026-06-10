@@ -166,8 +166,10 @@ class ReadingSession {
    * the same document; document/new-document reads still go through startSession.
    */
   async reconfigure(provider: TtsProvider, voice: string): Promise<void> {
-    // Capture position + play state BEFORE we change anything.
-    const wasPlaying = this.state === "playing";
+    // Capture position BEFORE we change anything. Policy: a provider/voice
+    // switch NEVER auto-starts audio — the session re-primes paused at the
+    // current sentence and the user presses play when ready. Predictable
+    // beats clever here (user feedback: surprise audio on switch is jarring).
     const sentenceCount = this.model.sentences.length;
     const idx = Math.max(0, Math.min(sentenceCount - 1, this.position.sentenceIndex));
     const firstWord = this.model.sentences[idx]?.words[0];
@@ -188,7 +190,7 @@ class ReadingSession {
     };
     // Re-init the SAME webview. main.ts init() tears down its prior engine and
     // (because the settings panel lives outside #content) keeps the panel open.
-    this.panel.sendInit(this.model, this.chunks.length, settings, startAtWord, wasPlaying);
+    this.panel.sendInit(this.model, this.chunks.length, settings, startAtWord, false);
   }
 
   dispose() {
@@ -241,31 +243,37 @@ export function activate(context: vscode.ExtensionContext) {
   // Voices don't change mid-session, so cache per provider for the host lifetime.
   const voiceCache = new VoiceCache();
 
-  /** Fetch + cache a provider's voices.
-   *  - Wraps the network call in a 4-second timeout so a hanging provider never
-   *    leaves "Loading voices…" onscreen forever.
-   *  - On timeout OR error: returns a minimal fallback (the active voice) and
-   *    CACHES that fallback so every subsequent gear-open is instant. A window
-   *    reload clears the in-memory cache and retries fresh. */
-  async function fetchVoices(provider: TtsProvider): Promise<{ id: string; label: string }[]> {
-    // If already cached (including a previously cached fallback), return immediately.
+  /** Fetch a provider's voices with a 4-second answer guarantee.
+   *  - Real voice lists are cached for the host lifetime.
+   *  - The fallback (just the default voice) is NEVER cached — caching it once
+   *    pinned Edge to a single voice for the whole session. On timeout we return
+   *    the fallback for now, and when the real list eventually lands we cache it
+   *    and invoke `onLate` so the open panel can be refreshed. */
+  async function fetchVoices(
+    provider: TtsProvider,
+    onLate?: (voices: { id: string; label: string }[]) => void
+  ): Promise<{ id: string; label: string }[]> {
     const hit = voiceCache.get(provider.id);
     if (hit) return hit;
 
     const fallback = [{ id: provider.defaultVoice, label: provider.defaultVoice }];
-    let voices: { id: string; label: string }[];
-    try {
-      // Race the fetch against a 4-second timer. If it hangs, we get the fallback.
-      voices = await withTimeout(provider.listVoices(), 4000, fallback);
-    } catch (err) {
-      log.error(`listVoices(${provider.id}) failed: ${err instanceof Error ? err.message : String(err)}`);
-      voices = fallback;
-    }
-    // Cache whatever we got — success, fallback-on-timeout, or fallback-on-error —
-    // so the next gear-open never waits again. voiceCache.resolve() would NOT cache
-    // errors, so we manage caching directly here.
-    voiceCache.set(provider.id, voices);
-    return voices;
+    let timedOut = false;
+    const real = provider.listVoices()
+      .then((v) => {
+        if (v && v.length > 1) {
+          voiceCache.set(provider.id, v); // cache ONLY real lists
+          if (timedOut) onLate?.(v);      // landed after we already showed the fallback
+          return v;
+        }
+        return v && v.length ? v : fallback;
+      })
+      .catch((err) => {
+        log.error(`listVoices(${provider.id}) failed: ${err instanceof Error ? err.message : String(err)}`);
+        return fallback;
+      });
+    const result = await withTimeout(real, 4000, fallback);
+    if (result === fallback) timedOut = true;
+    return result;
   }
 
   async function startSession(doc: vscode.TextDocument): Promise<boolean> {
@@ -310,18 +318,19 @@ export function activate(context: vscode.ExtensionContext) {
 
   /** Send settings data immediately (cache or loading), then — if voices weren't
    *  cached — fetch them and push a follow-up settingsData with them filled in.
-   *  fetchVoices() always resolves (never throws): it caches success, fallback-
-   *  on-timeout, and fallback-on-error alike, so a second gear-open is always
-   *  instant. */
+   *  fetchVoices() always resolves within ~4s (never throws); if the real list
+   *  arrives after the timeout, the onLate callback pushes a second refresh. */
   async function pushSettingsData(active: ReadingSession): Promise<void> {
     active.panel.sendSettingsData(settingsSnapshot(active));
     if (voiceCache.has(active.provider.id)) return;
     const provider = active.provider;
-    const voices = await fetchVoices(provider);
-    // Guard against a provider/session swap while the fetch was in flight.
-    if (session === active && active.provider === provider) {
-      active.panel.sendSettingsData({ ...settingsSnapshot(active), voices });
-    }
+    const pushIfCurrent = (voices: { id: string; label: string }[]) => {
+      if (session === active && active.provider === provider) {
+        active.panel.sendSettingsData({ ...settingsSnapshot(active), voices });
+      }
+    };
+    const voices = await fetchVoices(provider, pushIfCurrent);
+    pushIfCurrent(voices);
   }
 
   /** Reconfigure the active session in place (same webview), preserving position

@@ -66,20 +66,19 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
     return wrap;
   };
 
-  // ── Voice section (provider rows + voice dropdown) ────────────────────────
-  const voiceSection = section("Voice");
+  // ── Provider section (engine choice) ──────────────────────────────────────
+  const providerSection = section("Provider");
   const providerList = document.createElement("div");
   providerList.id = "settings-providers";
-  voiceSection.appendChild(providerList);
+  providerSection.appendChild(providerList);
 
-  const voiceLabel = document.createElement("label");
-  voiceLabel.className = "settings-field-label";
-  voiceLabel.textContent = "Voice";
-  voiceLabel.htmlFor = "settings-voice";
+  // ── Voice section (the active provider's voices) ──────────────────────────
+  const voiceSection = section("Voice");
   const voiceSelect = document.createElement("select");
   voiceSelect.id = "settings-voice";
+  voiceSelect.setAttribute("aria-label", "Voice");
   voiceSelect.addEventListener("change", () => { if (voiceSelect.value) opts.onVoice(voiceSelect.value); });
-  voiceSection.append(voiceLabel, voiceSelect);
+  voiceSection.append(voiceSelect);
 
   // ── Appearance section (font size + highlight colors + reset) ─────────────
   const appearanceSection = section("Appearance");
