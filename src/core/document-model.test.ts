@@ -66,4 +66,19 @@ describe("word spans", () => {
     expect(bold.text).toBe("bold");
     expect(src.slice(bold.source.start, bold.source.end)).toBe("bold");
   });
+
+  it("word source is a bounding box when markers sit inside the word span", () => {
+    const src = "**word**.";
+    const m = parseDocument(src, "t.md", 1);
+    expect(m.words[0].text).toBe("word.");
+    // bounding box spans the closing markers between "word" and "."
+    expect(src.slice(m.words[0].source.start, m.words[0].source.end)).toBe("word**.");
+  });
+
+  it("handles CRLF line endings without leaking \\r into word text or offsets", () => {
+    const src = "First sentence.\r\nSecond sentence.";
+    const m = parseDocument(src, "t.md", 1);
+    expect(m.words.every((w) => !w.text.includes("\r"))).toBe(true);
+    expect(m.words.every((w) => src.slice(w.source.start, w.source.end) === w.text)).toBe(true);
+  });
 });
