@@ -16,6 +16,7 @@
       { "command": "speakittome.readDocument", "title": "SpeakItToMe: Read Document", "icon": "$(unmute)" },
       { "command": "speakittome.readSelection", "title": "SpeakItToMe: Read Selection" },
       { "command": "speakittome.readFromCursor", "title": "SpeakItToMe: Read from Here" },
+      { "command": "speakittome.jumpToCursor", "title": "SpeakItToMe: Jump Playback to Cursor" },
       { "command": "speakittome.pauseResume", "title": "SpeakItToMe: Pause/Resume" },
       { "command": "speakittome.stop", "title": "SpeakItToMe: Stop" },
       { "command": "speakittome.openReader", "title": "SpeakItToMe: Open Reader" },
@@ -33,7 +34,8 @@
       ]
     },
     "keybindings": [
-      { "command": "speakittome.pauseResume", "key": "ctrl+shift+r", "mac": "cmd+shift+r" }
+      { "command": "speakittome.pauseResume", "key": "ctrl+shift+r", "mac": "cmd+shift+r" },
+      { "command": "speakittome.jumpToCursor", "key": "alt+j", "mac": "alt+j", "when": "editorTextFocus" }
     ],
     "configuration": {
       "type": "object",
@@ -55,7 +57,11 @@
         "speakittome.voice.say": { "type": "string", "default": "Samantha" },
         "speakittome.voice.sarvam": { "type": "string", "default": "shubh" },
         "speakittome.speed": { "type": "number", "default": 1.0, "minimum": 0.5, "maximum": 2.0, "description": "Playback speed (pitch preserved). Persisted from the player." },
-        "speakittome.editorClickToJump": { "type": "boolean", "default": true, "description": "Alt+click in the source editor jumps playback there during a session." },
+        "speakittome.editorClickToJump": {
+          "type": "string", "default": "alt-j",
+          "enum": ["off", "alt-j", "plain-click"],
+          "description": "How to jump playback from the source editor: keyboard gesture on cursor (alt-j), any plain click while a session plays (plain-click), or off."
+        },
         "speakittome.readerFontSize": { "type": "number", "default": 16 },
         "speakittome.highlight.sentenceColor": { "type": "string", "default": "", "description": "Sentence band color. Empty = theme default." },
         "speakittome.highlight.wordColor": { "type": "string", "default": "", "description": "Current word color. Empty = theme default." },

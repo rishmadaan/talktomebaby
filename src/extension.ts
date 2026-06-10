@@ -6,6 +6,7 @@ import { DiskCache } from "./synthesis/disk-cache";
 import { EdgeProvider } from "./synthesis/edge";
 import { TtsProvider } from "./synthesis/provider";
 import { ReaderPanel, ReaderSettings } from "./ui/reader-panel";
+import { EditorSync } from "./ui/editor-sync";
 
 let log: vscode.LogOutputChannel;
 
@@ -13,7 +14,10 @@ class ReadingSession {
   readonly model: DocumentModel;
   readonly chunks: Chunk[];
   readonly panel: ReaderPanel;
+  readonly editorSync: EditorSync;
   private synthesis: SynthesisService;
+  private disposables: vscode.Disposable[] = [];
+  private editPrompted = false;
   state: "playing" | "paused" | "ended" = "paused";
   position = { wordIndex: -1, sentenceIndex: -1 };
 
@@ -31,6 +35,7 @@ class ReadingSession {
     this.chunks = buildChunks(this.model);
     this.synthesis = new SynthesisService(provider, voice, cache);
     this.panel = new ReaderPanel(extensionUri, vscode.workspace.asRelativePath(docUri));
+    this.editorSync = new EditorSync(docUri, this.model, (idx) => this.jumpToWord(idx));
 
     // Send init eagerly so it is queued ahead of any jumpToWord that a command
     // issues immediately after construction (readFromCursor / readSelection).
@@ -67,6 +72,7 @@ class ReadingSession {
         }
         case "position":
           this.position = { wordIndex: msg.wordIndex, sentenceIndex: msg.sentenceIndex };
+          this.editorSync.highlight(msg.sentenceIndex, msg.wordIndex, true);
           this.onEvent(this);
           break;
         case "state":
@@ -82,11 +88,35 @@ class ReadingSession {
           break;
       }
     });
+
+    this.disposables.push(
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        if (e.document.uri.toString() !== docUri.toString() || e.contentChanges.length === 0) return;
+        if (this.editPrompted) return;
+        this.editPrompted = true;
+        this.panel.control("pause");
+        void vscode.window
+          .showInformationMessage("SpeakItToMe: document changed — restart from current position?", "Restart here", "Stop")
+          .then((choice) => {
+            this.editPrompted = false;
+            if (choice === "Restart here") {
+              void vscode.commands.executeCommand("speakittome.readFromCursor");
+            } else if (choice === "Stop") {
+              void vscode.commands.executeCommand("speakittome.stop");
+            }
+          });
+      })
+    );
   }
 
   pauseResume() { this.panel.control(this.state === "playing" ? "pause" : "resume"); }
   jumpToWord(wordIndex: number) { this.panel.seekToWord(wordIndex); }
-  dispose() { this.synthesis.abortAll(); this.panel.dispose(); }
+  dispose() {
+    this.synthesis.abortAll();
+    this.editorSync.dispose();
+    for (const d of this.disposables) d.dispose();
+    this.panel.dispose();
+  }
 }
 
 let session: ReadingSession | undefined;
@@ -140,6 +170,13 @@ export function activate(context: vscode.ExtensionContext) {
       const offset = editor.document.offsetAt(editor.selection.start);
       const word = session!.model.words.find((w) => w.source.end > offset);
       if (word) session!.jumpToWord(word.index);
+    }),
+    vscode.commands.registerCommand("speakittome.jumpToCursor", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || !session) return;
+      if (cfg().get<string>("editorClickToJump", "alt-j") === "off") return;
+      const idx = session.editorSync.wordAtPosition(editor.document, editor.selection.active);
+      if (idx !== undefined) session.jumpToWord(idx);
     }),
     vscode.commands.registerCommand("speakittome.pauseResume", () => session?.pauseResume()),
     vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; }),
