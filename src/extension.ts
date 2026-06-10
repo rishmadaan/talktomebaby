@@ -15,6 +15,22 @@ import { ApiKeyManager } from "./ui/api-key-manager";
 
 let log: vscode.LogOutputChannel;
 
+const PROSE_EXTS = /\.(md|mdx|txt|rst|org|tex|adoc)$/i;
+
+async function resolveActiveDocument(): Promise<vscode.TextDocument | undefined> {
+  const editor = vscode.window.activeTextEditor;
+  if (editor) return editor.document;
+  // Active tab may be a custom editor (e.g. a markdown WYSIWYG webview) — pull its URI.
+  const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+  const uri =
+    input instanceof vscode.TabInputCustom ? input.uri :
+    input instanceof vscode.TabInputText ? input.uri : undefined;
+  if (uri && PROSE_EXTS.test(uri.path)) {
+    return vscode.workspace.openTextDocument(uri);
+  }
+  return undefined;
+}
+
 class ReadingSession {
   readonly model: DocumentModel;
   readonly chunks: Chunk[];
@@ -158,7 +174,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const keys = new ApiKeyManager(context.secrets);
 
-  async function startSession(editor: vscode.TextEditor): Promise<boolean> {
+  async function startSession(doc: vscode.TextDocument): Promise<boolean> {
     const provider = await makeProvider(keys);
     if (!provider) return false;
     session?.dispose();
@@ -166,7 +182,7 @@ export function activate(context: vscode.ExtensionContext) {
     const cacheDir = vscode.Uri.joinPath(context.globalStorageUri, "audio-cache").fsPath;
     const cache = new DiskCache(cacheDir, cfg().get<number>("cacheSizeMB", 200)! * 1024 * 1024);
     session = new ReadingSession(
-      editor.document.uri, editor.document.getText(), editor.document.version,
+      doc.uri, doc.getText(), doc.version,
       provider, voice, cache, context.extensionUri,
       (s) => {
         statusBar.update(s.state, vscode.workspace.getConfiguration("speakittome").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
@@ -178,19 +194,23 @@ export function activate(context: vscode.ExtensionContext) {
 
   const needEditor = () => {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) void vscode.window.showWarningMessage("SpeakItToMe: no active editor");
+    if (!editor) void vscode.window.showWarningMessage("SpeakItToMe: this command needs the text editor. Right-click the tab → Reopen Editor With → Text Editor.");
     return editor;
   };
 
   context.subscriptions.push(
     vscode.commands.registerCommand("speakittome.readDocument", async () => {
-      const editor = needEditor();
-      if (editor) await startSession(editor);
+      const doc = await resolveActiveDocument();
+      if (!doc) {
+        void vscode.window.showWarningMessage("SpeakItToMe: open a prose file (md, txt, ...) first");
+        return;
+      }
+      await startSession(doc);
     }),
     vscode.commands.registerCommand("speakittome.readFromCursor", async () => {
       const editor = needEditor();
       if (!editor) return;
-      if (!(await startSession(editor)) || !session) return;
+      if (!(await startSession(editor.document)) || !session) return;
       const offset = editor.document.offsetAt(editor.selection.active);
       const word = session.model.words.find((w) => w.source.end > offset) ?? session.model.words[0];
       if (word) session.jumpToWord(word.index);
@@ -198,7 +218,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("speakittome.readSelection", async () => {
       const editor = needEditor();
       if (!editor || editor.selection.isEmpty) return;
-      if (!(await startSession(editor)) || !session) return; // selection = start at selection, read on
+      if (!(await startSession(editor.document)) || !session) return; // selection = start at selection, read on
       const offset = editor.document.offsetAt(editor.selection.start);
       const word = session.model.words.find((w) => w.source.end > offset);
       if (word) session.jumpToWord(word.index);
