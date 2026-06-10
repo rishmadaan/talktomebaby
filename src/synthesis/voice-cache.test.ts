@@ -44,4 +44,30 @@ describe("VoiceCache", () => {
     expect(cache.get("edge")).toEqual(VOICES);
     expect(cache.get("elevenlabs")).toEqual([{ id: "x", label: "X" }]);
   });
+
+  it("invalidate removes a cached entry so the next resolve re-fetches", async () => {
+    const cache = new VoiceCache();
+    const fetcher = vi.fn().mockResolvedValue(VOICES);
+
+    // Populate the cache.
+    await cache.resolve("elevenlabs", fetcher);
+    expect(cache.has("elevenlabs")).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    // Invalidate — the entry should disappear.
+    cache.invalidate("elevenlabs");
+    expect(cache.has("elevenlabs")).toBe(false);
+    expect(cache.get("elevenlabs")).toBeUndefined();
+
+    // The next resolve should fetch again.
+    const voices = await cache.resolve("elevenlabs", fetcher);
+    expect(voices).toEqual(VOICES);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidate on a provider with no cached entry is a no-op", () => {
+    const cache = new VoiceCache();
+    expect(() => cache.invalidate("sarvam")).not.toThrow();
+    expect(cache.has("sarvam")).toBe(false);
+  });
 });

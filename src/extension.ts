@@ -93,11 +93,17 @@ class ReadingSession {
         case "requestChunk": {
           const chunk = this.chunks[msg.chunkIndex];
           if (!chunk) break;
+          const synthAtRequest = this.synthesis;
           try {
             const a = await this.synthesis.request(chunk, msg.priority);
+            // Guard: if a reconfigure replaced the synthesis pipeline while the
+            // request was in flight, discard the stale audio — it came from the
+            // old provider and the webview has already re-initialised.
+            if (this.synthesis !== synthAtRequest) break;
             this.panel.sendChunk(msg.chunkIndex, a.audio, a.format, a.timings);
           } catch (err) {
             const m = err instanceof Error ? err.message : String(err);
+            if (this.synthesis !== synthAtRequest || m === "aborted") break; // stale generation — old synthesis aborted by reconfigure
             log.error(`chunk ${msg.chunkIndex} failed: ${m}`);
             this.panel.sendChunkFailed(msg.chunkIndex, m);
           }
@@ -337,12 +343,17 @@ export function activate(context: vscode.ExtensionContext) {
         if (msg.id === current.provider.id) break;
         const desc = availableProviders(process.platform).find((p) => p.id === msg.id);
         if (!desc) break;
+        // If this provider requires a key, check whether one already exists.
+        // If not, makeProviderById will prompt — a newly stored key may expose
+        // different voices, so we invalidate the cache after a successful prompt.
+        const hadKey = desc.requiresKey ? !!(await keys.getKey(msg.id)) : true;
         const provider = await makeProviderById(msg.id, keys);
         if (!provider) {
           // Cancelled key prompt or unavailable — snap the UI back to reality.
           await pushSettingsData(current);
           break;
         }
+        if (!hadKey) voiceCache.invalidate(msg.id); // new key stored — evict stale voice list
         const voice = cfg().get<string>(`voice.${provider.id}`) || provider.defaultVoice;
         await cfg().update("provider", msg.id, vscode.ConfigurationTarget.Global);
         await reconfigureActive(provider, voice);
@@ -423,8 +434,12 @@ export function activate(context: vscode.ExtensionContext) {
       const pick = await vscode.window.showQuickPick(items, { placeHolder: "SpeakItToMe TTS provider" });
       if (!pick || pick.id === activeId) return;
       const desc = availableProviders(process.platform).find((p) => p.id === pick.id)!;
+      // Check for an existing key before calling makeProviderById so we can
+      // detect when a NEW key is prompted and invalidate the voice cache.
+      const hadKey = desc.requiresKey ? !!(await keys.getKey(pick.id)) : true;
       const provider = await makeProviderById(pick.id, keys);
       if (!provider) return; // cancelled key prompt — no change
+      if (!hadKey) voiceCache.invalidate(pick.id); // new key stored — evict stale voice list
       await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
       void vscode.window.showInformationMessage(`SpeakItToMe: Provider set to ${desc.label}.`);
       if (session) {
@@ -454,7 +469,11 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand("speakittome.setApiKey", async () => {
       const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });
-      if (pick) await keys.promptAndStore(pick);
+      if (!pick) return;
+      const stored = await keys.promptAndStore(pick);
+      // A new key may expose different voices (different plan tier), so evict
+      // the cached voice list so the next fetch reflects the new credentials.
+      if (stored) voiceCache.invalidate(pick);
     }),
     { dispose() { session?.dispose(); } }
   );

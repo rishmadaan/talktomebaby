@@ -38,4 +38,13 @@ export class VoiceCache {
     this.store.set(providerId, voices);
     return voices;
   }
+
+  /**
+   * Remove a provider's cached voice list, forcing the next resolve() to
+   * re-fetch from the provider. Use when a provider's API key changes —
+   * the new key may surface different voices (e.g. a different plan tier).
+   */
+  invalidate(providerId: string): void {
+    this.store.delete(providerId);
+  }
 }
