@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2026-06-10
+
+- Added explicit privacy/data-flow disclosure for network TTS providers
+- Added expanded user-responsibility, warranty, provider, content-rights, and liability disclaimers
+- Added third-party runtime dependency notices for packaged builds
+- Restored Speechify-inspired positioning with an independence/no-affiliation disclaimer
+
 ## [0.3.0] - 2026-06-10 — TalkToMeBaby
 
 Renamed SpeakItToMe → TalkToMeBaby.

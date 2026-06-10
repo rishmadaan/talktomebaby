@@ -6,7 +6,7 @@
 
 ## Goal
 
-Rebuild read-vscode-tts as **SpeakItToMe**, a VS Code extension with Speechify-parity reading:
+Rebuild read-vscode-tts as **SpeakItToMe**, a VS Code extension with polished read-aloud behavior:
 
 1. Smooth, continuous spoken reading (no per-sentence gaps, natural prosody)
 2. Word-level highlight that sweeps with the voice, inside a sentence band
@@ -142,7 +142,7 @@ Engine behaviors:
 - Dual highlight: `.sentence-active` band + `.word-active` emphasis, CSS transitions for the sweep.
 - **Click any word** → `jumpTo(wordIdx)`.
 - **Player bar** (sticky): play/pause, back/forward one sentence, speed presets 0.75–2x + fine slider, voice picker, provider picker, progress (sentence X of Y / % through doc).
-- Auto-scroll keeps the sentence band comfortably in view. Any user scroll suspends following; a floating "↓ return to playback" pill re-engages. Same pattern as Speechify/Kindle.
+- Auto-scroll keeps the sentence band comfortably in view. Any user scroll suspends following; a floating "↓ return to playback" pill re-engages.
 
 ### Editor surface (secondary)
 

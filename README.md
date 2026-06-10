@@ -1,6 +1,10 @@
 # TalkToMeBaby
 
-TalkToMeBaby reads your prose files aloud inside VS Code with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with Edge TTS (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
+TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with an unofficial Edge TTS provider (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
+
+TalkToMeBaby is independent and is not affiliated with, endorsed by, or sponsored by Speechify.
+
+Use of TalkToMeBaby is at your own risk. You are responsible for choosing a provider, complying with provider terms, ensuring you have rights to send or synthesize the text you read, and protecting confidential or regulated content. See [DISCLAIMER.md](DISCLAIMER.md) and [PRIVACY.md](PRIVACY.md).
 
 Core features:
 - **Reader panel** - rendered reading view with dual-layer highlighting: sentence band + moving word sweep
@@ -31,7 +35,7 @@ code --install-extension rishmadaan.talktomebaby
 ### From VSIX
 
 ```bash
-code --install-extension talktomebaby-0.3.0.vsix
+code --install-extension talktomebaby-0.3.1.vsix
 ```
 
 Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
@@ -42,8 +46,8 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 git clone https://github.com/rishmadaan/talktomebaby.git
 cd talktomebaby
 npm install
-npm run package   # produces talktomebaby-0.3.0.vsix
-code --install-extension talktomebaby-0.3.0.vsix
+npm run package   # produces talktomebaby-0.3.1.vsix
+code --install-extension talktomebaby-0.3.1.vsix
 ```
 
 ---
@@ -79,10 +83,12 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 
 | Provider | Quality | Word timing | Key required | Notes |
 |---|---|---|---|---|
-| Edge TTS (default) | Good | Word-level | No | Free. Requires internet. Many voices. |
+| Edge TTS (default) | Good | Word-level | No | Free, unofficial, best effort. Requires internet. Many voices. |
 | ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
 | macOS say | Basic | Estimated | No | Offline. macOS only. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. |
 | Sarvam AI | Good | Estimated | Yes | Indian English focus. |
+
+Network providers synthesize audio by sending the text being read to the selected provider. Edge, ElevenLabs, and Sarvam require internet access; macOS `say` runs locally and does not send text to a network TTS provider. See [PRIVACY.md](PRIVACY.md) for the full data-flow summary.
 
 ### Switching provider and voice
 
@@ -141,7 +147,7 @@ While a session is active, the source editor stays in sync with the reader:
 
 ## Privacy and API keys
 
-Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See the [provider architecture notes](https://github.com/rishmadaan/talktomebaby/blob/main/docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
+TalkToMeBaby does not include analytics or telemetry. When you use a network TTS provider, the text being read is sent to that provider to generate audio. Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See [PRIVACY.md](PRIVACY.md), [DISCLAIMER.md](DISCLAIMER.md), and the [provider architecture notes](https://github.com/rishmadaan/talktomebaby/blob/main/docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
 
 ## Keybindings
 
@@ -172,7 +178,7 @@ Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API,
 ## Troubleshooting
 
 **Edge TTS produces no audio / connection error**
-Edge TTS requires an internet connection to Microsoft's speech service. If you are offline, switch to macOS say (`talktomebaby.provider: say`) or a cached document.
+Edge TTS requires an internet connection to Microsoft's speech service and is an unofficial, best-effort provider. If you are offline, switch to macOS say (`talktomebaby.provider: say`) or a cached document.
 
 **macOS say not available**
 The `say` provider only works on macOS. On other platforms it is hidden from the provider picker.
@@ -209,4 +215,4 @@ For vulnerability reports or sensitive security issues, see [SECURITY.md](https:
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Additional disclaimers are in [DISCLAIMER.md](DISCLAIMER.md). Third-party runtime dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
