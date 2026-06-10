@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TalkToMeBaby — read-aloud for VS Code</title>
+  <meta name="description" content="Speechify-inspired read-aloud for VS Code: word-level karaoke highlighting, click-to-jump navigation, and 2x speed without pitch shift.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
+  <nav aria-label="Main">
+    <a href="getting-started.html">Getting started</a>
+    <a href="reader.html">Reader</a>
+    <a href="providers.html">Providers</a>
+    <a href="reference.html">Reference</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="changelog.html">Changelog</a>
+    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+
+  <!-- ── Hero ────────────────────────────────────────────────── -->
+  <section class="hero">
+    <h1 class="karaoke">
+      <span style="--i:0">Your</span> <span style="--i:1">docs,</span>
+      <span style="--i:2">read</span> <span style="--i:3">aloud,</span>
+      <span style="--i:4">word</span> <span style="--i:5">by</span>
+      <span style="--i:6">word.</span>
+    </h1>
+    <p class="hero-sub">
+      A Speechify-inspired read-aloud extension for VS Code — word-level highlighting,
+      click-to-jump navigation, and 2x speed without pitch shift.
+    </p>
+    <div class="hero-actions">
+      <a class="btn" href="getting-started.html">Get started</a>
+      <a class="btn-ghost" href="https://github.com/rishmadaan/talktomebaby">GitHub ↗</a>
+    </div>
+
+    <!-- Works with -->
+    <p class="muted" style="margin-bottom:0.75rem;">Works with</p>
+    <div class="works-with">
+      <span class="ext-pill">.md</span>
+      <span class="ext-pill">.mdx</span>
+      <span class="ext-pill">.txt</span>
+      <span class="ext-pill">.rst</span>
+      <span class="ext-pill">.org</span>
+      <span class="ext-pill">.tex</span>
+      <span class="ext-pill">.adoc</span>
+    </div>
+  </section>
+
+  <!-- ── Feature cards ───────────────────────────────────────── -->
+  <section aria-labelledby="features-heading">
+    <h2 id="features-heading" style="text-align:center;margin-bottom:0.25rem;">Core features</h2>
+    <div class="card-grid">
+      <div class="card">
+        <span class="card-icon" aria-hidden="true">🎯</span>
+        <h3>Dual-layer highlighting</h3>
+        <p>The Reader panel shows a sentence band behind the current sentence and a moving word sweep on top — so you always know exactly where you are.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon" aria-hidden="true">🖱️</span>
+        <h3>Click any word to jump</h3>
+        <p>Click any word in the Reader panel to jump playback there instantly. Press <code>alt+j</code> from the source editor to jump to your cursor position.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon" aria-hidden="true">⚡</span>
+        <h3>Speed 0.5–2x, pitch preserved</h3>
+        <p>Change speed on the fly with presets or the fine slider. No re-synthesis — speed is applied locally, so pitch stays natural and it's instant.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon" aria-hidden="true">💾</span>
+        <h3>200 MB disk cache</h3>
+        <p>Synthesized audio is cached to disk (default 200 MB, LRU eviction). Re-read the same document as many times as you like — no extra API credits spent.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Providers teaser ────────────────────────────────────── -->
+  <div class="providers-section">
+    <h2>Voices &amp; providers</h2>
+    <p>TalkToMeBaby works out of the box on every platform — no API key required to start.</p>
+    <ul class="provider-list">
+      <li><strong>macOS say</strong> — the default on macOS. Fully offline; no data leaves your machine. Uses the official macOS speech synthesis command.</li>
+      <li><strong>Edge TTS</strong> — the default on Windows and Linux. Free, no key needed. Uses an unofficial Microsoft endpoint — choose this with that in mind.</li>
+      <li><strong>ElevenLabs</strong> — high-quality neural voices. Requires an ElevenLabs API key.</li>
+      <li><strong>Sarvam AI</strong> — Indian-language voices. Requires a Sarvam AI API key.</li>
+    </ul>
+    <a href="providers.html">Compare providers →</a>
+  </div>
+
+  <!-- ── Final CTA ───────────────────────────────────────────── -->
+  <div class="cta-band">
+    <h2>Go on. Talk to me, baby.</h2>
+    <p>Install from the VS Code Marketplace and start listening in under a minute.</p>
+    <a class="btn"
+       href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">
+      Install from Marketplace ↗
+    </a>
+    <br>
+    <span class="cta-install">ext install rishmadaan.talktomebaby</span>
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
+  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">MIT License</a> · v0.3.2</p>
+</footer>
+</body>
+</html>

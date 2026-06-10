@@ -1,0 +1,553 @@
+/* ============================================================
+   TalkToMeBaby — design system
+   Single stylesheet; all pages link to this file.
+   ============================================================ */
+
+/* --- Design tokens ----------------------------------------- */
+:root {
+  --bg:       #0e0c12;
+  --surface:  #1a1622;
+  --line:     #2c2638;
+  --text:     #f3ede2;
+  --muted:    #a299b0;
+  --accent:   #ff5470;   /* hot coral — links, buttons, logo mark */
+  --band:     #ffb347;   /* amber highlighter band — karaoke sweep, <mark> */
+  --band-ink: #1a1200;   /* text color on top of the band */
+
+  --radius: 8px;
+  --radius-sm: 4px;
+  --gap: 1.5rem;
+}
+
+/* --- Reset -------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* --- Base --------------------------------------------------- */
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 3rem 1.25rem;
+}
+
+/* --- Typography -------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 800; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.1rem; }
+
+p { margin-bottom: 1rem; }
+
+small, .muted { color: var(--muted); font-size: 0.875rem; }
+
+/* --- Links -------------------------------------------------- */
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--text);
+  text-decoration-color: var(--accent);
+  outline: none;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- Buttons ----------------------------------------------- */
+.btn,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.65em 1.4em;
+  border-radius: var(--radius);
+  font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  border: 2px solid transparent;
+}
+
+.btn {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn:hover,
+.btn:focus-visible {
+  filter: brightness(1.12);
+  color: #fff;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.btn-ghost:hover,
+.btn-ghost:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn:focus-visible,
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --- Header / Nav ------------------------------------------ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.logo {
+  font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.logo:hover,
+.logo:focus-visible {
+  color: var(--accent);
+}
+
+.logo-mark {
+  color: var(--accent);
+  font-size: 0.95em;
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.125rem;
+}
+
+.site-header nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.site-header nav a:hover,
+.site-header nav a:focus-visible {
+  color: var(--text);
+  background-color: var(--surface);
+}
+
+.site-header nav a[aria-current="page"] {
+  color: var(--accent);
+  background-color: var(--surface);
+}
+
+.site-header nav a.nav-gh {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.site-header nav a.nav-gh:hover,
+.site-header nav a.nav-gh:focus-visible {
+  color: var(--accent);
+}
+
+/* --- Footer ------------------------------------------------ */
+.site-footer {
+  background-color: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+.site-footer p { margin-bottom: 0.25rem; }
+
+.site-footer a { color: var(--muted); }
+.site-footer a:hover,
+.site-footer a:focus-visible { color: var(--accent); }
+
+/* --- Mark / inline highlight ------------------------------- */
+mark {
+  background-color: var(--band);
+  color: var(--band-ink);
+  padding: 0.1em 0.25em;
+  border-radius: 2px;
+}
+
+/* --- Karaoke hero ------------------------------------------ */
+.karaoke {
+  font-family: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+.karaoke span {
+  display: inline;
+  background: linear-gradient(var(--band), var(--band)) no-repeat 0 62% / 0% 42%;
+  color: inherit;
+  padding-bottom: 0.05em;
+  animation: kword 0.45s steps(6) calc(var(--i) * 0.45s) forwards;
+}
+
+@keyframes kword {
+  to { background-size: 100% 42%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karaoke span {
+    animation: none;
+    background-size: 100% 42%;
+  }
+}
+
+/* --- Hero section ------------------------------------------ */
+.hero {
+  text-align: center;
+  padding: 4rem 1rem 3rem;
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  color: var(--muted);
+  margin-bottom: 2rem;
+  max-width: 36rem;
+  margin-inline: auto;
+  margin-bottom: 2rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+/* --- Card grid --------------------------------------------- */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--gap);
+  margin: 2rem 0;
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+/* --- Works-with strip -------------------------------------- */
+.works-with {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.ext-pill {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.25em 0.75em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--band);
+}
+
+/* --- Providers teaser -------------------------------------- */
+.providers-section {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin: 2.5rem 0;
+}
+
+.providers-section h2 {
+  margin-top: 0;
+}
+
+.provider-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.provider-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.provider-list li::before {
+  content: "▶";
+  color: var(--accent);
+  font-size: 0.65em;
+  flex-shrink: 0;
+  position: relative;
+  top: -0.05em;
+}
+
+/* --- CTA band ---------------------------------------------- */
+.cta-band {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  text-align: center;
+  margin: 3rem 0 0;
+}
+
+.cta-band h2 {
+  margin-top: 0;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.cta-band p {
+  color: var(--muted);
+  max-width: 30rem;
+  margin-inline: auto;
+  margin-bottom: 1.5rem;
+}
+
+.cta-install {
+  display: inline-block;
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.4em 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 1rem;
+}
+
+/* --- Code / pre -------------------------------------------- */
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+  color: var(--band);
+}
+
+pre {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+/* --- Blockquote -------------------------------------------- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --- Callout box ------------------------------------------- */
+.callout {
+  background-color: var(--surface);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--text);
+}
+
+.callout p:last-child { margin-bottom: 0; }
+
+/* --- Tables ------------------------------------------------ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  display: block;
+}
+
+thead tr {
+  background-color: var(--surface);
+  border-bottom: 2px solid var(--line);
+}
+
+th {
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+/* Zebra rows */
+tbody tr:nth-child(even) {
+  background-color: var(--surface);
+}
+
+tbody tr:hover {
+  background-color: color-mix(in srgb, var(--surface) 70%, var(--line));
+}
+
+/* Monospace first column (common in docs tables) */
+td:first-child,
+th:first-child {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* --- Lists ------------------------------------------------- */
+ul, ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+li { margin-bottom: 0.3rem; }
+
+/* --- 404 specific ------------------------------------------ */
+.not-found {
+  text-align: center;
+  padding: 5rem 1rem;
+}
+
+.not-found .karaoke {
+  font-size: clamp(5rem, 18vw, 10rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.not-found p {
+  color: var(--muted);
+  font-size: 1.15rem;
+  margin-bottom: 2rem;
+}
+
+/* --- Responsive -------------------------------------------- */
+@media (max-width: 640px) {
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .site-header nav {
+    width: 100%;
+  }
+
+  .hero {
+    padding: 2.5rem 0.5rem 2rem;
+  }
+
+  .providers-section,
+  .cta-band {
+    padding: 1.5rem 1rem;
+  }
+}
