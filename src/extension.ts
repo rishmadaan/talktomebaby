@@ -149,6 +149,7 @@ class ReadingSession {
 }
 
 let session: ReadingSession | undefined;
+let restarting = false;
 
 async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
   const id = vscode.workspace.getConfiguration("speakittome").get<string>("provider", "edge");
@@ -227,15 +228,28 @@ export function activate(context: vscode.ExtensionContext) {
   /** Restart the active session on the same document, resuming at the start of
    *  the sentence that was playing. Used after a live provider/voice change. */
   async function restartSessionAtCurrentPosition(): Promise<void> {
-    if (!session) return;
-    const uri = session.docUri;
-    const sentenceCount = session.model.sentences.length;
-    const idx = Math.max(0, Math.min(sentenceCount - 1, session.position.sentenceIndex));
-    const doc = await vscode.workspace.openTextDocument(uri);
-    if (!(await startSession(doc)) || !session) return;
-    const sentence = session.model.sentences[idx];
-    const firstWord = sentence?.words[0];
-    if (firstWord) session.jumpToWord(firstWord.index);
+    if (restarting) return;
+    restarting = true;
+    try {
+      if (!session) return;
+      const uri = session.docUri;
+      const sentenceCount = session.model.sentences.length;
+      const idx = Math.max(0, Math.min(sentenceCount - 1, session.position.sentenceIndex));
+      let doc: vscode.TextDocument;
+      try {
+        doc = await vscode.workspace.openTextDocument(uri);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        void vscode.window.showWarningMessage("SpeakItToMe: couldn't restart playback — " + message);
+        return;
+      }
+      if (!(await startSession(doc)) || !session) return;
+      const sentence = session.model.sentences[idx];
+      const firstWord = sentence?.words[0];
+      if (firstWord) session.jumpToWord(firstWord.index);
+    } finally {
+      restarting = false;
+    }
   }
 
   /** Handle settings-panel messages. Only fires while a session exists. */

@@ -184,6 +184,16 @@ export function initSettingsPanel(opts: SettingsPanelOptions): SettingsPanel {
     // Colors.
     sentenceInput.value = swatch(data.sentenceColor, "#3a6ea5");
     wordInput.value = swatch(data.wordColor, "#d7a900");
+    if (data.sentenceColor) {
+      document.documentElement.style.setProperty("--sentence-color", data.sentenceColor);
+    } else {
+      document.documentElement.style.removeProperty("--sentence-color");
+    }
+    if (data.wordColor) {
+      document.documentElement.style.setProperty("--word-color", data.wordColor);
+    } else {
+      document.documentElement.style.removeProperty("--word-color");
+    }
   }
 
   return {
