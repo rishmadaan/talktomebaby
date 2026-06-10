@@ -1,55 +1,70 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working in this repository.
 
-## Build Commands
+## Build & Test
 
 ```bash
-npm run compile    # Build with esbuild (dev, with sourcemaps)
-npm run watch      # Auto-rebuild on file changes
-npm run build      # Production build (minified)
-npm run package    # Create .vsix package (runs build first via prepublish)
+npm run compile        # dev build: esbuild ext (→ out/extension.js) + webview (→ media/reader.js)
+npm run watch          # incremental rebuild on save
+npm run build          # production build (minified, no sourcemaps)
+npm run package        # npx @vscode/vsce package — runs build first via vscode:prepublish
+npm test               # vitest run — 63 tests across 12 files (no vscode runtime needed)
 ```
 
-No test runner or linter is configured. Verify changes compile cleanly with `npm run compile`.
+Press F5 in VS Code to launch the Extension Development Host (runs `npm: watch` as the default build task). Reload the dev host window to pick up changes.
 
-## Development Workflow
+**Accepted tsc quirk:** two `rootDir` errors from `tsconfig.json` — one for `src/webview/` files that esbuild bundles separately, one for test files. Both are tolerated by the build; `npm run compile` still succeeds.
 
-Press F5 in VS Code to launch the Extension Development Host (runs `npm run watch` as pre-launch task). Reload the dev host window to pick up changes.
+**Tracked build output:** `media/reader.js` is the compiled webview bundle. It is checked into git (the webview is loaded via `vscode-resource:` URI and must be present in the packaged extension). Do not gitignore it.
 
-## Architecture
+## Source Layout
 
-VS Code extension providing text-to-speech with synchronized sentence highlighting. Entry point is [extension.ts](src/extension.ts) which wires together four subsystems:
+```
+src/
+  extension.ts          # Entry point — wires all subsystems; handles commands + resume-after-reload
+  core/
+    document-model.ts   # Parses raw text → DocumentModel (sentences → words with source bounding boxes)
+    chunker.ts          # Groups sentences into audio chunks; deterministic on both host and webview
+    timing.ts           # Merges word-boundary timings from providers into chunk-level offsets
+  synthesis/
+    provider.ts         # TtsProvider interface
+    provider-catalog.ts # availableProviders(platform) — filters say on non-darwin
+    edge.ts             # Edge TTS (msedge-tts, unofficial endpoint, exact word timing)
+    elevenlabs.ts       # ElevenLabs API (exact char-alignment timing)
+    say.ts              # macOS say (estimated timing)
+    sarvam.ts           # Sarvam AI (estimated timing)
+    synthesis-service.ts# Priority queue + dual-audio handoff; calls provider, applies cache
+    disk-cache.ts       # LRU disk cache (globalStorageUri/audio-cache, default 200 MB)
+    voice-cache.ts      # In-memory session cache for voice lists (never caches fallback lists)
+    api-key-manager.ts  # SecretStorage read/write for ElevenLabs + Sarvam keys
+    with-timeout.ts     # Race a promise against a timeout, return fallback value
+  ui/
+    reader-panel.ts     # ReaderPanel — webview lifecycle, message routing, post() buffer
+    editor-sync.ts      # Editor decorations (sentence band) + click-to-jump listeners
+    status-bar.ts       # Status bar item (sentence N/total, speed)
+  webview/
+    main.ts             # Webview entry — Engine, PlayerBar, SettingsPanel, Renderer
+    engine.ts           # Playback engine: chunk queue, dual AudioBuffer handoff, word sweep
+    renderer.ts         # DOM renderer — builds word spans from DocumentModel
+    player-bar.ts       # Speed presets, slider, pause/resume, stop, gear button
+    settings-panel.ts   # Settings slide-in: Provider / Voice / Appearance sections
+```
 
-### Managers (`src/managers/`)
-- **AudioManager** — Playback state machine (idle → loading → playing ↔ paused → idle). Orchestrates TTS API calls, caching, and webview communication. Emits `sentenceChange`, `stateChange`, and `error` events.
-- **HighlightManager** — Applies editor decorations to the current sentence and auto-scrolls to keep it visible.
-- **ApiKeyManager** — Stores API keys in VS Code SecretStorage, manages provider selection and key validation.
+Tests live alongside the files they test (`*.test.ts` co-located in `src/`). Vitest runs them in a happy-dom environment — no VS Code runtime needed.
 
-### Providers (`src/providers/`)
-Provider-agnostic TTS via the `ITtsProvider` interface defined in [tts-provider.ts](src/providers/tts-provider.ts). Each provider implements `synthesize()` and `validateKey()`.
+## Key Invariants
 
-- **SarvamProvider** — Sarvam AI API, 2500 char limit, returns base64 MP3
-- **ElevenLabsProvider** — ElevenLabs API, 5000 char limit, returns raw MP3 buffer
+- **Document model is the single source of truth.** `DocumentModel` is built once from raw text and never mutated. All offsets (word positions, sentence ranges) are bounding boxes into the original text. The chunker derives chunks deterministically from the model, so host and webview always agree on chunk boundaries.
+- **Webview owns playback state.** The webview engine drives `position` and `state` messages; the extension host updates the status bar and persists position in response. The host never assumes playback state — it reads it from messages.
+- **Provider/voice switches reconfigure in place, never auto-play.** `ReadingSession.reconfigure()` aborts the old synthesis pipeline, builds a new one, and re-inits the same webview paused at the current sentence. The user presses play when ready. No surprise audio.
+- **Never cache fallback voice lists.** `VoiceCache` stores only real provider lists (length > 1). If `listVoices()` times out, the fallback (just the default voice) is returned for display but not stored — so the next fetch retries the real list. Caching the fallback would pin the provider to a single voice for the whole session.
+- **Disk cache uses globalStorageUri.** `DiskCache` writes to `context.globalStorageUri/audio-cache`. The size limit is `talktomebaby.cacheSizeMB` (default 200). LRU eviction by bytes on write.
 
-### Adding a new TTS provider
-1. Create `src/providers/your-provider.ts` implementing `ITtsProvider`
-2. Add secret key + quick pick option in [api-key-manager.ts](src/managers/api-key-manager.ts)
-3. Add new enum value to `read-tts.provider` in [package.json](package.json)
+## Adding a New TTS Provider
 
-### Webview (`src/webview/`)
-Sidebar panel with playback controls. [webview-provider.ts](src/webview/webview-provider.ts) manages the webview lifecycle and message routing. [playback.js](src/webview/media/playback.js) handles audio via Web Audio API (AudioContext + BufferSource).
-
-**Extension ↔ Webview messages:** `playAudio` (base64 data URL), `pause`, `resume`, `stop`, `audioEnded`, `togglePauseResume`, `stopPlayback`, `ready`.
-
-### Utils (`src/utils/`)
-- **text-parser.ts** — Strips markdown, splits into sentences (respecting abbreviations like Mr./Dr./e.g.), maps sentences back to editor Ranges for highlighting.
-- **cache.ts** — LRU in-memory audio cache, 100MB cap, keyed by SHA256 of (text + provider + voice).
-
-## Key Design Decisions
-
-- **esbuild** bundles everything into a single `out/extension.js`. The `vscode` module is external (provided by runtime). No webpack.
-- **No runtime dependencies** — only devDependencies for types and build tooling.
-- **Session-only cache** — audio is cached in memory, cleared on VS Code reload. No disk persistence.
-- Webview uses **Web Audio API** (not `<audio>` element) for playback control and pause/resume with offset tracking.
-- Supports only `.md` and `.txt` files. File type filtering is done via `when` clauses on menu contributions in package.json.
+1. Create `src/synthesis/your-provider.ts` implementing `TtsProvider` (see `provider.ts`)
+2. Add it to `src/synthesis/provider-catalog.ts` (id, label, description, requiresKey, defaultVoice)
+3. Register it in `extension.ts` `makeProviderById()` switch
+4. Add the config key `talktomebaby.voice.your-provider` to `package.json`
+5. If it needs a key: add handling in `src/ui/api-key-manager.ts`

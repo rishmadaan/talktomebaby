@@ -17,7 +17,7 @@ Supported file types: `.md`, `.mdx`, `.txt`, `.rst`, `.org`, `.tex`, `.adoc`
 ### From VSIX (current)
 
 ```bash
-code --install-extension talktomebaby-0.2.0.vsix
+code --install-extension talktomebaby-0.3.0.vsix
 ```
 
 Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
@@ -27,10 +27,10 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 ```bash
 git clone https://github.com/rishmadaan/read-vscode-tts.git
 cd read-vscode-tts
-git checkout talktomebaby-rebuild
+git checkout speakittome-rebuild
 npm install
-npm run package   # produces talktomebaby-0.2.0.vsix
-code --install-extension talktomebaby-0.2.0.vsix
+npm run package   # produces talktomebaby-0.3.0.vsix
+code --install-extension talktomebaby-0.3.0.vsix
 ```
 
 ---
@@ -172,6 +172,17 @@ Audio is synthesized in chunks as you read - subsequent sentences are prefetched
 
 **Playback highlight is off after editing**
 If you edit the document while reading, the session model becomes stale. Use the prompt that appears to restart from your current position.
+
+**Playback stopped after a VS Code reload**
+Reloading the VS Code window or restarting the extension host always ends the active session — audio is not preserved across reloads. If TalkToMeBaby saved your position (within the last 3 seconds of playback), you will be offered a "Resume?" toast on the next activation.
+
+---
+
+## Reliability
+
+**Resume after reload:** If VS Code reloads (window reload, extension host restart, OS sleep/wake), TalkToMeBaby saves your position automatically (every ~3 seconds while playing). When the extension reactivates, it offers a "Resume?" toast if a session was saved within the last 12 hours. Choosing Resume re-opens the document and jumps straight to your last sentence. Dismissing clears the saved position. The position is also cleared when you press Stop or when a document finishes naturally.
+
+Note: a reload kills the active audio session — there is no way to resume mid-sentence. Resume starts from the beginning of the sentence you were on.
 
 ---
 
