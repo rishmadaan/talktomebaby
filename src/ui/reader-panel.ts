@@ -4,13 +4,29 @@ import { ChunkTimings } from "../core/timing";
 
 export interface ReaderSettings { speed: number; fontSize: number; sentenceColor: string; wordColor: string }
 
+/** Keys the settings panel may write directly to config (Global). */
+export type SettingKey = "readerFontSize" | "highlight.sentenceColor" | "highlight.wordColor";
+
+export interface SettingsData {
+  providers: { id: string; label: string; description: string; requiresKey: boolean; active: boolean }[];
+  voices: { id: string; label: string }[];
+  activeVoice: string;
+  fontSize: number;
+  sentenceColor: string;
+  wordColor: string;
+}
+
 export type ViewMsg =
   | { type: "ready" }
   | { type: "requestChunk"; chunkIndex: number; priority: boolean }
   | { type: "position"; wordIndex: number; sentenceIndex: number }
   | { type: "state"; state: "playing" | "paused" | "ended" }
   | { type: "speedChanged"; rate: number }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "settingsRequest" }
+  | { type: "setProvider"; id: string }
+  | { type: "setVoice"; id: string }
+  | { type: "setSetting"; key: SettingKey; value: string | number };
 
 export class ReaderPanel {
   private panel: vscode.WebviewPanel;
@@ -60,6 +76,7 @@ export class ReaderPanel {
   sendChunkFailed(chunkIndex: number, error: string) {
     this.post({ type: "chunkFailed", chunkIndex, error });
   }
+  sendSettingsData(data: SettingsData) { this.post({ type: "settingsData", ...data }); }
   control(action: "pause" | "resume" | "stop") { this.post({ type: "control", action }); }
   seekToWord(wordIndex: number) { this.post({ type: "seekToWord", wordIndex }); }
   reveal() { this.panel.reveal(undefined, true); }

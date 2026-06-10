@@ -4,6 +4,7 @@ export interface PlayerBarOptions {
   onSpeed(rate: number): void;
   onPrevSentence(): void;
   onNextSentence(): void;
+  onSettings(): void;
 }
 export interface PlayerBar {
   setState(state: "playing" | "paused" | "ended"): void;
@@ -48,6 +49,9 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
   const status = document.createElement("span");
   status.id = "player-status";
   bar.appendChild(status);
+
+  const gear = btn("⚙", opts.onSettings, "Settings");
+  gear.id = "settings-toggle";
 
   setSpeedUI(opts.initialSpeed);
 

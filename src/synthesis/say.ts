@@ -9,6 +9,28 @@ import { ChunkAudio, TtsProvider, VoiceInfo } from "./provider";
 
 const run = promisify(execFile);
 
+/**
+ * macOS ships en_US "novelty" voices (Bad News, Boing, Zarvox, ...) that aren't
+ * usable for reading prose. Filter them out so the voice list shows only normal
+ * speech voices (Samantha, Daniel, Karen, Moira, Rishi, Tessa, ...).
+ */
+const NOVELTY_VOICES = new Set([
+  "Bad News", "Bahh", "Bells", "Boing", "Bubbles", "Cellos", "Wobble",
+  "Albert", "Jester", "Hysterical", "Organ", "Superstar", "Trinoids",
+  "Whisper", "Zarvox", "Deranged", "Good News", "Pipe Organ", "Ralph",
+  "Kathy", "Junior", "Fred",
+]);
+
+/** Parse `say -v ?` stdout into normal English speech voices (novelties excluded). */
+export function parseSayVoices(stdout: string): VoiceInfo[] {
+  return stdout.split("\n").flatMap((line) => {
+    const m = line.match(/^([\w ()-]+?)\s{2,}([a-z]{2}[-_]\w+)/);
+    if (!m || !m[2].startsWith("en")) return [];
+    const name = m[1].trim();
+    return NOVELTY_VOICES.has(name) ? [] : [{ id: name, label: name }];
+  });
+}
+
 export function wavDurationMs(bytes: Uint8Array): number | undefined {
   const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (buf.length < 44 || buf.toString("ascii", 0, 4) !== "RIFF") return undefined;
@@ -35,10 +57,7 @@ export class SayProvider implements TtsProvider {
   async listVoices(): Promise<VoiceInfo[]> {
     try {
       const { stdout } = await run("say", ["-v", "?"]);
-      return stdout.split("\n").flatMap((line) => {
-        const m = line.match(/^([\w ()-]+?)\s{2,}([a-z]{2}[-_]\w+)/);
-        return m && m[2].startsWith("en") ? [{ id: m[1].trim(), label: m[1].trim() }] : [];
-      });
+      return parseSayVoices(stdout);
     } catch {
       return [{ id: "Samantha", label: "Samantha" }];
     }

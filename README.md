@@ -52,6 +52,7 @@ The Reader panel renders your document as a clean reading view. Each word is ind
 - **Click any word** to jump playback there and resume from that word
 - **Scroll freely** - auto-scroll follows playback while you don't interact; scroll away and a **Return to playback** pill appears in the corner; click it to snap back and re-engage auto-scroll
 - The **player bar** at the bottom has speed presets, a fine slider, pause/resume, and stop
+- The **gear (⚙)** at the right end of the player bar opens an in-reader settings panel for provider, voice, font size, and highlight colors (see [Switching provider and voice](#switching-provider-and-voice))
 
 ---
 
@@ -67,14 +68,29 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 |---|---|---|---|---|
 | Edge TTS (default) | Good | Word-level | No | Free. Requires internet. Many voices. |
 | ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
-| macOS say | Basic | Estimated | No | Offline. macOS only. |
+| macOS say | Basic | Estimated | No | Offline. macOS only. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. |
 | Sarvam AI | Good | Estimated | Yes | Indian English focus. |
 
-Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider**
+### Switching provider and voice
 
-Set API key: `Cmd+Shift+P` > **SpeakItToMe: Set API Key**
+The primary way to change provider, voice, and reader appearance is the **settings panel inside the Reader**: click the gear (⚙) at the right end of the player bar. It opens a panel above the player bar with:
 
-Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice**
+- **Provider** — one row per available provider, showing a short description, a "key required" badge where relevant, and a check (✓) on the active one. Click a row to switch. (macOS say only appears on macOS.)
+- **Voice** — a dropdown of the active provider's voices, with the current one selected.
+- **Font size** — a +/- stepper (12-28px) that applies instantly and persists.
+- **Highlight colors** — sentence-band and current-word color pickers that apply instantly, plus **Reset to theme** to clear both back to the theme default.
+
+(Speed lives in the player bar, not the settings panel.)
+
+**Live restart:** if you change the provider or voice while a session is playing, the session restarts automatically from the **current sentence** with the new provider/voice. Opening or closing the settings panel does not pause playback.
+
+If a key-required provider has no stored key, switching to it prompts for the key first; cancel and the selection snaps back to the current provider.
+
+**Command palette (alternative):**
+
+- Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider** — marks the active provider with ✓ / "(current)", and live-restarts on change.
+- Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice** — same active marker and live-restart.
+- Set API key: `Cmd+Shift+P` > **SpeakItToMe: Set API Key**
 
 ---
 

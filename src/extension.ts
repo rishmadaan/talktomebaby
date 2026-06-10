@@ -8,7 +8,8 @@ import { ElevenLabsProvider } from "./synthesis/elevenlabs";
 import { SayProvider } from "./synthesis/say";
 import { SarvamProvider } from "./synthesis/sarvam";
 import { TtsProvider } from "./synthesis/provider";
-import { ReaderPanel, ReaderSettings } from "./ui/reader-panel";
+import { availableProviders } from "./synthesis/provider-catalog";
+import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
 import { EditorSync } from "./ui/editor-sync";
 import { StatusBar } from "./ui/status-bar";
 import { ApiKeyManager } from "./ui/api-key-manager";
@@ -46,11 +47,12 @@ class ReadingSession {
     readonly docUri: vscode.Uri,
     text: string,
     version: number,
-    provider: TtsProvider,
-    voice: string,
+    readonly provider: TtsProvider,
+    readonly voice: string,
     cache: DiskCache,
     extensionUri: vscode.Uri,
-    private onEvent: (s: ReadingSession) => void
+    private onEvent: (s: ReadingSession) => void,
+    private onSettingsMessage: (msg: ViewMsg, session: ReadingSession) => Promise<void>
   ) {
     this.model = parseDocument(text, docUri.toString(), version);
     this.chunks = buildChunks(this.model);
@@ -106,6 +108,12 @@ class ReadingSession {
           break;
         case "error":
           log.error(`webview: ${msg.message}`);
+          break;
+        case "settingsRequest":
+        case "setProvider":
+        case "setVoice":
+        case "setSetting":
+          await this.onSettingsMessage(msg, this);
           break;
       }
     });
@@ -186,10 +194,91 @@ export function activate(context: vscode.ExtensionContext) {
       provider, voice, cache, context.extensionUri,
       (s) => {
         statusBar.update(s.state, vscode.workspace.getConfiguration("speakittome").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
-      }
+      },
+      handleSettingsMessage
     );
     session.panel.onDispose(() => { statusBar.hide(); session = undefined; });
     return true;
+  }
+
+  /** Build the settings snapshot the panel renders. Reuses the active session's
+   *  provider instance (which holds any prompted key) to list voices. */
+  async function buildSettingsData(active: ReadingSession): Promise<SettingsData> {
+    const activeId = active.provider.id;
+    const providers = availableProviders(process.platform).map((p) => ({
+      id: p.id, label: p.label, description: p.description,
+      requiresKey: p.requiresKey, active: p.id === activeId,
+    }));
+    let voices: { id: string; label: string }[] = [];
+    try {
+      voices = await active.provider.listVoices();
+    } catch (err) {
+      log.error(`listVoices failed: ${err instanceof Error ? err.message : String(err)}`);
+      voices = [{ id: active.voice, label: active.voice }];
+    }
+    return {
+      providers, voices, activeVoice: active.voice,
+      fontSize: cfg().get<number>("readerFontSize", 16),
+      sentenceColor: cfg().get<string>("highlight.sentenceColor", ""),
+      wordColor: cfg().get<string>("highlight.wordColor", ""),
+    };
+  }
+
+  /** Restart the active session on the same document, resuming at the start of
+   *  the sentence that was playing. Used after a live provider/voice change. */
+  async function restartSessionAtCurrentPosition(): Promise<void> {
+    if (!session) return;
+    const uri = session.docUri;
+    const sentenceCount = session.model.sentences.length;
+    const idx = Math.max(0, Math.min(sentenceCount - 1, session.position.sentenceIndex));
+    const doc = await vscode.workspace.openTextDocument(uri);
+    if (!(await startSession(doc)) || !session) return;
+    const sentence = session.model.sentences[idx];
+    const firstWord = sentence?.words[0];
+    if (firstWord) session.jumpToWord(firstWord.index);
+  }
+
+  /** Handle settings-panel messages. Only fires while a session exists. */
+  async function handleSettingsMessage(msg: ViewMsg, current: ReadingSession): Promise<void> {
+    if (session !== current) return; // stale panel from a disposed session
+    switch (msg.type) {
+      case "settingsRequest":
+        current.panel.sendSettingsData(await buildSettingsData(current));
+        break;
+      case "setProvider": {
+        if (msg.id === current.provider.id) break;
+        const desc = availableProviders(process.platform).find((p) => p.id === msg.id);
+        if (!desc) break;
+        // Ensure a key exists for key-required providers before committing.
+        if (desc.requiresKey && !(await keys.getKey(msg.id))) {
+          const stored = await keys.promptAndStore(msg.id);
+          if (!stored) {
+            // Cancelled — snap the UI back to reality.
+            current.panel.sendSettingsData(await buildSettingsData(current));
+            break;
+          }
+        }
+        await cfg().update("provider", msg.id, vscode.ConfigurationTarget.Global);
+        await restartSessionAtCurrentPosition();
+        break;
+      }
+      case "setVoice": {
+        if (msg.id === current.voice) break;
+        await cfg().update(`voice.${current.provider.id}`, msg.id, vscode.ConfigurationTarget.Global);
+        await restartSessionAtCurrentPosition();
+        break;
+      }
+      case "setSetting":
+        // The webview already applied font/color optimistically and the value
+        // it sent IS the new truth, so no settingsData echo is needed here —
+        // avoids re-listing voices (a network/exec call) on every stepper click.
+        await applySetting(msg.key, msg.value);
+        break;
+    }
+  }
+
+  async function applySetting(key: SettingKey, value: string | number): Promise<void> {
+    await cfg().update(key, value, vscode.ConfigurationTarget.Global);
   }
 
   const needEditor = () => {
@@ -234,25 +323,45 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; statusBar.hide(); }),
     vscode.commands.registerCommand("speakittome.openReader", () => session?.panel.reveal()),
     vscode.commands.registerCommand("speakittome.selectProvider", async () => {
-      const items = [
-        { id: "edge", label: "Edge TTS", description: "free · word-level timing" },
-        { id: "elevenlabs", label: "ElevenLabs", description: "premium · word-level timing · key required" },
-        ...(process.platform === "darwin"
-          ? [{ id: "say", label: "macOS say", description: "offline · estimated timing" }] : []),
-        { id: "sarvam", label: "Sarvam AI", description: "Indian English · estimated timing · key required" },
-      ];
+      const activeId = cfg().get<string>("provider", "edge");
+      const items = availableProviders(process.platform).map((p) => {
+        const isActive = p.id === activeId;
+        const keyNote = p.requiresKey ? " · key required" : "";
+        return {
+          id: p.id,
+          label: `${isActive ? "$(check) " : ""}${p.label}`,
+          description: `${p.description}${keyNote}${isActive ? " (current)" : ""}`,
+        };
+      });
       const pick = await vscode.window.showQuickPick(items, { placeHolder: "SpeakItToMe TTS provider" });
-      if (pick) await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
+      if (!pick || pick.id === activeId) return;
+      const desc = availableProviders(process.platform).find((p) => p.id === pick.id)!;
+      if (desc.requiresKey && !(await keys.getKey(pick.id))) {
+        if (!(await keys.promptAndStore(pick.id))) return; // cancelled — no change
+      }
+      await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
+      void vscode.window.showInformationMessage(`SpeakItToMe: Provider set to ${desc.label}.`);
+      await restartSessionAtCurrentPosition();
     }),
     vscode.commands.registerCommand("speakittome.selectVoice", async () => {
-      const provider = await makeProvider(keys);
+      const provider = session?.provider ?? (await makeProvider(keys));
       if (!provider) return;
+      const activeVoice = session?.voice
+        ?? cfg().get<string>(`voice.${provider.id}`) ?? provider.defaultVoice;
       const voices = await provider.listVoices();
       const pick = await vscode.window.showQuickPick(
-        voices.map((v) => ({ label: v.label, description: v.id })),
+        voices.map((v) => ({
+          label: `${v.id === activeVoice ? "$(check) " : ""}${v.label}`,
+          description: v.id === activeVoice ? `${v.id} (current)` : v.id,
+          id: v.id,
+          voiceLabel: v.label,
+        })),
         { placeHolder: `Voice for ${provider.label}` }
       );
-      if (pick) await cfg().update(`voice.${provider.id}`, pick.description, vscode.ConfigurationTarget.Global);
+      if (!pick || pick.id === activeVoice) return;
+      await cfg().update(`voice.${provider.id}`, pick.id, vscode.ConfigurationTarget.Global);
+      void vscode.window.showInformationMessage(`SpeakItToMe: Voice set to ${pick.voiceLabel}.`);
+      await restartSessionAtCurrentPosition();
     }),
     vscode.commands.registerCommand("speakittome.setApiKey", async () => {
       const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });

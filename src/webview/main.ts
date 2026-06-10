@@ -5,6 +5,8 @@ import { buildChunks, Chunk } from "../core/chunker";
 import { DocumentModel } from "../core/document-model";
 import { ChunkTimings } from "../core/timing";
 import { initPlayerBar, PlayerBar } from "./player-bar";
+import { initSettingsPanel, SettingsPanel } from "./settings-panel";
+import { SettingsData } from "../ui/reader-panel";
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
 const vscode = acquireVsCodeApi();
@@ -12,6 +14,7 @@ const vscode = acquireVsCodeApi();
 let engine: Engine | null = null;
 let highlight: HighlightController | null = null;
 let playerBar: PlayerBar | null = null;
+let settingsPanel: SettingsPanel | null = null;
 let tickTimer: ReturnType<typeof setInterval> | null = null;
 
 const FORMAT_MIME: Record<string, string> = { mp3: "audio/mpeg", wav: "audio/wav" };
@@ -30,12 +33,20 @@ function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; 
   renderModel(root, model);
   highlight = new HighlightController(root);
 
+  settingsPanel = initSettingsPanel({
+    onProvider: (id) => vscode.postMessage({ type: "setProvider", id }),
+    onVoice: (id) => vscode.postMessage({ type: "setVoice", id }),
+    onSetting: (key, value) => vscode.postMessage({ type: "setSetting", key, value }),
+    requestData: () => vscode.postMessage({ type: "settingsRequest" }),
+  });
+
   playerBar = initPlayerBar({
     initialSpeed: settings.speed,
     onPlayPause: () => { engine!.isPlaying ? engine!.pause() : engine!.resume(); },
     onSpeed: (rate) => { engine!.setSpeed(rate); vscode.postMessage({ type: "speedChanged", rate }); },
     onPrevSentence: () => jumpSentence(-1),
     onNextSentence: () => jumpSentence(+1),
+    onSettings: () => settingsPanel?.toggle(),
   });
 
   engine = new Engine(model, chunks, {
@@ -100,6 +111,9 @@ window.addEventListener("message", (event) => {
     case "seekToWord":
       engine?.jumpToWord(msg.wordIndex);
       highlight?.engageFollow();
+      break;
+    case "settingsData":
+      settingsPanel?.showData(msg as SettingsData);
       break;
     case "control":
       if (msg.action === "pause") engine?.pause();
