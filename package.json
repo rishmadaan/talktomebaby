@@ -1,149 +1,75 @@
 {
-  "name": "read-vscode-tts",
-  "displayName": "Read — Text to Speech",
-  "description": "Read documents aloud with sentence-level text highlighting. Supports Sarvam AI and ElevenLabs.",
-  "version": "0.1.0",
+  "name": "speakittome",
+  "displayName": "SpeakItToMe",
+  "description": "Listen to your docs. Speechify-style reading for VS Code: word-level highlighting, click-to-jump, 2x speed without pitch shift.",
+  "version": "0.2.0",
   "publisher": "rish",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rishmadaan/read-vscode-tts"
-  },
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "keywords": [
-    "tts",
-    "text-to-speech",
-    "read-aloud",
-    "highlight",
-    "sarvam",
-    "elevenlabs"
-  ],
+  "repository": { "type": "git", "url": "https://github.com/rishmadaan/read-vscode-tts" },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "keywords": ["tts", "text-to-speech", "read-aloud", "speechify", "highlight"],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "read-tts.speakDocument",
-        "title": "Read: Speak Document",
-        "icon": "$(unmute)"
-      },
-      {
-        "command": "read-tts.speakSelection",
-        "title": "Read: Speak Selection"
-      },
-      {
-        "command": "read-tts.startFromCursor",
-        "title": "Read: Start from Here"
-      },
-      {
-        "command": "read-tts.pauseResume",
-        "title": "Read: Pause/Resume"
-      },
-      {
-        "command": "read-tts.stop",
-        "title": "Read: Stop"
-      },
-      {
-        "command": "read-tts.setApiKey",
-        "title": "Read: Set API Key"
-      },
-      {
-        "command": "read-tts.selectProvider",
-        "title": "Read: Select TTS Provider"
-      }
+      { "command": "speakittome.readDocument", "title": "SpeakItToMe: Read Document", "icon": "$(unmute)" },
+      { "command": "speakittome.readSelection", "title": "SpeakItToMe: Read Selection" },
+      { "command": "speakittome.readFromCursor", "title": "SpeakItToMe: Read from Here" },
+      { "command": "speakittome.pauseResume", "title": "SpeakItToMe: Pause/Resume" },
+      { "command": "speakittome.stop", "title": "SpeakItToMe: Stop" },
+      { "command": "speakittome.openReader", "title": "SpeakItToMe: Open Reader" },
+      { "command": "speakittome.setApiKey", "title": "SpeakItToMe: Set API Key" },
+      { "command": "speakittome.selectProvider", "title": "SpeakItToMe: Select TTS Provider" },
+      { "command": "speakittome.selectVoice", "title": "SpeakItToMe: Select Voice" }
     ],
     "menus": {
       "editor/title": [
-        {
-          "command": "read-tts.speakDocument",
-          "when": "resourceExtname =~ /\\.(md|txt)$/",
-          "group": "navigation"
-        }
+        { "command": "speakittome.readDocument", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
       ],
       "editor/context": [
-        {
-          "command": "read-tts.startFromCursor",
-          "when": "resourceExtname =~ /\\.(md|txt)$/",
-          "group": "navigation"
-        },
-        {
-          "command": "read-tts.speakSelection",
-          "when": "editorHasSelection && resourceExtname =~ /\\.(md|txt)$/",
-          "group": "navigation"
-        }
+        { "command": "speakittome.readFromCursor", "when": "resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" },
+        { "command": "speakittome.readSelection", "when": "editorHasSelection && resourceExtname =~ /\\.(md|mdx|txt|rst|org|tex|adoc)$/", "group": "navigation" }
       ]
     },
     "keybindings": [
-      {
-        "command": "read-tts.pauseResume",
-        "key": "ctrl+shift+r",
-        "mac": "cmd+shift+r"
-      }
+      { "command": "speakittome.pauseResume", "key": "ctrl+shift+r", "mac": "cmd+shift+r" }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "readTtsView",
-          "title": "Read TTS",
-          "icon": "$(play-circle)"
-        }
-      ]
-    },
-    "views": {
-      "readTtsView": [
-        {
-          "type": "webview",
-          "id": "read-tts.playback",
-          "name": "Playback"
-        }
-      ]
-    },
     "configuration": {
       "type": "object",
-      "title": "Read TTS",
+      "title": "SpeakItToMe",
       "properties": {
-        "read-tts.provider": {
-          "type": "string",
-          "default": "sarvam",
-          "enum": [
-            "sarvam",
-            "elevenlabs"
-          ],
+        "speakittome.provider": {
+          "type": "string", "default": "edge",
+          "enum": ["edge", "elevenlabs", "say", "sarvam"],
           "enumDescriptions": [
-            "Sarvam AI (Indian English, free credits included)",
-            "ElevenLabs (requires paid plan)"
+            "Edge TTS (free, no key, word-level timing)",
+            "ElevenLabs (premium voices, word-level timing, requires key)",
+            "macOS say (offline, estimated timing, macOS only)",
+            "Sarvam AI (Indian English, estimated timing, requires key)"
           ],
-          "description": "TTS provider to use"
+          "description": "TTS provider"
         },
-        "read-tts.voice": {
-          "type": "string",
-          "default": "",
-          "description": "Voice name/ID. Leave empty for provider default (Sarvam: Shubh, ElevenLabs: Rachel)"
-        },
-        "read-tts.speed": {
-          "type": "number",
-          "default": 1.0,
-          "minimum": 0.5,
-          "maximum": 2.0,
-          "description": "Speech speed (0.5 = half speed, 2.0 = double speed)"
-        },
-        "read-tts.highlightColor": {
-          "type": "string",
-          "default": "",
-          "description": "Background color for the current sentence highlight (e.g., #FFFF0033). Leave empty for theme default."
-        }
+        "speakittome.voice.edge": { "type": "string", "default": "en-US-AriaNeural" },
+        "speakittome.voice.elevenlabs": { "type": "string", "default": "21m00Tcm4TlvDq8ikWAM" },
+        "speakittome.voice.say": { "type": "string", "default": "Samantha" },
+        "speakittome.voice.sarvam": { "type": "string", "default": "shubh" },
+        "speakittome.speed": { "type": "number", "default": 1.0, "minimum": 0.5, "maximum": 2.0, "description": "Playback speed (pitch preserved). Persisted from the player." },
+        "speakittome.editorClickToJump": { "type": "boolean", "default": true, "description": "Alt+click in the source editor jumps playback there during a session." },
+        "speakittome.readerFontSize": { "type": "number", "default": 16 },
+        "speakittome.highlight.sentenceColor": { "type": "string", "default": "", "description": "Sentence band color. Empty = theme default." },
+        "speakittome.highlight.wordColor": { "type": "string", "default": "", "description": "Current word color. Empty = theme default." },
+        "speakittome.cacheSizeMB": { "type": "number", "default": 200 }
       }
     }
   },
   "scripts": {
-    "compile": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
-    "watch": "npm run compile -- --watch",
-    "build": "npm run compile -- --minify",
+    "compile": "npm run compile:ext && npm run compile:webview",
+    "compile:ext": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "compile:webview": "esbuild src/webview/main.ts --bundle --outfile=media/reader.js --format=iife --sourcemap",
+    "watch": "npm run compile:ext -- --watch & npm run compile:webview -- --watch",
+    "build": "npm run compile:ext -- --minify && npm run compile:webview -- --minify",
+    "test": "vitest run",
     "vscode:prepublish": "npm run build",
     "package": "npx @vscode/vsce package"
   },
@@ -151,6 +77,12 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.20.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^3.0.0",
+    "happy-dom": "^15.0.0",
+    "tsx": "^4.0.0"
+  },
+  "dependencies": {
+    "msedge-tts": "^1.3.0"
   }
 }
