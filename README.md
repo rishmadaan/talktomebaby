@@ -2,6 +2,8 @@
 
 TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. On macOS it defaults to the built-in `say` command (official, fully offline, no data leaves the machine); on Windows and Linux it defaults to the free unofficial Edge TTS provider. Any provider can be chosen explicitly. Supported providers: Edge TTS, ElevenLabs, macOS say, and Sarvam AI.
 
+> 📖 **Docs site:** [talktomebaby.netlify.app](https://talktomebaby.netlify.app) — full guides for the reader, providers, and settings. (Source in [`site/`](site/).)
+
 TalkToMeBaby is independent and is not affiliated with, endorsed by, or sponsored by Speechify.
 
 Use of TalkToMeBaby is at your own risk. You are responsible for choosing a provider, complying with provider terms, ensuring you have rights to send or synthesize the text you read, and protecting confidential or regulated content. See [DISCLAIMER.md](DISCLAIMER.md) and [PRIVACY.md](PRIVACY.md).
