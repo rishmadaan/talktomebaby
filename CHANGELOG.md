@@ -1,9 +1,13 @@
 # Changelog
 
-## 0.2.0 — SpeakItToMe
+## 0.3.0 — TalkToMeBaby
 
-Ground-up rebuild. Renamed read-vscode-tts -> SpeakItToMe.
+Renamed SpeakItToMe → TalkToMeBaby.
 
+- In-reader settings panel (primary settings surface): provider, voice, font size, highlight colors — all accessible from the gear icon in the player bar
+- Instant voice loading with session cache: voices are prefetched on read start so the first gear-open is usually instant
+- No-auto-play-on-switch policy: changing provider or voice re-primes the session paused at the current sentence; press play when ready
+- Provider architecture docs: see docs/provider-architecture.md for full provider design, fragility notes, and roadmap
 - Reader panel: rendered reading view with word-level karaoke highlighting
 - Click any word to jump playback (alt+j from the source editor)
 - Continuous chunked audio (no more per-sentence gaps)

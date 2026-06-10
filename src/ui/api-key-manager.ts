@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 
 const KEY_NAMES: Record<string, string> = {
-  elevenlabs: "speakittome.key.elevenlabs",
-  sarvam: "speakittome.key.sarvam",
+  elevenlabs: "talktomebaby.key.elevenlabs",
+  sarvam: "talktomebaby.key.sarvam",
 };
 
 export class ApiKeyManager {

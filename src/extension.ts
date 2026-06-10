@@ -77,7 +77,7 @@ class ReadingSession {
     // queuing init first guarantees the webview builds its engine before any
     // seekToWord arrives. Waiting for the "ready" message instead would flush
     // the already-queued seekToWord BEFORE init ran — losing the jump.
-    const cfg = vscode.workspace.getConfiguration("speakittome");
+    const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const settings: ReaderSettings = {
       speed: cfg.get("speed", 1.0),
       fontSize: cfg.get("readerFontSize", 16),
@@ -120,7 +120,7 @@ class ReadingSession {
           this.onEvent(this);
           break;
         case "speedChanged":
-          await vscode.workspace.getConfiguration("speakittome")
+          await vscode.workspace.getConfiguration("talktomebaby")
             .update("speed", msg.rate, vscode.ConfigurationTarget.Global);
           break;
         case "error":
@@ -142,13 +142,13 @@ class ReadingSession {
         this.editPrompted = true;
         this.panel.control("pause");
         void vscode.window
-          .showInformationMessage("SpeakItToMe: document changed — restart from current position?", "Restart here", "Stop")
+          .showInformationMessage("TalkToMeBaby: document changed — restart from current position?", "Restart here", "Stop")
           .then((choice) => {
             this.editPrompted = false;
             if (choice === "Restart here") {
-              void vscode.commands.executeCommand("speakittome.readFromCursor");
+              void vscode.commands.executeCommand("talktomebaby.readFromCursor");
             } else if (choice === "Stop") {
-              void vscode.commands.executeCommand("speakittome.stop");
+              void vscode.commands.executeCommand("talktomebaby.stop");
             }
           });
       })
@@ -181,7 +181,7 @@ class ReadingSession {
     this._voice = voice;
     this.synthesis = new SynthesisService(provider, voice, this.cache);
 
-    const cfg = vscode.workspace.getConfiguration("speakittome");
+    const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const settings: ReaderSettings = {
       speed: cfg.get("speed", 1.0),
       fontSize: cfg.get("readerFontSize", 16),
@@ -210,7 +210,7 @@ async function makeProviderById(id: string, keys: ApiKeyManager): Promise<TtsPro
     case "edge": return new EdgeProvider();
     case "say":
       if (process.platform !== "darwin") {
-        void vscode.window.showWarningMessage("SpeakItToMe: macOS say is only available on macOS");
+        void vscode.window.showWarningMessage("TalkToMeBaby: macOS say is only available on macOS");
         return undefined;
       }
       return new SayProvider();
@@ -227,14 +227,14 @@ async function makeProviderById(id: string, keys: ApiKeyManager): Promise<TtsPro
 }
 
 async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
-  const id = vscode.workspace.getConfiguration("speakittome").get<string>("provider", "edge");
+  const id = vscode.workspace.getConfiguration("talktomebaby").get<string>("provider", "edge");
   return makeProviderById(id, keys);
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  log = vscode.window.createOutputChannel("SpeakItToMe", { log: true });
+  log = vscode.window.createOutputChannel("TalkToMeBaby", { log: true });
   context.subscriptions.push(log);
-  const cfg = () => vscode.workspace.getConfiguration("speakittome");
+  const cfg = () => vscode.workspace.getConfiguration("talktomebaby");
 
   const statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
@@ -287,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
       doc.uri, doc.getText(), doc.version,
       provider, voice, cache, context.extensionUri,
       (s) => {
-        statusBar.update(s.state, vscode.workspace.getConfiguration("speakittome").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
+        statusBar.update(s.state, vscode.workspace.getConfiguration("talktomebaby").get("speed", 1), Math.max(0, s.position.sentenceIndex), s.model.sentences.length);
       },
       handleSettingsMessage
     );
@@ -345,7 +345,7 @@ export function activate(context: vscode.ExtensionContext) {
         await active.reconfigure(provider, voice);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        void vscode.window.showWarningMessage("SpeakItToMe: couldn't apply the change — " + message);
+        void vscode.window.showWarningMessage("TalkToMeBaby: couldn't apply the change — " + message);
         return;
       }
       // Push fresh settings data so the open panel reflects the new provider/voice.
@@ -404,20 +404,20 @@ export function activate(context: vscode.ExtensionContext) {
 
   const needEditor = () => {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) void vscode.window.showWarningMessage("SpeakItToMe: this command needs the text editor. Right-click the tab → Reopen Editor With → Text Editor.");
+    if (!editor) void vscode.window.showWarningMessage("TalkToMeBaby: this command needs the text editor. Right-click the tab → Reopen Editor With → Text Editor.");
     return editor;
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("speakittome.readDocument", async () => {
+    vscode.commands.registerCommand("talktomebaby.readDocument", async () => {
       const doc = await resolveActiveDocument();
       if (!doc) {
-        void vscode.window.showWarningMessage("SpeakItToMe: open a prose file (md, txt, ...) first");
+        void vscode.window.showWarningMessage("TalkToMeBaby: open a prose file (md, txt, ...) first");
         return;
       }
       await startSession(doc);
     }),
-    vscode.commands.registerCommand("speakittome.readFromCursor", async () => {
+    vscode.commands.registerCommand("talktomebaby.readFromCursor", async () => {
       const editor = needEditor();
       if (!editor) return;
       if (!(await startSession(editor.document)) || !session) return;
@@ -425,7 +425,7 @@ export function activate(context: vscode.ExtensionContext) {
       const word = session.model.words.find((w) => w.source.end > offset) ?? session.model.words[0];
       if (word) session.jumpToWord(word.index);
     }),
-    vscode.commands.registerCommand("speakittome.readSelection", async () => {
+    vscode.commands.registerCommand("talktomebaby.readSelection", async () => {
       const editor = needEditor();
       if (!editor || editor.selection.isEmpty) return;
       if (!(await startSession(editor.document)) || !session) return; // selection = start at selection, read on
@@ -433,17 +433,17 @@ export function activate(context: vscode.ExtensionContext) {
       const word = session.model.words.find((w) => w.source.end > offset);
       if (word) session.jumpToWord(word.index);
     }),
-    vscode.commands.registerCommand("speakittome.jumpToCursor", () => {
+    vscode.commands.registerCommand("talktomebaby.jumpToCursor", () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor || !session) return;
       if (cfg().get<string>("editorClickToJump", "alt-j") === "off") return;
       const idx = session.editorSync.wordAtPosition(editor.document, editor.selection.active);
       if (idx !== undefined) session.jumpToWord(idx);
     }),
-    vscode.commands.registerCommand("speakittome.pauseResume", () => session?.pauseResume()),
-    vscode.commands.registerCommand("speakittome.stop", () => { session?.dispose(); session = undefined; statusBar.hide(); }),
-    vscode.commands.registerCommand("speakittome.openReader", () => session?.panel.reveal()),
-    vscode.commands.registerCommand("speakittome.selectProvider", async () => {
+    vscode.commands.registerCommand("talktomebaby.pauseResume", () => session?.pauseResume()),
+    vscode.commands.registerCommand("talktomebaby.stop", () => { session?.dispose(); session = undefined; statusBar.hide(); }),
+    vscode.commands.registerCommand("talktomebaby.openReader", () => session?.panel.reveal()),
+    vscode.commands.registerCommand("talktomebaby.selectProvider", async () => {
       const activeId = cfg().get<string>("provider", "edge");
       const items = availableProviders(process.platform).map((p) => {
         const isActive = p.id === activeId;
@@ -454,7 +454,7 @@ export function activate(context: vscode.ExtensionContext) {
           description: `${p.description}${keyNote}${isActive ? " (current)" : ""}`,
         };
       });
-      const pick = await vscode.window.showQuickPick(items, { placeHolder: "SpeakItToMe TTS provider" });
+      const pick = await vscode.window.showQuickPick(items, { placeHolder: "TalkToMeBaby TTS provider" });
       if (!pick || pick.id === activeId) return;
       const desc = availableProviders(process.platform).find((p) => p.id === pick.id)!;
       // Check for an existing key before calling makeProviderById so we can
@@ -464,13 +464,13 @@ export function activate(context: vscode.ExtensionContext) {
       if (!provider) return; // cancelled key prompt — no change
       if (!hadKey) voiceCache.invalidate(pick.id); // new key stored — evict stale voice list
       await cfg().update("provider", pick.id, vscode.ConfigurationTarget.Global);
-      void vscode.window.showInformationMessage(`SpeakItToMe: Provider set to ${desc.label}.`);
+      void vscode.window.showInformationMessage(`TalkToMeBaby: Provider set to ${desc.label}.`);
       if (session) {
         const voice = cfg().get<string>(`voice.${provider.id}`) || provider.defaultVoice;
         await reconfigureActive(provider, voice);
       }
     }),
-    vscode.commands.registerCommand("speakittome.selectVoice", async () => {
+    vscode.commands.registerCommand("talktomebaby.selectVoice", async () => {
       const provider = session?.provider ?? (await makeProvider(keys));
       if (!provider) return;
       const activeVoice = session?.voice
@@ -487,10 +487,10 @@ export function activate(context: vscode.ExtensionContext) {
       );
       if (!pick || pick.id === activeVoice) return;
       await cfg().update(`voice.${provider.id}`, pick.id, vscode.ConfigurationTarget.Global);
-      void vscode.window.showInformationMessage(`SpeakItToMe: Voice set to ${pick.voiceLabel}.`);
+      void vscode.window.showInformationMessage(`TalkToMeBaby: Voice set to ${pick.voiceLabel}.`);
       if (session) await reconfigureActive(session.provider, pick.id);
     }),
-    vscode.commands.registerCommand("speakittome.setApiKey", async () => {
+    vscode.commands.registerCommand("talktomebaby.setApiKey", async () => {
       const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });
       if (!pick) return;
       const stored = await keys.promptAndStore(pick);
@@ -500,7 +500,7 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     { dispose() { session?.dispose(); } }
   );
-  log.info("SpeakItToMe activated");
+  log.info("TalkToMeBaby activated");
 }
 
 export function deactivate() {}

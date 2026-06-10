@@ -41,7 +41,7 @@ export class ReaderPanel {
 
   constructor(extensionUri: vscode.Uri, title: string) {
     this.panel = vscode.window.createWebviewPanel(
-      "speakittome.reader", `SpeakItToMe — ${title}`, vscode.ViewColumn.Beside,
+      "talktomebaby.reader", `TalkToMeBaby — ${title}`, vscode.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [extensionUri] }
     );
     const css = this.panel.webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "reader.css"));

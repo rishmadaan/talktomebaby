@@ -64,7 +64,7 @@ export class SayProvider implements TtsProvider {
   }
 
   async synthesize(chunk: Chunk, voice: string, signal: AbortSignal): Promise<ChunkAudio> {
-    const out = join(tmpdir(), `speakittome-say-${Date.now()}-${chunk.index}.wav`);
+    const out = join(tmpdir(), `talktomebaby-say-${Date.now()}-${chunk.index}.wav`);
     try {
       await run(
         "say",

@@ -13,7 +13,7 @@ const audio = (n: number, fill = 65): ChunkAudio => ({
 
 describe("DiskCache", () => {
   let dir: string;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "speakittome-cache-")); });
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "talktomebaby-cache-")); });
 
   it("round-trips audio and timings", async () => {
     const cache = new DiskCache(dir, 1024 * 1024);

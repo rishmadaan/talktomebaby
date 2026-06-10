@@ -1,6 +1,6 @@
-# SpeakItToMe
+# TalkToMeBaby
 
-SpeakItToMe reads your prose files aloud inside VS Code with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with Edge TTS (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
+TalkToMeBaby reads your prose files aloud inside VS Code with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with Edge TTS (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
 
 Core features:
 - **Reader panel** - rendered reading view with dual-layer highlighting: sentence band + moving word sweep
@@ -17,7 +17,7 @@ Supported file types: `.md`, `.mdx`, `.txt`, `.rst`, `.org`, `.tex`, `.adoc`
 ### From VSIX (current)
 
 ```bash
-code --install-extension speakittome-0.2.0.vsix
+code --install-extension talktomebaby-0.2.0.vsix
 ```
 
 Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
@@ -27,10 +27,10 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 ```bash
 git clone https://github.com/rishmadaan/read-vscode-tts.git
 cd read-vscode-tts
-git checkout speakittome-rebuild
+git checkout talktomebaby-rebuild
 npm install
-npm run package   # produces speakittome-0.2.0.vsix
-code --install-extension speakittome-0.2.0.vsix
+npm run package   # produces talktomebaby-0.2.0.vsix
+code --install-extension talktomebaby-0.2.0.vsix
 ```
 
 ---
@@ -38,10 +38,10 @@ code --install-extension speakittome-0.2.0.vsix
 ## Quick start
 
 1. Open any `.md`, `.txt`, or other supported prose file
-2. `Cmd+Shift+P` > **SpeakItToMe: Read Document**
+2. `Cmd+Shift+P` > **TalkToMeBaby: Read Document**
 3. The Reader panel opens; reading starts from the beginning
 
-To start from a specific point: place your cursor, then use **SpeakItToMe: Read from Here** (right-click menu or command palette).
+To start from a specific point: place your cursor, then use **TalkToMeBaby: Read from Here** (right-click menu or command palette).
 
 ---
 
@@ -91,9 +91,9 @@ If a key-required provider has no stored key, switching to it prompts for the ke
 
 **Command palette (alternative, mirrors the gear panel):**
 
-- Switch provider: `Cmd+Shift+P` > **SpeakItToMe: Select TTS Provider** — marks the active provider with ✓ / "(current)", and reconfigures in place on change.
-- Select voice: `Cmd+Shift+P` > **SpeakItToMe: Select Voice** — same active marker; reconfigures in place.
-- Set API key: `Cmd+Shift+P` > **SpeakItToMe: Set API Key**
+- Switch provider: `Cmd+Shift+P` > **TalkToMeBaby: Select TTS Provider** — marks the active provider with ✓ / "(current)", and reconfigures in place on change.
+- Select voice: `Cmd+Shift+P` > **TalkToMeBaby: Select Voice** — same active marker; reconfigures in place.
+- Set API key: `Cmd+Shift+P` > **TalkToMeBaby: Set API Key**
 
 ---
 
@@ -112,17 +112,17 @@ While a session is active, the source editor stays in sync with the reader:
 
 | Setting | Default | Description |
 |---|---|---|
-| `speakittome.provider` | `edge` | TTS provider: `edge`, `elevenlabs`, `say`, `sarvam` |
-| `speakittome.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
-| `speakittome.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
-| `speakittome.voice.say` | `Samantha` | Voice for macOS say |
-| `speakittome.voice.sarvam` | `shubh` | Voice for Sarvam AI |
-| `speakittome.speed` | `1.0` | Playback speed (0.5-2.0). Updated automatically when changed in the player. |
-| `speakittome.editorClickToJump` | `alt-j` | Jump trigger in the source editor: `off`, `alt-j` (keyboard shortcut only), `plain-click` (any click during a session) |
-| `speakittome.readerFontSize` | `16` | Reader panel font size in px |
-| `speakittome.highlight.sentenceColor` | `""` | Sentence band highlight color. Empty uses the theme default. |
-| `speakittome.highlight.wordColor` | `""` | Current word highlight color. Empty uses the theme default. |
-| `speakittome.cacheSizeMB` | `200` | Disk cache size limit in MB. Audio is cached under `globalStorageUri/audio-cache`. |
+| `talktomebaby.provider` | `edge` | TTS provider: `edge`, `elevenlabs`, `say`, `sarvam` |
+| `talktomebaby.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
+| `talktomebaby.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
+| `talktomebaby.voice.say` | `Samantha` | Voice for macOS say |
+| `talktomebaby.voice.sarvam` | `shubh` | Voice for Sarvam AI |
+| `talktomebaby.speed` | `1.0` | Playback speed (0.5-2.0). Updated automatically when changed in the player. |
+| `talktomebaby.editorClickToJump` | `alt-j` | Jump trigger in the source editor: `off`, `alt-j` (keyboard shortcut only), `plain-click` (any click during a session) |
+| `talktomebaby.readerFontSize` | `16` | Reader panel font size in px |
+| `talktomebaby.highlight.sentenceColor` | `""` | Sentence band highlight color. Empty uses the theme default. |
+| `talktomebaby.highlight.wordColor` | `""` | Current word highlight color. Empty uses the theme default. |
+| `talktomebaby.cacheSizeMB` | `200` | Disk cache size limit in MB. Audio is cached under `globalStorageUri/audio-cache`. |
 
 ---
 
@@ -143,23 +143,23 @@ Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API,
 
 | Command | Description |
 |---|---|
-| SpeakItToMe: Read Document | Open Reader and read the active file from the beginning |
-| SpeakItToMe: Read from Here | Open Reader and read from the cursor position |
-| SpeakItToMe: Read Selection | Open Reader and read from the start of the current selection |
-| SpeakItToMe: Open Reader | Reveal the Reader panel if already open |
-| SpeakItToMe: Pause/Resume | Toggle playback |
-| SpeakItToMe: Stop | Stop playback and close the session |
-| SpeakItToMe: Jump Playback to Cursor | Jump to the word at cursor in the source editor |
-| SpeakItToMe: Select TTS Provider | Pick a provider from a quick-pick list |
-| SpeakItToMe: Select Voice | Pick a voice for the active provider |
-| SpeakItToMe: Set API Key | Store an API key for ElevenLabs or Sarvam |
+| TalkToMeBaby: Read Document | Open Reader and read the active file from the beginning |
+| TalkToMeBaby: Read from Here | Open Reader and read from the cursor position |
+| TalkToMeBaby: Read Selection | Open Reader and read from the start of the current selection |
+| TalkToMeBaby: Open Reader | Reveal the Reader panel if already open |
+| TalkToMeBaby: Pause/Resume | Toggle playback |
+| TalkToMeBaby: Stop | Stop playback and close the session |
+| TalkToMeBaby: Jump Playback to Cursor | Jump to the word at cursor in the source editor |
+| TalkToMeBaby: Select TTS Provider | Pick a provider from a quick-pick list |
+| TalkToMeBaby: Select Voice | Pick a voice for the active provider |
+| TalkToMeBaby: Set API Key | Store an API key for ElevenLabs or Sarvam |
 
 ---
 
 ## Troubleshooting
 
 **Edge TTS produces no audio / connection error**
-Edge TTS requires an internet connection to Microsoft's speech service. If you are offline, switch to macOS say (`speakittome.provider: say`) or a cached document.
+Edge TTS requires an internet connection to Microsoft's speech service. If you are offline, switch to macOS say (`talktomebaby.provider: say`) or a cached document.
 
 **macOS say not available**
 The `say` provider only works on macOS. On other platforms it is hidden from the provider picker.

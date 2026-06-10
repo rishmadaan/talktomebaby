@@ -11,7 +11,7 @@ export class EditorSync {
     private model: DocumentModel,
     onAltClick: (wordIndex: number) => void
   ) {
-    const cfg = vscode.workspace.getConfiguration("speakittome");
+    const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const sentenceColor = cfg.get<string>("highlight.sentenceColor") || undefined;
     const wordColor = cfg.get<string>("highlight.wordColor") || undefined;
     this.sentenceDeco = vscode.window.createTextEditorDecorationType({
