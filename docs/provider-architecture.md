@@ -39,7 +39,9 @@ do that.
 
 Two structural gaps follow from this table:
 
-1. **The default provider is unofficial.** If Edge TTS breaks upstream, zero-config
+1. **The default provider is unofficial on Windows/Linux.** As of v0.3.2, macOS
+   defaults to the official `say` provider (fully offline). Windows and Linux still
+   default to Edge TTS — unofficial, best-effort. If Edge breaks upstream, those
    users lose audio until we ship a fix or they configure a key. Mitigation today:
    three alternative providers. Real mitigation: gap 2.
 2. **Offline reading only exists on macOS.** Windows and Linux users have no
@@ -65,7 +67,8 @@ downloading a model (likely a one-time "download voice (60 MB)" flow, since bund
 it in the VSIX would bloat the install), plus onnxruntime-node as a native
 dependency.
 
-**Recommendation:** keep Edge TTS as the zero-config default for now; build the
-Piper provider as the next major feature. When Piper lands, it becomes the offline
-default and `say` becomes a legacy/extra option. This removes both structural gaps
-in one move.
+**Recommendation:** macOS already uses `say` as the zero-config default (v0.3.2).
+The next step is the Piper provider for Windows and Linux: when Piper lands, it
+becomes the offline default on those platforms, removing both structural gaps in
+one move. `say` continues as the macOS default until Piper quality is confirmed
+comparable or better.

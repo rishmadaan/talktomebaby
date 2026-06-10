@@ -28,3 +28,24 @@ export function availableProviders(platform: NodeJS.Platform): ProviderDescripto
 export function isProviderAvailable(id: string, platform: NodeJS.Platform): boolean {
   return availableProviders(platform).some((p) => p.id === id);
 }
+
+/**
+ * Resolve a stored provider id to a concrete, platform-available id.
+ *
+ * Rules (in priority order):
+ *   1. If `configured` is a known id AND available on `platform` → return it as-is.
+ *   2. Otherwise (including "auto", undefined, empty, unknown, or unavailable) →
+ *      return the platform default: "say" on darwin, "edge" everywhere else.
+ *
+ * Callers always receive a concrete id — never "auto".
+ */
+export function resolveProviderId(
+  configured: string | undefined,
+  platform: NodeJS.Platform
+): string {
+  const platformDefault = platform === "darwin" ? "say" : "edge";
+  if (configured && isProviderAvailable(configured, platform)) {
+    return configured;
+  }
+  return platformDefault;
+}

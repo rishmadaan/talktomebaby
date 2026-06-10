@@ -1,6 +1,6 @@
 # TalkToMeBaby
 
-TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with an unofficial Edge TTS provider (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
+TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. On macOS it defaults to the built-in `say` command (official, fully offline, no data leaves the machine); on Windows and Linux it defaults to the free unofficial Edge TTS provider. Any provider can be chosen explicitly. Supported providers: Edge TTS, ElevenLabs, macOS say, and Sarvam AI.
 
 TalkToMeBaby is independent and is not affiliated with, endorsed by, or sponsored by Speechify.
 
@@ -83,9 +83,9 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 
 | Provider | Quality | Word timing | Key required | Notes |
 |---|---|---|---|---|
-| Edge TTS (default) | Good | Word-level | No | Free, unofficial, best effort. Requires internet. Many voices. |
+| macOS say | Basic | Estimated | No | **Default on macOS.** Offline, official Apple CLI. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. macOS only. |
+| Edge TTS | Good | Word-level | No | **Default on Windows/Linux.** Free, unofficial, best effort. Requires internet. Many voices. |
 | ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
-| macOS say | Basic | Estimated | No | Offline. macOS only. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. |
 | Sarvam AI | Good | Estimated | Yes | Indian English focus. |
 
 Network providers synthesize audio by sending the text being read to the selected provider. Edge, ElevenLabs, and Sarvam require internet access; macOS `say` runs locally and does not send text to a network TTS provider. See [PRIVACY.md](PRIVACY.md) for the full data-flow summary.
@@ -131,7 +131,7 @@ While a session is active, the source editor stays in sync with the reader:
 
 | Setting | Default | Description |
 |---|---|---|
-| `talktomebaby.provider` | `edge` | TTS provider: `edge`, `elevenlabs`, `say`, `sarvam` |
+| `talktomebaby.provider` | `auto` | TTS provider: `auto` (macOS say on macOS, Edge elsewhere), `edge`, `elevenlabs`, `say`, `sarvam` |
 | `talktomebaby.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
 | `talktomebaby.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
 | `talktomebaby.voice.say` | `Samantha` | Voice for macOS say |

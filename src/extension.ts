@@ -8,7 +8,7 @@ import { ElevenLabsProvider } from "./synthesis/elevenlabs";
 import { SayProvider } from "./synthesis/say";
 import { SarvamProvider } from "./synthesis/sarvam";
 import { TtsProvider } from "./synthesis/provider";
-import { availableProviders } from "./synthesis/provider-catalog";
+import { availableProviders, resolveProviderId } from "./synthesis/provider-catalog";
 import { VoiceCache } from "./synthesis/voice-cache";
 import { withTimeout } from "./synthesis/with-timeout";
 import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
@@ -231,7 +231,8 @@ async function makeProviderById(id: string, keys: ApiKeyManager): Promise<TtsPro
 }
 
 async function makeProvider(keys: ApiKeyManager): Promise<TtsProvider | undefined> {
-  const id = vscode.workspace.getConfiguration("talktomebaby").get<string>("provider", "edge");
+  const raw = vscode.workspace.getConfiguration("talktomebaby").get<string>("provider");
+  const id = resolveProviderId(raw, process.platform);
   return makeProviderById(id, keys);
 }
 
@@ -467,7 +468,7 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand("talktomebaby.openReader", () => session?.panel.reveal()),
     vscode.commands.registerCommand("talktomebaby.selectProvider", async () => {
-      const activeId = cfg().get<string>("provider", "edge");
+      const activeId = resolveProviderId(cfg().get<string>("provider"), process.platform);
       const items = availableProviders(process.platform).map((p) => {
         const isActive = p.id === activeId;
         const keyNote = p.requiresKey ? " · key required" : "";

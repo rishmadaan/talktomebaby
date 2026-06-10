@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.2] - 2026-06-10
+
+- New `auto` provider default: macOS now defaults to the built-in `say` voice (official, fully offline); Windows/Linux keep Edge TTS. Explicit provider choices are unchanged and always respected.
+
 ## [0.3.1] - 2026-06-10
 
 - Added explicit privacy/data-flow disclosure for network TTS providers

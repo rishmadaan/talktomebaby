@@ -2,7 +2,7 @@
   "name": "talktomebaby",
   "displayName": "TalkToMeBaby",
   "description": "Speechify-inspired read-aloud for VS Code: word-level highlighting, click-to-jump, and 2x speed without pitch shift.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "rishmadaan",
   "icon": "icon.png",
   "license": "MIT",
@@ -46,9 +46,10 @@
       "title": "TalkToMeBaby",
       "properties": {
         "talktomebaby.provider": {
-          "type": "string", "default": "edge",
-          "enum": ["edge", "elevenlabs", "say", "sarvam"],
+          "type": "string", "default": "auto",
+          "enum": ["auto", "edge", "elevenlabs", "say", "sarvam"],
           "enumDescriptions": [
+            "Auto — macOS say on macOS (offline, official), Edge TTS elsewhere",
             "Edge TTS (unofficial, free, no key, word-level timing)",
             "ElevenLabs (premium voices, word-level timing, requires key)",
             "macOS say (offline, estimated timing, macOS only)",
