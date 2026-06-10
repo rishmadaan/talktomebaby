@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Read TTS
+description: Report a bug in TalkToMeBaby
 labels: ["bug"]
 body:
   - type: textarea
@@ -21,8 +21,10 @@ body:
     attributes:
       label: TTS Provider
       options:
-        - Sarvam AI
+        - Edge TTS (default)
         - ElevenLabs
+        - macOS say
+        - Sarvam AI
     validations:
       required: true
   - type: textarea
@@ -31,11 +33,11 @@ body:
       placeholder: |
         - VS Code: v1.XX.X
         - OS: macOS / Windows / Linux
-        - Extension version: 0.1.0
+        - Extension version: 0.3.0
     validations:
       required: true
   - type: textarea
     attributes:
       label: Error Output
-      description: Check Output panel > "Read TTS" for error logs
+      description: Check Output panel > "TalkToMeBaby" for error logs
       render: shell

@@ -1,0 +1,92 @@
+:root { --reader-font-size: 16px;
+  --sentence-color: color-mix(in srgb, var(--vscode-editor-selectionBackground) 55%, transparent);
+  --word-color: var(--vscode-editor-findMatchBackground); }
+body { font-family: var(--vscode-editor-font-family, system-ui); font-size: var(--reader-font-size);
+  line-height: 1.7; max-width: 72ch; margin: 0 auto; padding: 1rem 1.5rem 6rem;
+  color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }
+.block { margin: 0.6em 0; }
+.block-code { opacity: 0.45; font-size: 0.85em; white-space: pre-wrap;
+  border-left: 3px solid var(--vscode-panel-border); padding-left: 0.8em; }
+span[data-w] { border-radius: 3px; cursor: pointer; }
+span[data-w]:hover { outline: 1px solid var(--vscode-focusBorder); }
+.sentence-active { background: var(--sentence-color); border-radius: 4px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.word-active { background: var(--word-color); transition: background 80ms linear; }
+#return-pill { position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%);
+  padding: 0.4em 1em; border-radius: 999px; border: 1px solid var(--vscode-focusBorder);
+  background: var(--vscode-button-background); color: var(--vscode-button-foreground); cursor: pointer; z-index: 10; }
+#player-bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 0.5rem;
+  align-items: center; padding: 0.5rem 1rem; flex-wrap: wrap;
+  background: var(--vscode-sideBar-background); border-top: 1px solid var(--vscode-panel-border); z-index: 9; }
+#player-bar button { background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground); border: none; border-radius: 4px;
+  padding: 0.3em 0.7em; cursor: pointer; }
+#player-bar button.active { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+#player-bar input[type="range"] { width: 90px; }
+#player-status { margin-left: auto; opacity: 0.8; font-size: 0.85em; }
+
+/* Gear reads as a first-class control: own slot, separated from the speed cluster,
+   clear pressed state while the panel is open. */
+#settings-toggle { margin-left: 0.5rem; font-size: 1.05em; line-height: 1;
+  padding: 0.3em 0.6em; }
+#settings-toggle.active { background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  outline: 1px solid var(--vscode-focusBorder); }
+
+/* Settings panel sits ABOVE the player bar (not overlapping it), so the gear is
+   always clickable to toggle closed. The reader body has bottom padding (6rem)
+   to clear both. */
+#settings-panel { position: fixed; left: 0; right: 0; bottom: 3rem; z-index: 8;
+  max-height: 70vh; overflow-y: auto; padding: 0.5rem 1.5rem 1.5rem;
+  display: flex; flex-direction: column; gap: 1.4rem; font-size: 0.9rem;
+  background: var(--vscode-sideBar-background); color: var(--vscode-editor-foreground);
+  border-top: 1px solid var(--vscode-panel-border);
+  box-shadow: 0 -10px 30px color-mix(in srgb, var(--vscode-widget-shadow, #000) 35%, transparent); }
+/* The hidden attribute must win over our display:flex (author display overrides
+   the UA [hidden] rule otherwise). This is why the panel "never closed". */
+#settings-panel[hidden] { display: none; }
+.settings-header { position: sticky; top: 0; display: flex; align-items: center;
+  justify-content: space-between; padding: 0.6rem 0 0.5rem;
+  background: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-panel-border); margin-bottom: 0.2rem; }
+.settings-title { font-weight: 600; font-size: 1rem; }
+.settings-close { background: none; border: none; cursor: pointer; font-size: 0.95rem;
+  color: var(--vscode-editor-foreground); opacity: 0.7; border-radius: 4px;
+  padding: 0.2em 0.5em; }
+.settings-close:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, var(--vscode-button-secondaryBackground)); }
+.settings-section { display: flex; flex-direction: column; gap: 0.6rem; }
+.settings-heading { font-weight: 600; opacity: 0.75; text-transform: uppercase;
+  letter-spacing: 0.05em; font-size: 0.72rem; }
+.settings-field-label { font-size: 0.82rem; opacity: 0.85; margin-top: 0.2rem; }
+#settings-providers { display: flex; flex-direction: column; gap: 0.5rem; }
+.settings-provider { text-align: left; width: 100%; display: flex; flex-direction: column;
+  gap: 0.25rem; padding: 0.7rem 0.9rem; border-radius: 8px; cursor: pointer;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid transparent; }
+.settings-provider:hover { outline: 1px solid var(--vscode-focusBorder); }
+.settings-provider.active { background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-focusBorder); cursor: default; }
+.settings-provider-main { display: flex; align-items: center; gap: 0.5rem; }
+.settings-provider-label { font-weight: 600; }
+.settings-provider-desc { opacity: 0.8; font-size: 0.82em; }
+.settings-check { margin-left: auto; }
+.settings-badge { font-size: 0.68rem; padding: 0.05em 0.45em; border-radius: 999px;
+  border: 1px solid var(--vscode-panel-border); opacity: 0.85; }
+#settings-voice { width: 100%; max-width: 28ch; padding: 0.3em 0.4em; border-radius: 4px;
+  background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-panel-border)); }
+.settings-stepper { display: flex; align-items: center; gap: 0.6rem; }
+.settings-stepper button { background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground); border: none; border-radius: 4px;
+  width: 1.9em; height: 1.9em; cursor: pointer; font-size: 1em; }
+.settings-stepper button:disabled { opacity: 0.4; cursor: default; }
+#settings-font-value { min-width: 4ch; }
+.settings-colors { display: flex; gap: 1rem; flex-wrap: wrap; }
+.settings-color-field { display: flex; align-items: center; gap: 0.4rem; }
+.settings-color-field input[type="color"] { width: 2.2em; height: 1.6em; padding: 0;
+  border: 1px solid var(--vscode-panel-border); border-radius: 4px; background: none; cursor: pointer; }
+.settings-reset { align-self: flex-start; background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground); border: none; border-radius: 4px;
+  padding: 0.3em 0.7em; cursor: pointer; }

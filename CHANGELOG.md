@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0 — TalkToMeBaby
+
+Renamed SpeakItToMe → TalkToMeBaby.
+
+- In-reader settings panel (primary settings surface): Provider and Voice sections split into separate areas; font size, highlight colors — all accessible from the gear icon in the player bar
+- Instant voice loading with session cache: voices are prefetched on read start so the first gear-open is usually instant; fallback voice lists are never cached (ensures the next fetch retries the real list)
+- No-auto-play-on-switch policy: changing provider or voice re-primes the session paused at the current sentence; press play when ready
+- Resume after reload: position is persisted to workspaceState (throttled ~3s); on activation a "Resume?" toast is offered if a session was saved within 12 hours
+- Playback failures surfaced: chunk synthesis errors are sent to the webview and reported in the Output channel rather than silently dropped
+- Provider architecture docs: see docs/provider-architecture.md for full provider design, fragility notes, and roadmap
+- Reader panel: rendered reading view with word-level karaoke highlighting
+- Click any word to jump playback (alt+j from the source editor)
+- Continuous chunked audio (no more per-sentence gaps)
+- Speed 0.5-2x, pitch preserved, instant, persisted
+- Resume restarts the current sentence
+- Providers: Edge TTS (default, free), ElevenLabs, macOS say, Sarvam
+- Persistent disk cache (default 200 MB), re-reads cost no API credits
+- Editor decorations stay in sync; auto-scroll with return-to-playback pill
+
 ## [0.1.0] - 2026-03-04
 
 ### Added

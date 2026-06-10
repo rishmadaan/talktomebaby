@@ -1,151 +1,190 @@
-# Read — Text to Speech for VS Code
+# TalkToMeBaby
 
-A VS Code extension that reads your documents aloud while highlighting each sentence in the editor as it's spoken. Think audiobook mode for your Markdown and text files.
+TalkToMeBaby reads your prose files aloud inside VS Code with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. It works out of the box with Edge TTS (free, no key needed) and supports ElevenLabs, macOS say, and Sarvam AI.
 
-You bring your own TTS API key (Sarvam AI or ElevenLabs), and the extension handles the rest — sentence parsing, audio playback, caching, and synchronized highlighting that follows along in the editor.
+Core features:
+- **Reader panel** - rendered reading view with dual-layer highlighting: sentence band + moving word sweep
+- **Click any word** to jump playback there instantly; `alt+j` jumps from the source editor to the cursor
+- **Speed 0.5-2x** with pitch preserved, no re-synthesis; presets + fine slider, persisted across sessions
+- **Disk cache** (default 200 MB) so re-reads cost no API credits
 
-## Why
+Supported file types: `.md`, `.mdx`, `.txt`, `.rst`, `.org`, `.tex`, `.adoc`
 
-Reading your own writing aloud is one of the best ways to catch awkward phrasing, run-on sentences, and flow issues. But switching between an editor and a separate TTS tool breaks concentration. This extension keeps everything in one place — you hear your text and see exactly which sentence is playing, right in VS Code.
+---
 
-## Features
+## Install
 
-- **Sentence highlighting** — the current sentence is highlighted in the editor and auto-scrolls to stay visible
-- **Full playback controls** — play, pause, resume, stop — in the sidebar panel and via `Cmd+Shift+R`
-- **Start from anywhere** — right-click to start reading from any point in the document
-- **Smart caching** — audio is cached per-sentence in memory, so re-reading costs zero API calls
-- **Multiple providers** — switch between Sarvam AI and ElevenLabs from the sidebar, or add your own
-- **Markdown-aware** — strips formatting before speaking, so you hear clean prose, not syntax
-
-## Installation
-
-### Install from VSIX (Recommended)
-
-1. Download the latest `.vsix` file from [Releases](https://github.com/rishmadaan/read-vscode-tts/releases)
-2. In VS Code, open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-3. Run **"Extensions: Install from VSIX..."**
-4. Select the downloaded `.vsix` file
-
-Or install from the terminal:
+### From VSIX (current)
 
 ```bash
-code --install-extension read-tts-0.1.0.vsix
+code --install-extension talktomebaby-0.3.0.vsix
 ```
 
-### Build from Source
+Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
+
+### Build from source
 
 ```bash
 git clone https://github.com/rishmadaan/read-vscode-tts.git
 cd read-vscode-tts
+git checkout speakittome-rebuild
 npm install
-npm run compile
+npm run package   # produces talktomebaby-0.3.0.vsix
+code --install-extension talktomebaby-0.3.0.vsix
 ```
 
-**To package and install locally:**
+---
 
-```bash
-npx @vscode/vsce package         # Creates read-tts-0.1.0.vsix
-```
+## Quick start
 
-Then install the `.vsix` using either method above.
+1. Open any `.md`, `.txt`, or other supported prose file
+2. `Cmd+Shift+P` > **TalkToMeBaby: Read Document**
+3. The Reader panel opens; reading starts from the beginning
 
-**To run in development mode:**
+To start from a specific point: place your cursor, then use **TalkToMeBaby: Read from Here** (right-click menu or command palette).
 
-Open the project in VS Code and press `F5` to launch the Extension Development Host.
+---
 
-## Setup
+## Reader panel
 
-1. Open the Command Palette (`Cmd+Shift+P`)
-2. Run **"Read: Set API Key"**
-3. Select your TTS provider and paste your API key
-4. Open any `.md` or `.txt` file
-5. Click the speaker icon in the editor title bar
+The Reader panel renders your document as a clean reading view. Each word is individually clickable.
 
-### Getting API Keys
+- **Click any word** to jump playback there and resume from that word
+- **Scroll freely** - auto-scroll follows playback while you don't interact; scroll away and a **Return to playback** pill appears in the corner; click it to snap back and re-engage auto-scroll
+- The **player bar** at the bottom has speed presets, a fine slider, pause/resume, and stop
+- The **gear (⚙)** at the right end of the player bar opens an in-reader settings panel for provider, voice, font size, and highlight colors (see [Switching provider and voice](#switching-provider-and-voice))
 
-**Sarvam AI** (recommended for getting started):
-- Sign up at [sarvam.ai](https://www.sarvam.ai/) — you get Rs.1000 in free credits
-- Go to Dashboard > API Keys > Create
-- Supports Indian English with 45+ natural voices
+---
 
-**ElevenLabs**:
-- Sign up at [elevenlabs.io](https://elevenlabs.io/)
-- Go to Settings > API Keys > Create
-- Note: requires a paid plan ($5/mo starter) for API access
+## Speed
 
-## Usage
+Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0x. The fine slider covers the full 0.5-2.0 range. Pitch is preserved at all speeds using `preservesPitch`. The chosen speed is persisted globally and restored on the next read.
 
-| Action | How |
-|--------|-----|
-| Read entire document | Click speaker icon in title bar, or `Cmd+Shift+P` > "Read: Speak Document" |
-| Read selected text | Select text, right-click > "Read: Speak Selection" |
-| Start from a sentence | Place cursor, right-click > "Read: Start from Here" |
-| Pause / Resume | `Cmd+Shift+R` or click pause in sidebar |
-| Stop | Click stop in sidebar, or `Cmd+Shift+P` > "Read: Stop" |
-| Switch provider | `Cmd+Shift+P` > "Read: Select TTS Provider" |
+---
+
+## Providers
+
+| Provider | Quality | Word timing | Key required | Notes |
+|---|---|---|---|---|
+| Edge TTS (default) | Good | Word-level | No | Free. Requires internet. Many voices. |
+| ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
+| macOS say | Basic | Estimated | No | Offline. macOS only. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. |
+| Sarvam AI | Good | Estimated | Yes | Indian English focus. |
+
+### Switching provider and voice
+
+**The settings panel inside the Reader is the primary way to change everything.** Click the gear (⚙) in the player bar to open it; click the gear again, press **Esc**, or hit the **✕** to close it. The gear shows a pressed state while the panel is open. The panel slides in above the player bar with two sections:
+
+- **Provider** — one row per available provider, each with a short description, a "key required" badge where relevant, and a check (✓) on the active one. Click a row to switch. (macOS say only appears on macOS.)
+- **Voice** — a dropdown of the active provider's voices, with the current one selected.
+- **Appearance**
+  - **Font size** — a +/- stepper (12-28px) that applies instantly and persists.
+  - **Highlight colors** — sentence-band and current-word color pickers that apply instantly, plus **Reset to theme** to clear both back to the theme default.
+
+(Speed lives in the player bar, not the settings panel.)
+
+**Instant open:** the panel opens immediately. Voices are cached per provider for the session and prefetched when a read starts, so the first open is usually instant; if a provider's voices are still loading you'll briefly see a disabled "Loading voices…" option, then the list fills in.
+
+**Switching keeps your place and never auto-plays:** changing provider or voice reconfigures the reader **in place** — the Reader is not torn down and rebuilt. The session re-primes **paused at your current sentence** with the new voice; press play when you're ready. No surprise audio. The settings panel stays open across the switch.
+
+If a key-required provider has no stored key, switching to it prompts for the key first; cancel and the selection snaps back to the current provider.
+
+**Command palette (alternative, mirrors the gear panel):**
+
+- Switch provider: `Cmd+Shift+P` > **TalkToMeBaby: Select TTS Provider** — marks the active provider with ✓ / "(current)", and reconfigures in place on change.
+- Select voice: `Cmd+Shift+P` > **TalkToMeBaby: Select Voice** — same active marker; reconfigures in place.
+- Set API key: `Cmd+Shift+P` > **TalkToMeBaby: Set API Key**
+
+---
+
+## Editor surface
+
+While a session is active, the source editor stays in sync with the reader:
+
+- **Sentence decoration** - the sentence currently being spoken is highlighted in the source editor
+- **alt+j** (in the source editor) - jumps playback to the word at cursor; always starts playback even if paused
+- **editorClickToJump setting** - controls whether a plain click in the editor also triggers a jump (see settings table below)
+- **Document edits** - if you edit the file mid-read, playback pauses and a prompt offers to restart from the current position or stop
+
+---
 
 ## Settings
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `read-tts.provider` | `sarvam` | TTS provider (`sarvam` or `elevenlabs`) |
-| `read-tts.voice` | _(provider default)_ | Voice name/ID. Sarvam: `shubh`, `priya`, `ritu`, etc. ElevenLabs: voice ID |
-| `read-tts.speed` | `1.0` | Speech speed (0.5 to 2.0) |
-| `read-tts.highlightColor` | _(theme-aware yellow)_ | Custom highlight color, e.g. `#FFFF0033` |
+|---|---|---|
+| `talktomebaby.provider` | `edge` | TTS provider: `edge`, `elevenlabs`, `say`, `sarvam` |
+| `talktomebaby.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
+| `talktomebaby.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
+| `talktomebaby.voice.say` | `Samantha` | Voice for macOS say |
+| `talktomebaby.voice.sarvam` | `shubh` | Voice for Sarvam AI |
+| `talktomebaby.speed` | `1.0` | Playback speed (0.5-2.0). Updated automatically when changed in the player. |
+| `talktomebaby.editorClickToJump` | `alt-j` | Jump trigger in the source editor: `off`, `alt-j` (keyboard shortcut only), `plain-click` (any click during a session) |
+| `talktomebaby.readerFontSize` | `16` | Reader panel font size in px |
+| `talktomebaby.highlight.sentenceColor` | `""` | Sentence band highlight color. Empty uses the theme default. |
+| `talktomebaby.highlight.wordColor` | `""` | Current word highlight color. Empty uses the theme default. |
+| `talktomebaby.cacheSizeMB` | `200` | Disk cache size limit in MB. Audio is cached under `globalStorageUri/audio-cache`. |
 
-## How It Works
+---
 
-1. Your document is parsed into sentences (markdown formatting is stripped)
-2. Each sentence is sent to the TTS API and the audio is cached in memory
-3. As each sentence plays, it's highlighted in the editor with auto-scroll
-4. Cached sentences replay instantly — no API call needed on re-reads
-5. Cache is session-only (cleared when VS Code reloads)
+## Privacy and API keys
 
-## Architecture
+Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See [docs/provider-architecture.md](docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
 
-```
-src/
-├── providers/          # TTS provider interface + implementations
-│   ├── tts-provider.ts       # ITtsProvider interface
-│   ├── sarvam-provider.ts    # Sarvam AI
-│   └── elevenlabs-provider.ts
-├── managers/           # Core logic
-│   ├── audio-manager.ts      # Playback orchestration + caching
-│   ├── highlight-manager.ts  # Editor text decorations
-│   └── api-key-manager.ts    # Secure key storage
-├── utils/
-│   ├── text-parser.ts        # Sentence splitting + markdown stripping
-│   └── cache.ts              # LRU in-memory cache (100MB cap)
-├── webview/            # Sidebar playback panel
-│   ├── webview-provider.ts
-│   └── media/
-│       ├── playback.js       # Web Audio API playback
-│       └── playback.css
-└── extension.ts        # Entry point
-```
+## Keybindings
 
-### Adding a New TTS Provider
+| Key | Command |
+|---|---|
+| `cmd+shift+r` / `ctrl+shift+r` | Pause / Resume |
+| `alt+j` (editor focus) | Jump playback to cursor |
 
-Implement the `ITtsProvider` interface:
+---
 
-```typescript
-interface ITtsProvider {
-  readonly name: string;
-  readonly maxCharsPerRequest: number;
-  readonly defaultVoice: string;
-  synthesize(text: string, options: TtsOptions): Promise<AudioResult>;
-  validateKey(apiKey: string): Promise<boolean>;
-}
-```
+## Commands
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+| Command | Description |
+|---|---|
+| TalkToMeBaby: Read Document | Open Reader and read the active file from the beginning |
+| TalkToMeBaby: Read from Here | Open Reader and read from the cursor position |
+| TalkToMeBaby: Read Selection | Open Reader and read from the start of the current selection |
+| TalkToMeBaby: Open Reader | Reveal the Reader panel if already open |
+| TalkToMeBaby: Pause/Resume | Toggle playback |
+| TalkToMeBaby: Stop | Stop playback and close the session |
+| TalkToMeBaby: Jump Playback to Cursor | Jump to the word at cursor in the source editor |
+| TalkToMeBaby: Select TTS Provider | Pick a provider from a quick-pick list |
+| TalkToMeBaby: Select Voice | Pick a voice for the active provider |
+| TalkToMeBaby: Set API Key | Store an API key for ElevenLabs or Sarvam |
 
-## Known Limitations
+---
 
-- Highlighting is sentence-level, not word-level (TTS APIs don't return word timestamps in their REST endpoints)
-- Supported file types: `.md` and `.txt` only
-- ElevenLabs free tier does not support API access — a paid plan is required
-- Audio is cached in memory only (cleared on VS Code reload)
+## Troubleshooting
+
+**Edge TTS produces no audio / connection error**
+Edge TTS requires an internet connection to Microsoft's speech service. If you are offline, switch to macOS say (`talktomebaby.provider: say`) or a cached document.
+
+**macOS say not available**
+The `say` provider only works on macOS. On other platforms it is hidden from the provider picker.
+
+**ElevenLabs returns 401**
+ElevenLabs free accounts may be blocked from the TTS API. A paid plan (Starter tier or higher) is recommended for API access.
+
+**First read of a long document is slow**
+Audio is synthesized in chunks as you read - subsequent sentences are prefetched in the background. Once a chunk is cached to disk, replaying it is instant and costs no API credits.
+
+**Playback highlight is off after editing**
+If you edit the document while reading, the session model becomes stale. Use the prompt that appears to restart from your current position.
+
+**Playback stopped after a VS Code reload**
+Reloading the VS Code window or restarting the extension host always ends the active session — audio is not preserved across reloads. If TalkToMeBaby saved your position (within the last 3 seconds of playback), you will be offered a "Resume?" toast on the next activation.
+
+---
+
+## Reliability
+
+**Resume after reload:** If VS Code reloads (window reload, extension host restart, OS sleep/wake), TalkToMeBaby saves your position automatically (every ~3 seconds while playing). When the extension reactivates, it offers a "Resume?" toast if a session was saved within the last 12 hours. Choosing Resume re-opens the document and jumps straight to your last sentence. Dismissing clears the saved position. The position is also cleared when you press Stop or when a document finishes naturally.
+
+Note: a reload kills the active audio session — there is no way to resume mid-sentence. Resume starts from the beginning of the sentence you were on.
+
+---
 
 ## License
 
