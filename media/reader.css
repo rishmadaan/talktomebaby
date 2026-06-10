@@ -14,10 +14,10 @@ span[data-w]:hover { outline: 1px solid var(--vscode-focusBorder); }
 .word-active { background: var(--word-color); transition: background 80ms linear; }
 #return-pill { position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%);
   padding: 0.4em 1em; border-radius: 999px; border: 1px solid var(--vscode-focusBorder);
-  background: var(--vscode-button-background); color: var(--vscode-button-foreground); cursor: pointer; }
+  background: var(--vscode-button-background); color: var(--vscode-button-foreground); cursor: pointer; z-index: 10; }
 #player-bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 0.5rem;
   align-items: center; padding: 0.5rem 1rem; flex-wrap: wrap;
-  background: var(--vscode-sideBar-background); border-top: 1px solid var(--vscode-panel-border); }
+  background: var(--vscode-sideBar-background); border-top: 1px solid var(--vscode-panel-border); z-index: 9; }
 #player-bar button { background: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground); border: none; border-radius: 4px;
   padding: 0.3em 0.7em; cursor: pointer; }

@@ -2,8 +2,9 @@ export class HighlightController {
   private activeSentence: HTMLElement | null = null;
   private activeWord: HTMLElement | null = null;
   private following = true;
-  private suppressScrollEvents = 0;
+  private scrolling = false;
   private pill: HTMLElement;
+  private aborter = new AbortController();
 
   constructor(private root: HTMLElement, private onReturn?: () => void) {
     this.pill = document.createElement("button");
@@ -14,9 +15,17 @@ export class HighlightController {
     this.pill.addEventListener("click", () => this.engageFollow());
 
     window.addEventListener("scroll", () => {
-      if (this.suppressScrollEvents > 0) { this.suppressScrollEvents--; return; }
+      if (this.scrolling) return;
       if (this.following) { this.following = false; this.pill.hidden = false; }
-    }, { passive: true });
+    }, { passive: true, signal: this.aborter.signal });
+
+    window.addEventListener("scrollend", () => { this.scrolling = false; }, { passive: true, signal: this.aborter.signal });
+  }
+
+  destroy() {
+    this.aborter.abort();
+    this.pill.remove();
+    this.clear();
   }
 
   engageFollow() {
@@ -50,7 +59,7 @@ export class HighlightController {
     const rect = this.activeSentence.getBoundingClientRect();
     const margin = window.innerHeight * 0.25;
     if (rect.top < margin || rect.bottom > window.innerHeight - margin) {
-      this.suppressScrollEvents += 2; // our own scroll fires events; don't treat as manual
+      this.scrolling = true;
       this.activeSentence.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }

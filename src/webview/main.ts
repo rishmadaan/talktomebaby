@@ -17,6 +17,11 @@ let tickTimer: ReturnType<typeof setInterval> | null = null;
 const FORMAT_MIME: Record<string, string> = { mp3: "audio/mpeg", wav: "audio/wav" };
 
 function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; fontSize: number; sentenceColor: string; wordColor: string }) {
+  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+  engine?.stop();
+  highlight?.destroy();
+  highlight = null;
+
   const root = document.getElementById("content")!;
   document.documentElement.style.setProperty("--reader-font-size", `${settings.fontSize}px`);
   if (settings.sentenceColor) document.documentElement.style.setProperty("--sentence-color", settings.sentenceColor);
@@ -24,6 +29,14 @@ function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; 
 
   renderModel(root, model);
   highlight = new HighlightController(root);
+
+  playerBar = initPlayerBar({
+    initialSpeed: settings.speed,
+    onPlayPause: () => { engine!.isPlaying ? engine!.pause() : engine!.resume(); },
+    onSpeed: (rate) => { engine!.setSpeed(rate); vscode.postMessage({ type: "speedChanged", rate }); },
+    onPrevSentence: () => jumpSentence(-1),
+    onNextSentence: () => jumpSentence(+1),
+  });
 
   engine = new Engine(model, chunks, {
     requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority }),
@@ -46,13 +59,6 @@ function init(model: DocumentModel, chunks: Chunk[], settings: { speed: number; 
   });
 
   engine.setSpeed(settings.speed);
-  playerBar = initPlayerBar({
-    initialSpeed: settings.speed,
-    onPlayPause: () => { engine!.isPlaying ? engine!.pause() : engine!.resume(); },
-    onSpeed: (rate) => { engine!.setSpeed(rate); vscode.postMessage({ type: "speedChanged", rate }); },
-    onPrevSentence: () => jumpSentence(-1),
-    onNextSentence: () => jumpSentence(+1),
-  });
 
   // click any word to jump
   root.addEventListener("click", (e) => {
@@ -98,7 +104,7 @@ window.addEventListener("message", (event) => {
     case "control":
       if (msg.action === "pause") engine?.pause();
       if (msg.action === "resume") engine?.resume();
-      if (msg.action === "stop") { engine?.stop(); highlight?.clear(); if (tickTimer) clearInterval(tickTimer); }
+      if (msg.action === "stop") { engine?.stop(); highlight?.clear(); if (tickTimer) { clearInterval(tickTimer); tickTimer = null; } }
       break;
   }
 });

@@ -233,21 +233,28 @@
       document.body.appendChild(this.pill);
       this.pill.addEventListener("click", () => this.engageFollow());
       window.addEventListener("scroll", () => {
-        if (this.suppressScrollEvents > 0) {
-          this.suppressScrollEvents--;
+        if (this.scrolling)
           return;
-        }
         if (this.following) {
           this.following = false;
           this.pill.hidden = false;
         }
-      }, { passive: true });
+      }, { passive: true, signal: this.aborter.signal });
+      window.addEventListener("scrollend", () => {
+        this.scrolling = false;
+      }, { passive: true, signal: this.aborter.signal });
     }
     activeSentence = null;
     activeWord = null;
     following = true;
-    suppressScrollEvents = 0;
+    scrolling = false;
     pill;
+    aborter = new AbortController();
+    destroy() {
+      this.aborter.abort();
+      this.pill.remove();
+      this.clear();
+    }
     engageFollow() {
       this.following = true;
       this.pill.hidden = true;
@@ -279,7 +286,7 @@
       const rect = this.activeSentence.getBoundingClientRect();
       const margin = window.innerHeight * 0.25;
       if (rect.top < margin || rect.bottom > window.innerHeight - margin) {
-        this.suppressScrollEvents += 2;
+        this.scrolling = true;
         this.activeSentence.scrollIntoView({ block: "center", behavior: "smooth" });
       }
     }
@@ -350,6 +357,13 @@
   var tickTimer = null;
   var FORMAT_MIME = { mp3: "audio/mpeg", wav: "audio/wav" };
   function init(model, chunks, settings) {
+    if (tickTimer) {
+      clearInterval(tickTimer);
+      tickTimer = null;
+    }
+    engine?.stop();
+    highlight?.destroy();
+    highlight = null;
     const root = document.getElementById("content");
     document.documentElement.style.setProperty("--reader-font-size", `${settings.fontSize}px`);
     if (settings.sentenceColor)
@@ -358,6 +372,18 @@
       document.documentElement.style.setProperty("--word-color", settings.wordColor);
     renderModel(root, model);
     highlight = new HighlightController(root);
+    playerBar = initPlayerBar({
+      initialSpeed: settings.speed,
+      onPlayPause: () => {
+        engine.isPlaying ? engine.pause() : engine.resume();
+      },
+      onSpeed: (rate) => {
+        engine.setSpeed(rate);
+        vscode.postMessage({ type: "speedChanged", rate });
+      },
+      onPrevSentence: () => jumpSentence(-1),
+      onNextSentence: () => jumpSentence(1)
+    });
     engine = new Engine(model, chunks, {
       requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority }),
       onPosition: (wordIndex, sentenceIndex) => {
@@ -377,18 +403,6 @@
       revokeUrl: (url) => URL.revokeObjectURL(url)
     });
     engine.setSpeed(settings.speed);
-    playerBar = initPlayerBar({
-      initialSpeed: settings.speed,
-      onPlayPause: () => {
-        engine.isPlaying ? engine.pause() : engine.resume();
-      },
-      onSpeed: (rate) => {
-        engine.setSpeed(rate);
-        vscode.postMessage({ type: "speedChanged", rate });
-      },
-      onPrevSentence: () => jumpSentence(-1),
-      onNextSentence: () => jumpSentence(1)
-    });
     root.addEventListener("click", (e) => {
       const target = e.target.closest("span[data-w]");
       if (!target || !engine)
@@ -438,8 +452,10 @@
         if (msg.action === "stop") {
           engine?.stop();
           highlight?.clear();
-          if (tickTimer)
+          if (tickTimer) {
             clearInterval(tickTimer);
+            tickTimer = null;
+          }
         }
         break;
     }
