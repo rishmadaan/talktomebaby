@@ -5,7 +5,7 @@
   "version": "0.3.0",
   "publisher": "rish",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/rishmadaan/read-vscode-tts" },
+  "repository": { "type": "git", "url": "https://github.com/rishmadaan/talktomebaby" },
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "keywords": ["tts", "text-to-speech", "read-aloud", "speechify", "highlight"],

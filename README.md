@@ -25,8 +25,8 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 ### Build from source
 
 ```bash
-git clone https://github.com/rishmadaan/read-vscode-tts.git
-cd read-vscode-tts
+git clone https://github.com/rishmadaan/talktomebaby.git
+cd talktomebaby
 git checkout speakittome-rebuild
 npm install
 npm run package   # produces talktomebaby-0.3.0.vsix
