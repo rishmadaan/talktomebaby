@@ -10,3 +10,4 @@ export { TtsProvider } from "./synthesis/provider";
 export { availableProviders, resolveProviderId } from "./synthesis/provider-catalog";
 export { VoiceCache } from "./synthesis/voice-cache";
 export { withTimeout } from "./synthesis/with-timeout";
+export { detectPlayer, play, playWith, hasBin, NoPlayerError, PlayerSpec, Runner } from "./playback/index";
