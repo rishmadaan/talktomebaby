@@ -82,7 +82,7 @@
     "build": "npm run compile:ext -- --minify && npm run compile:webview -- --minify",
     "test": "vitest run",
     "vscode:prepublish": "npm run build",
-    "package": "npx @vscode/vsce package"
+    "package": "npx @vscode/vsce package --no-dependencies --out talktomebaby.vsix"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
