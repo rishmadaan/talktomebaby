@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { DocumentModel } from "../core/document-model";
+import { DocumentModel } from "@talktomebaby/engine/core";
 
 export class EditorSync {
   private sentenceDeco: vscode.TextEditorDecorationType;

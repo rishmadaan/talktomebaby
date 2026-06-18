@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { DocumentModel } from "../core/document-model";
-import { ChunkTimings } from "../core/timing";
+import { DocumentModel } from "@talktomebaby/engine/core";
+import { ChunkTimings } from "@talktomebaby/engine/core";
 
 export interface ReaderSettings { speed: number; fontSize: number; sentenceColor: string; wordColor: string }
 

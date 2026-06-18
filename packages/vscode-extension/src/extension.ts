@@ -1,16 +1,11 @@
 import * as vscode from "vscode";
-import { parseDocument, DocumentModel } from "./core/document-model";
-import { buildChunks, Chunk } from "./core/chunker";
-import { SynthesisService } from "./synthesis/synthesis-service";
-import { DiskCache } from "./synthesis/disk-cache";
-import { EdgeProvider } from "./synthesis/edge";
-import { ElevenLabsProvider } from "./synthesis/elevenlabs";
-import { SayProvider } from "./synthesis/say";
-import { SarvamProvider } from "./synthesis/sarvam";
-import { TtsProvider } from "./synthesis/provider";
-import { availableProviders, resolveProviderId } from "./synthesis/provider-catalog";
-import { VoiceCache } from "./synthesis/voice-cache";
-import { withTimeout } from "./synthesis/with-timeout";
+import { parseDocument, DocumentModel } from "@talktomebaby/engine/core";
+import { buildChunks, Chunk } from "@talktomebaby/engine/core";
+import {
+  SynthesisService, DiskCache, EdgeProvider, ElevenLabsProvider,
+  SayProvider, SarvamProvider, TtsProvider, availableProviders,
+  resolveProviderId, VoiceCache, withTimeout,
+} from "@talktomebaby/engine";
 import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
 import { EditorSync } from "./ui/editor-sync";
 import { StatusBar } from "./ui/status-bar";

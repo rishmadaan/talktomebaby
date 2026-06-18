@@ -1,9 +1,9 @@
 import { Engine, AudioLike } from "./engine";
 import { renderModel } from "./renderer";
 import { HighlightController } from "./highlight";
-import { buildChunks, Chunk } from "../core/chunker";
-import { DocumentModel } from "../core/document-model";
-import { ChunkTimings } from "../core/timing";
+import { buildChunks, Chunk } from "@talktomebaby/engine/core";
+import { DocumentModel } from "@talktomebaby/engine/core";
+import { ChunkTimings } from "@talktomebaby/engine/core";
 import { initPlayerBar, PlayerBar } from "./player-bar";
 import { initSettingsPanel, SettingsPanel } from "./settings-panel";
 import { SettingsData } from "../ui/reader-panel";

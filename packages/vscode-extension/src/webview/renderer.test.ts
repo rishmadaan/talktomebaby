@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
 import { renderModel } from "./renderer";
-import { parseDocument } from "../core/document-model";
+import { parseDocument } from "@talktomebaby/engine/core";
 
 const md = ["# Title here", "", "One two. Three four!", "", "```js", "code();", "```"].join("\n");
 

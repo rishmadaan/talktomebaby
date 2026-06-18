@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { Engine, AudioLike, EngineCallbacks } from "./engine";
-import { DocumentModel } from "../core/document-model";
-import { Chunk } from "../core/chunker";
-import { ChunkTimings } from "../core/timing";
+import { DocumentModel } from "@talktomebaby/engine/core";
+import { Chunk } from "@talktomebaby/engine/core";
+import { ChunkTimings } from "@talktomebaby/engine/core";
 
 class FakeAudio implements AudioLike {
   currentTime = 0; duration = NaN; playbackRate = 1; preservesPitch = true;

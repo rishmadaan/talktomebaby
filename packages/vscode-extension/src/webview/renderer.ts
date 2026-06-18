@@ -1,4 +1,4 @@
-import { Block, DocumentModel, Sentence } from "../core/document-model";
+import { Block, DocumentModel, Sentence } from "@talktomebaby/engine/core";
 
 const TAG: Record<string, string> = {
   paragraph: "p", "list-item": "li", quote: "blockquote", code: "pre",

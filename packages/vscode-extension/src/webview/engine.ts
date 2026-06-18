@@ -1,6 +1,6 @@
-import { DocumentModel } from "../core/document-model";
-import { Chunk } from "../core/chunker";
-import { ChunkTimings } from "../core/timing";
+import { DocumentModel } from "@talktomebaby/engine/core";
+import { Chunk } from "@talktomebaby/engine/core";
+import { ChunkTimings } from "@talktomebaby/engine/core";
 
 export interface AudioLike {
   currentTime: number; duration: number; playbackRate: number; preservesPitch: boolean;
