@@ -760,7 +760,7 @@ main().then((code) => process.exit(code)).catch((e) => { log(`fatal: ${e}`); pro
 
 ```bash
 node packages/cli/dist/cli.js status
-node packages/cli/dist/cli.js install claude   # writes to a temp HOME to avoid touching the real one:
+# Install into a temp HOME so the smoke test never mutates the real ~/.claude / ~/.codex:
 HOME=$(mktemp -d) node packages/cli/dist/cli.js install claude
 HOME=$(mktemp -d) node packages/cli/dist/cli.js install codex
 echo '{}' | node packages/cli/dist/cli.js agent --agent auto    # disabled by default -> exits 0, no output
