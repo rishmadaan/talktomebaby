@@ -12,6 +12,7 @@ export interface ProviderDescriptor {
 export const PROVIDER_CATALOG: ProviderDescriptor[] = [
   { id: "edge", label: "Edge TTS", description: "Free · word-level timing", requiresKey: false },
   { id: "elevenlabs", label: "ElevenLabs", description: "Premium · word-level timing", requiresKey: true },
+  { id: "openai", label: "OpenAI", description: "Premium · estimated timing", requiresKey: true },
   { id: "say", label: "macOS say", description: "Offline · estimated timing", requiresKey: false, darwinOnly: true },
   { id: "sarvam", label: "Sarvam AI", description: "Indian English · estimated timing", requiresKey: true },
 ];
