@@ -118,8 +118,11 @@ Commands:
 - **`on | off | toggle | status`**: global enable switch (ported from
   `voice.js`). State in the XDG config.
 - **`config`**: provider / voice / scope / max length.
-- **`say "text"`** / stdin (`-`): ad-hoc read-aloud. Secondary, not a headline;
-  retained because the engine is right there. Candidate to cut if it adds noise.
+- ~~`say "text"` / stdin~~: ad-hoc read-aloud. **Cut from v1** (YAGNI). The
+  headline is agent-voice; ad-hoc read-aloud is already served by `edge-tts-cli`
+  and the macOS `say` binary, and prose reading is the VS Code member's job. Easy
+  to add post-v1 if users ask. Note: the macOS `say` *provider* is unaffected and
+  stays in the engine - this only drops the CLI *command*.
 
 Scope (ported): `full`, `first-paragraph`, `summary` (Smart - summarizer Gemini
 then OpenAI, falls back to first-paragraph with no key).
@@ -210,6 +213,10 @@ The extension is shipped; protect it.
 
 - Exact npm package names (`@talktomebaby/engine` scope availability; CLI bin name
   `talktomebaby` vs adding `ttmb` alias).
-- Whether to keep `say` in v1 or cut it (YAGNI lean: cut if it complicates).
 - Linux player preference order and whether to document an install hint when none
   is found.
+
+## Decisions
+
+- **`say` command: cut from v1** (2026-06-18, YAGNI). The macOS `say` *provider*
+  stays in the engine; only the ad-hoc read-aloud CLI command is dropped.
