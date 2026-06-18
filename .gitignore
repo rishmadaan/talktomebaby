@@ -1,5 +1,7 @@
 node_modules/
-out/
+packages/*/out/
+packages/*/dist/
+packages/*/*.vsix
 *.vsix
 .env
 .env.*
