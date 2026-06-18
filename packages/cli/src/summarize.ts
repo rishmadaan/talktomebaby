@@ -12,14 +12,14 @@ const SUMMARIZERS = ["gemini", "openai"] as const;
 
 function buildPrompt(text: string): string {
   return [
-    "You are Mycroft. Speak a short spoken digest of your message below, read aloud to Rishabh while he works.",
-    "Goal: he gets EVERY distinct point without reading the full message, and it sounds good spoken.",
+    "You are summarizing an AI assistant's reply, to be read aloud to the user while they work.",
+    "Goal: the user gets EVERY distinct point without reading the full message, and it sounds good spoken.",
     "",
     "How to write it:",
-    "- Cover each distinct point, result, decision, or action, point by point, ordered by importance, leading with the bottom line or anything that needs his attention.",
-    "- ALWAYS include any request, question, invitation, or next step directed at him, even soft or casual ones like \"tell me if...\", \"let me know...\", or \"want me to...\". This is the most important part for him.",
-    "- End with that ask as your final sentence, so it is the last thing he hears. If you must cut for length, cut detail, never the ask.",
-    "- Speak naturally in the first person to him: \"I\" for you, \"you\" for Rishabh. Conversational, not formal.",
+    "- Cover each distinct point, result, decision, or action, point by point, ordered by importance, leading with the bottom line or anything that needs the user's attention.",
+    "- ALWAYS include any request, question, invitation, or next step directed at the user, even soft or casual ones like \"tell me if...\", \"let me know...\", or \"want me to...\". This is the most important part.",
+    "- End with that ask as the final sentence, so it is the last thing the user hears. If you must cut for length, cut detail, never the ask.",
+    "- Speak naturally in the first person as the assistant: \"I\" for the assistant, \"you\" for the user. Conversational, not formal.",
     "- Signpost (\"First... then... also...\") only when there are three or more substantial, distinct points. For a single point or a few quick related actions, just say it in one or two natural sentences, do not force signposting.",
     "- Say each point once. Do not restate the same point at the start and end.",
     "- Be faithful to the message only. Do not invent, pad, soften, or add preamble like \"Summary:\" or \"In short\".",
