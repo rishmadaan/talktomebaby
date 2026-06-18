@@ -1,2 +1,11 @@
 export * from "./core/index";
-// synthesis added in Task 3
+export { SynthesisService } from "./synthesis/synthesis-service";
+export { DiskCache } from "./synthesis/disk-cache";
+export { EdgeProvider } from "./synthesis/edge";
+export { ElevenLabsProvider } from "./synthesis/elevenlabs";
+export { SayProvider } from "./synthesis/say";
+export { SarvamProvider } from "./synthesis/sarvam";
+export { TtsProvider } from "./synthesis/provider";
+export { availableProviders, resolveProviderId } from "./synthesis/provider-catalog";
+export { VoiceCache } from "./synthesis/voice-cache";
+export { withTimeout } from "./synthesis/with-timeout";
