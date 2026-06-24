@@ -37,7 +37,7 @@ code --install-extension rishmadaan.talktomebaby
 ### From VSIX
 
 ```bash
-code --install-extension talktomebaby-0.3.2.vsix
+code --install-extension packages/vscode-extension/talktomebaby.vsix
 ```
 
 Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
@@ -48,8 +48,9 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 git clone https://github.com/rishmadaan/talktomebaby.git
 cd talktomebaby
 npm install
-npm run package   # produces talktomebaby-0.3.2.vsix
-code --install-extension talktomebaby-0.3.2.vsix
+cd packages/vscode-extension
+npm run package   # runs vsce package --no-dependencies --out talktomebaby.vsix
+code --install-extension talktomebaby.vsix
 ```
 
 ---
