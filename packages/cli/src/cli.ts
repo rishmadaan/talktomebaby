@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { appendFileSync } from "fs";
 import { dirname, join } from "path";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { availableProviders } from "@talktomebaby/engine";
 import { configPath, loadConfig, saveConfig } from "./config";
 import { detectHost, discoverLatestTranscript, lastAssistantText } from "./transcripts/index";
@@ -78,6 +78,21 @@ function argFor(argv: string[], flag: string): string | undefined {
   return i !== -1 ? argv[i + 1] : undefined;
 }
 
+// The persisted hook must call a binary that still exists AFTER this process
+// exits. Bare "talktomebaby" is only durable when it resolves on PATH (global
+// install); an npx run's temp bin dir evaporates, so refuse rather than write
+// a hook that fails on every Stop event. A dev/local run persists an absolute
+// node+script invocation instead.
+function resolveHookCommand(agent: string): string {
+  const probe = spawnSync(process.platform === "win32" ? "where" : "which", ["talktomebaby"], { stdio: "ignore" });
+  if (probe.status === 0) return `talktomebaby agent --agent ${agent}`;
+  const script = process.argv[1] || "";
+  if (/[\\/]_npx[\\/]/.test(script)) {
+    throw new Error("talktomebaby is running from a temporary npx directory, so a hook pointing at it would break when npx cleans up. Install it durably first: npm i -g talktomebaby-cli, then re-run install.");
+  }
+  return `"${process.execPath}" "${script}" agent --agent ${agent}`;
+}
+
 async function main(): Promise<number> {
   const [cmd, ...rest] = process.argv.slice(2);
   try {
@@ -117,9 +132,10 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
     case "config": { return doConfig(rest); }
     case "install": {
       const target = rest[0];
-      const installers: Record<string, { path: string; fn: (p: string) => { changed: boolean }; name: string }> = {
-        claude: { path: join(homedir(), ".claude", "settings.json"), fn: installClaudeHook, name: "Claude" },
-        codex: { path: join(homedir(), ".codex", "hooks.json"), fn: installCodexHook, name: "Codex" },
+      const codexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
+      const installers: Record<string, { path: string; fn: (p: string, cmd: string) => { changed: boolean }; name: string; agent: string }> = {
+        claude: { path: join(homedir(), ".claude", "settings.json"), fn: installClaudeHook, name: "Claude", agent: "claude" },
+        codex: { path: join(codexHome, "hooks.json"), fn: installCodexHook, name: "Codex", agent: "codex" },
       };
       const inst = target ? installers[target] : undefined;
       if (!inst) { console.error("usage: talktomebaby install <claude|codex>"); return 1; }
@@ -132,10 +148,11 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
         // still sees the hook as absent and finishes. The old hook-first order
         // left an installed-but-disabled hook no retry could ever repair.
         if (!hasStopHook(inst.path)) {
+          const command = resolveHookCommand(inst.agent);
           const cfg = loadConfig({ strict: true });
           const enabled = { ...cfg, enabled: true };
           if (!cfg.enabled) saveConfig(enabled);
-          inst.fn(inst.path);
+          inst.fn(inst.path, command);
           // Spec promise: one command from install to HEARING the agent. The
           // test line is the dry-run that proves provider + player actually
           // work; a silent success here would hide a broken setup.

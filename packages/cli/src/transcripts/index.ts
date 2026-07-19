@@ -9,17 +9,21 @@ export { lastAssistantTextClaude, lastAssistantTextCodex };
 // Standalone mode auto-discovery (per the suite design spec): the most
 // recently modified transcript for the requested host, or "" if none.
 export function discoverLatestTranscript(host: "claude" | "codex" | "auto", home: string = homedir()): string {
+  const codexHome = process.env.CODEX_HOME || join(home, ".codex");
   const roots =
     host === "claude" ? [join(home, ".claude", "projects")]
-    : host === "codex" ? [join(home, ".codex", "sessions")]
-    : [join(home, ".claude", "projects"), join(home, ".codex", "sessions")];
+    : host === "codex" ? [join(codexHome, "sessions")]
+    : [join(home, ".claude", "projects"), join(codexHome, "sessions")];
   let best = "";
   let bestMtime = 0;
   for (const root of roots) {
     let names: string[];
     try { names = readdirSync(root, { recursive: true }) as string[]; } catch { continue; }
     for (const name of names) {
-      if (!String(name).endsWith(".jsonl")) continue;
+      const rel = String(name).replace(/\\/g, "/");
+      if (!rel.endsWith(".jsonl")) continue;
+      // Subagent transcripts are worker output, not the conversation.
+      if (rel.includes("/subagents/") || rel.startsWith("subagents/")) continue;
       const full = join(root, String(name));
       try {
         const m = statSync(full).mtimeMs;

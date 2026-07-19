@@ -28,6 +28,24 @@ ElevenLabs, OpenAI, and Sarvam API keys are stored through VS Code SecretStorage
 
 Keys are not written to `settings.json`, not synced by VS Code Settings Sync, not logged, and not committed by the extension.
 
+## The Terminal CLI (talktomebaby-cli)
+
+The `talktomebaby` terminal CLI (agent voice) has its own storage and data
+flows, separate from the extension:
+
+- **Keys:** read from environment variables (`OPENAI_API_KEY`,
+  `ELEVENLABS_API_KEY`, `SARVAM_API_KEY`, `GEMINI_API_KEY`) or, if you add
+  them there yourself, from `~/.config/talktomebaby/config.json`. That file is
+  written with owner-only permissions (0600) and is plain JSON, not an OS
+  credential store. `talktomebaby config` never prints stored key values.
+- **What is sent where:** the text spoken (your AI agent's latest reply, read
+  from the host's local transcript file) goes to the selected TTS provider,
+  same as the extension. In `summary` scope the reply text is additionally
+  sent to a summarizer (Gemini first, then OpenAI) to produce the short
+  spoken digest. Transcripts themselves are only ever read locally.
+- **Local state:** a log and a playback pid file live next to the config in
+  `~/.config/talktomebaby/`.
+
 ## Local Storage
 
 TalkToMeBaby stores generated audio chunks in VS Code global extension storage under `globalStorageUri/audio-cache`. The cache is local to your machine and is limited by `talktomebaby.cacheSizeMB` (default 200 MB). Cached audio may contain spoken versions of text you asked the extension to read.
