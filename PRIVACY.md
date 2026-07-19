@@ -10,6 +10,7 @@ When you start reading, TalkToMeBaby turns the current document or selection int
 |---|---:|---|
 | Edge TTS | Yes | Uses the unofficial `msedge-tts` package against the same general service family used by Microsoft Edge Read Aloud. This is best effort and may change or stop working. |
 | ElevenLabs | Yes | Uses ElevenLabs' official API with your API key. |
+| OpenAI | Yes | Uses OpenAI's official text-to-speech API with your API key. |
 | Sarvam AI | Yes | Uses Sarvam AI's official API with your API key. |
 | macOS `say` | No | Runs locally through Apple's `say` command and does not send text to a network TTS provider. macOS only. |
 
@@ -17,7 +18,7 @@ Only the text needed for the requested audio chunk is sent. TalkToMeBaby does no
 
 ## API Keys
 
-ElevenLabs and Sarvam API keys are stored through VS Code SecretStorage, backed by the operating system credential store where available:
+ElevenLabs, OpenAI, and Sarvam API keys are stored through VS Code SecretStorage, backed by the operating system credential store where available:
 
 | OS | Backing store |
 |---|---|

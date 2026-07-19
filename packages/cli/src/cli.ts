@@ -119,11 +119,14 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
       const inst = target ? installers[target] : undefined;
       if (!inst) { console.error("usage: talktomebaby install <claude|codex>"); return 1; }
       try {
+        // Validate the config BEFORE touching the host's settings: if the
+        // config is malformed, failing after the hook is written would leave a
+        // half-state a retry can't finish (hook "already present", never enabled).
+        const cfg = loadConfig({ strict: true });
         if (inst.fn(inst.path).changed) {
           // A fresh install is an explicit opt-in to agent voice: enable it so
           // the advertised onboarding command works end to end. A re-run of
           // install leaves the user's on/off choice alone.
-          const cfg = loadConfig({ strict: true });
           if (!cfg.enabled) saveConfig({ ...cfg, enabled: true });
           console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON`);
         } else {

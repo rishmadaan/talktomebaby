@@ -84,8 +84,7 @@
     "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
     "build": "npm run compile:ext -- --minify && npm run compile:webview -- --minify",
     "test": "vitest run",
-    "vscode:prepublish": "npm run build",
-    "prepackage": "node ../../scripts/stage-extension-docs.js",
+    "vscode:prepublish": "node ../../scripts/stage-extension-docs.js && npm run build",
     "package": "npx @vscode/vsce package --no-dependencies --out talktomebaby.vsix"
   },
   "devDependencies": {
