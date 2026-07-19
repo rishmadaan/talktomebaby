@@ -3,9 +3,9 @@ import { homedir, tmpdir } from "os";
 import { appendFileSync } from "fs";
 import { join } from "path";
 import { spawn } from "child_process";
+import { availableProviders } from "@talktomebaby/engine";
 import { loadConfig, saveConfig } from "./config";
-import { KNOWN_PROVIDERS } from "./providers";
-import { detectHost, lastAssistantText } from "./transcripts/index";
+import { detectHost, discoverLatestTranscript, lastAssistantText } from "./transcripts/index";
 import { speakText } from "./agent-voice";
 import { installClaudeHook } from "./hooks/claude";
 import { installCodexHook } from "./hooks/codex";
@@ -25,14 +25,18 @@ const PIDFILE = join(tmpdir(), "talktomebaby-agent.pid");
 // Newest reply wins: a new turn hushes any speech still playing from the
 // previous one instead of talking over it. The detached child is a process
 // group leader (spawned detached), so kill(-pid) takes its audio player with
-// it; kill(pid) is the fallback for a directly-run --foreground process.
+// it; kill(pid) is the fallback for a directly-run --foreground process. On
+// Windows there are no process groups, so taskkill /T fells the player tree.
 // ponytail: pidfile, no locking; a recycled pid could be mis-killed in theory.
 function hushPrevious(): void {
   try {
     const pid = Number(readFileSync(PIDFILE, "utf8").trim());
-    if (pid > 0 && pid !== process.pid) {
-      try { process.kill(-pid); } catch { try { process.kill(pid); } catch { /* already gone */ } }
+    if (!(pid > 0) || pid === process.pid) return;
+    if (process.platform === "win32") {
+      try { spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" }).unref(); } catch { /* already gone */ }
+      return;
     }
+    try { process.kill(-pid); } catch { try { process.kill(pid); } catch { /* already gone */ } }
   } catch { /* no previous job */ }
 }
 
@@ -89,14 +93,15 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
       // summarize/synthesize/play work. --foreground is that child.
       if (rest.includes("--foreground")) { await runAgent(rest); return 0; } // ALWAYS 0
       if (!loadConfig().enabled) return 0;
+      const agentPick = (argFor(rest, "--agent") as "claude" | "codex" | "auto") || "auto";
       let transcriptPath = argFor(rest, "--transcript") || "";
       if (!transcriptPath) {
         try { transcriptPath = JSON.parse(readStdin()).transcript_path || ""; } catch { /* not hook json */ }
       }
+      // Standalone with no hook JSON: speak the newest transcript for the host.
+      if (!transcriptPath) transcriptPath = discoverLatestTranscript(agentPick);
       if (!transcriptPath) return 0;
-      const args = [process.argv[1], "agent", "--foreground", "--transcript", transcriptPath];
-      const agentArg = argFor(rest, "--agent");
-      if (agentArg) args.push("--agent", agentArg);
+      const args = [process.argv[1], "agent", "--foreground", "--transcript", transcriptPath, "--agent", agentPick];
       spawn(process.execPath, args, { detached: true, stdio: "ignore" }).unref();
       return 0; // ALWAYS 0
     }
@@ -146,7 +151,10 @@ function doConfig(rest: string[]): number {
   }
   const [key, value] = rest;
   if (key === "provider" && value) {
-    if (!(KNOWN_PROVIDERS as readonly string[]).includes(value)) { console.error(`unknown provider "${value}" (valid: ${KNOWN_PROVIDERS.join(", ")})`); return 1; }
+    // The engine catalog is the single source of provider truth; filtering by
+    // platform keeps "say" out on non-macOS, where it cannot run.
+    const valid = availableProviders(process.platform).map((p) => p.id);
+    if (!valid.includes(value)) { console.error(`unknown or unavailable provider "${value}" (valid here: ${valid.join(", ")})`); return 1; }
     saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`); return 0;
   }
   if (key === "scope" && (value === "full" || value === "first-paragraph" || value === "summary")) { saveConfig({ ...c, scope: value }); console.log(`scope = ${value}`); return 0; }

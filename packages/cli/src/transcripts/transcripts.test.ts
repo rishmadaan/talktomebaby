@@ -1,4 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { promises as fs } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { discoverLatestTranscript } from "./index";
+
+describe("discoverLatestTranscript", () => {
+  let home: string;
+  beforeEach(async () => { home = await fs.mkdtemp(join(tmpdir(), "ttmb-home-")); });
+  afterEach(async () => { await fs.rm(home, { recursive: true, force: true }); });
+
+  it("returns the newest .jsonl for the host, and '' when none exist", async () => {
+    expect(discoverLatestTranscript("claude", home)).toBe("");
+    const proj = join(home, ".claude", "projects", "p1");
+    await fs.mkdir(proj, { recursive: true });
+    await fs.writeFile(join(proj, "old.jsonl"), "{}");
+    await fs.writeFile(join(proj, "new.jsonl"), "{}");
+    const past = new Date(Date.now() - 60_000);
+    await fs.utimes(join(proj, "old.jsonl"), past, past);
+    expect(discoverLatestTranscript("claude", home)).toBe(join(proj, "new.jsonl"));
+    expect(discoverLatestTranscript("auto", home)).toBe(join(proj, "new.jsonl"));
+  });
+});
 import { lastAssistantTextClaude, lastAssistantTextCodex, detectHost, lastAssistantText } from "./index";
 
 const claudeJsonl = [

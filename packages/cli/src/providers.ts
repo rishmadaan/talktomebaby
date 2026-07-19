@@ -1,8 +1,6 @@
 import { EdgeProvider, SayProvider, OpenAIProvider, ElevenLabsProvider, SarvamProvider, TtsProvider } from "@talktomebaby/engine";
 import { resolveKey } from "./config";
 
-export const KNOWN_PROVIDERS = ["edge", "say", "openai", "elevenlabs", "sarvam"] as const;
-
 export function makeProvider(providerId: string): TtsProvider {
   switch (providerId) {
     case "edge": return new EdgeProvider();

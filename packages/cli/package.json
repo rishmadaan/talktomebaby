@@ -6,7 +6,10 @@
   "bin": { "talktomebaby": "dist/cli.js" },
   "files": ["dist"],
   "scripts": {
+    "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
     "build": "esbuild src/cli.ts --bundle --outfile=dist/cli.js --platform=node --format=cjs --banner:js=\"#!/usr/bin/env node\"",
+    "prepack": "npm run build",
+    "pretest": "npm -C ../.. run build -w @talktomebaby/engine",
     "test": "tsc -p tsconfig.json --noEmit && vitest run"
   },
   "dependencies": { "@talktomebaby/engine": "*" },

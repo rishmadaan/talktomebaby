@@ -12,6 +12,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "watch": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "test": "vitest run"
   },
   "dependencies": {
