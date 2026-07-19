@@ -53,26 +53,38 @@ export function hasBin(bin: string): boolean {
   return dirs.some((d) => existsSync(join(d, bin)) || existsSync(join(d, `${bin}.exe`)));
 }
 
-/** Write audio to a temp file, run the given player spec, always clean up. */
+/**
+ * Write audio to a temp file, run the given player spec, always clean up.
+ *
+ * `dir` is an optional caller-owned private directory (the caller is
+ * responsible for its lifecycle — lets a killable worker be cleaned up
+ * externally). Without it, each call uses a fresh mkdtemp (0700, unpredictable
+ * name — never a guessable path in shared /tmp) removed after playback. The
+ * audio file itself is created exclusively with owner-only permissions.
+ */
 export async function playWith(
   audio: Uint8Array,
   format: "mp3" | "wav",
   spec: PlayerSpec,
   runner: Runner,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  dir?: string
 ): Promise<void> {
-  const file = join(tmpdir(), `talktomebaby-play-${process.pid}-${Date.now()}.${format}`);
-  await fs.writeFile(file, Buffer.from(audio));
+  const ephemeral = !dir;
+  const tempDir = dir || (await fs.mkdtemp(join(tmpdir(), "talktomebaby-")));
+  const file = join(tempDir, `play-${Date.now()}-${Math.random().toString(36).slice(2)}.${format}`);
+  await fs.writeFile(file, Buffer.from(audio), { mode: 0o600, flag: "wx" });
   try {
     await runner(spec.cmd, spec.args(file), { signal });
   } finally {
-    await fs.rm(file, { force: true });
+    if (ephemeral) await fs.rm(tempDir, { recursive: true, force: true });
+    else await fs.rm(file, { force: true });
   }
 }
 
 /** Play synthesized audio on this host. Throws NoPlayerError if no player is available. */
-export async function play(audio: Uint8Array, format: "mp3" | "wav", signal?: AbortSignal): Promise<void> {
+export async function play(audio: Uint8Array, format: "mp3" | "wav", signal?: AbortSignal, dir?: string): Promise<void> {
   const spec = detectPlayer(process.platform, hasBin, format);
   if (!spec) throw new NoPlayerError(process.platform, format);
-  await playWith(audio, format, spec, run as Runner, signal);
+  await playWith(audio, format, spec, run as Runner, signal, dir);
 }

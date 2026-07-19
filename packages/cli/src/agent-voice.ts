@@ -1,5 +1,7 @@
+import { mkdirSync, rmSync } from "fs";
+import { dirname, join } from "path";
 import { parseDocument, buildChunks, play, Chunk } from "@talktomebaby/engine";
-import { CliConfig } from "./config";
+import { CliConfig, configPath } from "./config";
 import { capLength, cleanForSpeech, firstParagraph } from "./clean-text";
 import { summarize } from "./summarize";
 import { makeProvider } from "./providers";
@@ -31,9 +33,18 @@ export function splitAtProviderLimit(chunks: Chunk[], limit: number): Chunk[] {
 
 async function defaultSink(chunks: Chunk[], providerId: string, voice: string, signal: AbortSignal): Promise<void> {
   const provider = makeProvider(providerId);
-  for (const chunk of splitAtProviderLimit(chunks, provider.maxCharsPerRequest)) {
-    const out = await provider.synthesize(chunk, voice, signal);
-    await play(out.audio, out.format, signal);
+  // Per-process audio dir under the user-owned config dir (not shared /tmp):
+  // a hushed (killed) worker cannot run its own cleanup, so the next agent
+  // run sweeps dead workers' dirs instead (see cleanStaleAudio in cli.ts).
+  const audioDir = join(dirname(configPath()), "audio", String(process.pid));
+  mkdirSync(audioDir, { recursive: true, mode: 0o700 });
+  try {
+    for (const chunk of splitAtProviderLimit(chunks, provider.maxCharsPerRequest)) {
+      const out = await provider.synthesize(chunk, voice, signal);
+      await play(out.audio, out.format, signal, audioDir);
+    }
+  } finally {
+    rmSync(audioDir, { recursive: true, force: true });
   }
 }
 

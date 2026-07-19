@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { appendFileSync } from "fs";
 import { dirname, join } from "path";
@@ -45,12 +45,29 @@ function hushPrevious(): void {
   } catch { /* no previous job */ }
 }
 
+// A hushed worker is killed mid-play and cannot run its own cleanup, so each
+// new worker sweeps audio dirs left by workers that are no longer alive.
+// ponytail: kill(pid, 0) liveness; a just-killed pid may linger one round.
+function cleanStaleAudio(): void {
+  const root = join(STATE_DIR, "audio");
+  let entries: string[] = [];
+  try { entries = readdirSync(root); } catch { return; }
+  for (const entry of entries) {
+    const pid = Number(entry);
+    if (pid === process.pid) continue;
+    let alive = false;
+    if (pid > 0) { try { process.kill(pid, 0); alive = true; } catch { /* dead */ } }
+    if (!alive) { try { rmSync(join(root, entry), { recursive: true, force: true }); } catch { /* next run */ } }
+  }
+}
+
 async function runAgent(argv: string[]): Promise<void> {
   // NEVER throws to the host: every path resolves and the caller exits 0.
   try {
     const cfg = loadConfig();
     if (!cfg.enabled) return;
     hushPrevious();
+    cleanStaleAudio();
     try { mkdirSync(STATE_DIR, { recursive: true }); writeFileSync(PIDFILE, String(process.pid)); } catch { /* best effort */ }
     const agentArg = argFor(argv, "--agent");
     const tpArg = argFor(argv, "--transcript");
@@ -84,12 +101,17 @@ function argFor(argv: string[], flag: string): string | undefined {
 // a hook that fails on every Stop event. A dev/local run persists an absolute
 // node+script invocation instead.
 function resolveHookCommand(agent: string): string {
-  const probe = spawnSync(process.platform === "win32" ? "where" : "which", ["talktomebaby"], { stdio: "ignore" });
-  if (probe.status === 0) return `talktomebaby agent --agent ${agent}`;
+  // npx puts its TEMPORARY bin dir on PATH, so the npx check must come before
+  // trusting a successful `which`: both the running script and the resolved
+  // binary are rejected if they live under an _npx cache dir.
+  const isNpx = (p: string) => /[\\/]_npx[\\/]/.test(p);
   const script = process.argv[1] || "";
-  if (/[\\/]_npx[\\/]/.test(script)) {
+  const probe = spawnSync(process.platform === "win32" ? "where" : "which", ["talktomebaby"], { encoding: "utf8" });
+  const resolved = probe.status === 0 ? String(probe.stdout).split(/\r?\n/)[0].trim() : "";
+  if (isNpx(script) || isNpx(resolved)) {
     throw new Error("talktomebaby is running from a temporary npx directory, so a hook pointing at it would break when npx cleans up. Install it durably first: npm i -g talktomebaby-cli, then re-run install.");
   }
+  if (resolved) return `talktomebaby agent --agent ${agent}`;
   return `"${process.execPath}" "${script}" agent --agent ${agent}`;
 }
 
