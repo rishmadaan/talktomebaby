@@ -31,7 +31,9 @@ export function detectPlayer(
   if (has("mpv")) return mpv;
 
   if (platform === "win32") {
-    if (format === "wav") return { cmd: "powershell", args: (f) => ["-NoProfile", "-Command", `(New-Object Media.SoundPlayer '${f}').PlaySync()`] };
+    // PS single-quoted literal: apostrophes in the path (C:\Users\O'Connor)
+    // are escaped by doubling them.
+    if (format === "wav") return { cmd: "powershell", args: (f) => ["-NoProfile", "-Command", `(New-Object Media.SoundPlayer '${f.replace(/'/g, "''")}').PlaySync()`] };
     return null;
   }
 

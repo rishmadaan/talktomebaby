@@ -71,6 +71,16 @@ function argFor(argv: string[], flag: string): string | undefined {
 
 async function main(): Promise<number> {
   const [cmd, ...rest] = process.argv.slice(2);
+  try {
+    return await dispatch(cmd, rest);
+  } catch (e) {
+    // A strict config load refusing to clobber a malformed file lands here.
+    console.error(e instanceof Error ? e.message : String(e));
+    return cmd === "agent" ? 0 : 1; // agent NEVER fails the host
+  }
+}
+
+async function dispatch(cmd: string | undefined, rest: string[]): Promise<number> {
   switch (cmd) {
     case "agent": {
       // The host's Stop hook waits for this command, so it must return
@@ -90,9 +100,9 @@ async function main(): Promise<number> {
       spawn(process.execPath, args, { detached: true, stdio: "ignore" }).unref();
       return 0; // ALWAYS 0
     }
-    case "on": { saveConfig({ ...loadConfig(), enabled: true }); console.log("talktomebaby voice ON"); return 0; }
-    case "off": { saveConfig({ ...loadConfig(), enabled: false }); console.log("talktomebaby voice OFF"); return 0; }
-    case "toggle": { const c = loadConfig(); saveConfig({ ...c, enabled: !c.enabled }); console.log(`talktomebaby voice ${!c.enabled ? "ON" : "OFF"}`); return 0; }
+    case "on": { saveConfig({ ...loadConfig({ strict: true }), enabled: true }); console.log("talktomebaby voice ON"); return 0; }
+    case "off": { saveConfig({ ...loadConfig({ strict: true }), enabled: false }); console.log("talktomebaby voice OFF"); return 0; }
+    case "toggle": { const c = loadConfig({ strict: true }); saveConfig({ ...c, enabled: !c.enabled }); console.log(`talktomebaby voice ${!c.enabled ? "ON" : "OFF"}`); return 0; }
     case "status": { const c = loadConfig(); console.log(`talktomebaby voice ${c.enabled ? "ON" : "OFF"} (${c.provider}, ${c.scope})`); return 0; }
     case "config": { return doConfig(rest); }
     case "install": {
@@ -108,7 +118,7 @@ async function main(): Promise<number> {
           // A fresh install is an explicit opt-in to agent voice: enable it so
           // the advertised onboarding command works end to end. A re-run of
           // install leaves the user's on/off choice alone.
-          const cfg = loadConfig();
+          const cfg = loadConfig({ strict: true });
           if (!cfg.enabled) saveConfig({ ...cfg, enabled: true });
           console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON`);
         } else {
@@ -127,8 +137,13 @@ async function main(): Promise<number> {
 }
 
 function doConfig(rest: string[]): number {
-  const c = loadConfig();
-  if (rest.length === 0) { console.log(JSON.stringify(c, null, 2)); return 0; }
+  const c = loadConfig({ strict: true });
+  if (rest.length === 0) {
+    // Never print stored key values; show which providers have one.
+    const shown = { ...c, keys: c.keys ? Object.fromEntries(Object.keys(c.keys).map((k) => [k, "<set>"])) : undefined };
+    console.log(JSON.stringify(shown, null, 2));
+    return 0;
+  }
   const [key, value] = rest;
   if (key === "provider" && value) {
     if (!(KNOWN_PROVIDERS as readonly string[]).includes(value)) { console.error(`unknown provider "${value}" (valid: ${KNOWN_PROVIDERS.join(", ")})`); return 1; }

@@ -36,6 +36,15 @@ describe("config", () => {
     expect(c.provider).toBe("openai");
   });
 
+  it("strict load throws on malformed JSON; tolerant load falls back to defaults", async () => {
+    const { loadConfig, configPath } = await import("./config");
+    await fs.mkdir(join(dir, "talktomebaby"), { recursive: true });
+    await fs.writeFile(configPath(), "{ not json");
+    expect(() => loadConfig({ strict: true })).toThrow(/not valid JSON/);
+    expect(loadConfig().provider).toBe("edge"); // tolerant read path
+    expect(await fs.readFile(configPath(), "utf8")).toBe("{ not json"); // untouched
+  });
+
   it("resolveKey prefers env var over config", async () => {
     const { resolveKey, saveConfig, loadConfig } = await import("./config");
     saveConfig({ ...loadConfig(), keys: { openai: "from-config" } } as any);

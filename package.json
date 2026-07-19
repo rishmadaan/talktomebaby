@@ -8,6 +8,7 @@
     "pretest": "npm run build -w @talktomebaby/engine",
     "test": "npm run test --workspaces --if-present",
     "compile": "npm run build -w @talktomebaby/engine && npm run compile -w talktomebaby",
+    "prewatch": "npm run build -w @talktomebaby/engine",
     "watch": "npm run watch -w talktomebaby",
     "package": "npm run package -w talktomebaby"
   },

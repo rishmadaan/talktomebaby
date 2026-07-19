@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { dirname, join } from "path";
 
@@ -28,11 +28,21 @@ export function configPath(): string {
   return join(base, "talktomebaby", "config.json");
 }
 
-export function loadConfig(): CliConfig {
+// strict: a mutating caller (on/off/config set/install) must not read a
+// malformed file as defaults and then write those defaults over it, silently
+// discarding the user's settings and keys. Read paths stay tolerant.
+export function loadConfig(opts: { strict?: boolean } = {}): CliConfig {
+  let text: string;
   try {
-    const raw = JSON.parse(readFileSync(configPath(), "utf8"));
+    text = readFileSync(configPath(), "utf8");
+  } catch {
+    return { ...DEFAULT_CONFIG }; // missing file: defaults are correct
+  }
+  try {
+    const raw = JSON.parse(text);
     return { ...DEFAULT_CONFIG, ...raw, voice: { ...DEFAULT_CONFIG.voice, ...(raw.voice || {}) } };
   } catch {
+    if (opts.strict) throw new Error(`${configPath()} is not valid JSON; fix or remove it and re-run`);
     return { ...DEFAULT_CONFIG };
   }
 }
@@ -40,8 +50,10 @@ export function loadConfig(): CliConfig {
 export function saveConfig(c: CliConfig): CliConfig {
   const p = configPath();
   mkdirSync(dirname(p), { recursive: true });
-  // 600: the config may hold API keys.
+  // 600: the config may hold API keys. mode only applies on create, so chmod
+  // too for a file that already existed with looser permissions.
   writeFileSync(p, JSON.stringify(c, null, 2), { mode: 0o600 });
+  try { chmodSync(p, 0o600); } catch { /* windows: best effort */ }
   return c;
 }
 
