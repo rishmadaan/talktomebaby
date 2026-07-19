@@ -519,7 +519,15 @@ export function activate(context: vscode.ExtensionContext) {
       const stored = await keys.promptAndStore(pick);
       // A new key may expose different voices (different plan tier), so evict
       // the cached voice list so the next fetch reflects the new credentials.
-      if (stored) voiceCache.invalidate(pick);
+      if (stored) {
+        voiceCache.invalidate(pick);
+        // The active provider captured the OLD key at construction; rebuild it
+        // so a rotated key takes effect without restarting the session.
+        if (session && session.provider.id === pick) {
+          const rebuilt = await makeProviderById(pick, keys);
+          if (rebuilt) await reconfigureActive(rebuilt, session.voice);
+        }
+      }
     }),
     { dispose() { session?.dispose(); } }
   );

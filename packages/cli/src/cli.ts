@@ -1,17 +1,22 @@
-import { readFileSync, writeFileSync } from "fs";
-import { homedir, tmpdir } from "os";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { homedir } from "os";
 import { appendFileSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
 import { spawn } from "child_process";
 import { availableProviders } from "@talktomebaby/engine";
-import { loadConfig, saveConfig } from "./config";
+import { configPath, loadConfig, saveConfig } from "./config";
 import { detectHost, discoverLatestTranscript, lastAssistantText } from "./transcripts/index";
 import { speakText } from "./agent-voice";
 import { installClaudeHook } from "./hooks/claude";
 import { installCodexHook } from "./hooks/codex";
+import { hasStopHook } from "./hooks/install";
 
-const LOG = join(tmpdir(), "talktomebaby.log");
-function log(m: string) { try { appendFileSync(LOG, `[${new Date().toISOString()}] ${m}\n`); } catch { /* never throw */ } }
+// Runtime state (log, pidfile) lives beside the config in the user-owned
+// config dir, never in shared /tmp, where predictable names invite another
+// user's pre-created file or symlink (mis-signal / truncation).
+const STATE_DIR = dirname(configPath());
+const LOG = join(STATE_DIR, "talktomebaby.log");
+function log(m: string) { try { mkdirSync(STATE_DIR, { recursive: true }); appendFileSync(LOG, `[${new Date().toISOString()}] ${m}\n`); } catch { /* never throw */ } }
 
 function readStdin(): string {
   // Only read stdin when it is piped: readFileSync(0) on an interactive TTY
@@ -20,7 +25,7 @@ function readStdin(): string {
   try { return readFileSync(0, "utf8"); } catch { return ""; }
 }
 
-const PIDFILE = join(tmpdir(), "talktomebaby-agent.pid");
+const PIDFILE = join(STATE_DIR, "agent.pid");
 
 // Newest reply wins: a new turn hushes any speech still playing from the
 // previous one instead of talking over it. The detached child is a process
@@ -46,7 +51,7 @@ async function runAgent(argv: string[]): Promise<void> {
     const cfg = loadConfig();
     if (!cfg.enabled) return;
     hushPrevious();
-    try { writeFileSync(PIDFILE, String(process.pid)); } catch { /* best effort */ }
+    try { mkdirSync(STATE_DIR, { recursive: true }); writeFileSync(PIDFILE, String(process.pid)); } catch { /* best effort */ }
     const agentArg = argFor(argv, "--agent");
     const tpArg = argFor(argv, "--transcript");
     let host = (agentArg as "claude" | "codex" | "auto") || "auto";
@@ -119,16 +124,18 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
       const inst = target ? installers[target] : undefined;
       if (!inst) { console.error("usage: talktomebaby install <claude|codex>"); return 1; }
       try {
-        // Validate the config BEFORE touching the host's settings: if the
-        // config is malformed, failing after the hook is written would leave a
-        // half-state a retry can't finish (hook "already present", never enabled).
-        const cfg = loadConfig({ strict: true });
-        if (inst.fn(inst.path).changed) {
-          // A fresh install is an explicit opt-in to agent voice: enable it so
-          // the advertised onboarding command works end to end. A re-run of
-          // install leaves the user's on/off choice alone.
+        // Order every write so a failure at any point is retryable:
+        // 1. strict config load (malformed config -> stop before touching anything)
+        // 2. enable voice (a fresh install is an explicit opt-in; harmless alone)
+        // 3. write the host hook
+        // A crash between 2 and 3 leaves voice enabled with no hook; the retry
+        // still sees the hook as absent and finishes. The old hook-first order
+        // left an installed-but-disabled hook no retry could ever repair.
+        if (!hasStopHook(inst.path)) {
+          const cfg = loadConfig({ strict: true });
           const enabled = { ...cfg, enabled: true };
           if (!cfg.enabled) saveConfig(enabled);
+          inst.fn(inst.path);
           // Spec promise: one command from install to HEARING the agent. The
           // test line is the dry-run that proves provider + player actually
           // work; a silent success here would hide a broken setup.

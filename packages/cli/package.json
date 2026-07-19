@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "commonjs",
+  "engines": { "node": ">=20" },
   "bin": { "talktomebaby": "dist/cli.js" },
   "files": ["dist"],
   "scripts": {
