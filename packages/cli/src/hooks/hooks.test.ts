@@ -29,6 +29,13 @@ describe("installClaudeHook", () => {
     expect(JSON.parse(readFileSync(p, "utf8")).model).toBe("x");
   });
 
+  it("recognizes an absolute-fallback command as already installed", async () => {
+    const p = join(dir, "settings.json");
+    const abs = `"/usr/bin/node" "/home/x/talktomebaby/packages/cli/dist/cli.js" agent --agent claude`;
+    installClaudeHook(p, abs);
+    expect(installClaudeHook(p).changed).toBe(false); // no duplicate appended
+  });
+
   it("refuses to overwrite a malformed settings file", async () => {
     const p = join(dir, "settings.json");
     await fs.writeFile(p, "{ not json");

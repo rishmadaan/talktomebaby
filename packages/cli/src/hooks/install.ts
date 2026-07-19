@@ -1,7 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname } from "path";
 
-const MARKER = "talktomebaby agent";
+// A hook is ours if it invokes talktomebaby's agent mode in ANY persisted
+// form: bare `talktomebaby agent ...` or the absolute dev/local fallback
+// `"node" ".../talktomebaby*/.../cli.js" agent ...` — a contiguous-substring
+// marker missed the latter and re-appended the hook on every dev install.
+function isOurCommand(command: string): boolean {
+  return command.includes("talktomebaby") && /\bagent\b/.test(command);
+}
 
 // Shared Stop-hook installer for both hosts. Idempotent by MARKER. Refuses to
 // touch a file it cannot parse: overwriting a malformed settings file would
@@ -21,7 +27,7 @@ function readSettings(settingsPath: string): any {
 function containsHook(cfg: any): boolean {
   const stop = cfg?.hooks?.Stop;
   if (!Array.isArray(stop)) return false;
-  return stop.some((g: any) => (g.hooks || []).some((h: any) => typeof h.command === "string" && h.command.includes(MARKER)));
+  return stop.some((g: any) => (g.hooks || []).some((h: any) => typeof h.command === "string" && isOurCommand(h.command)));
 }
 
 // Presence probe: lets the installer sequence its config write BEFORE the hook

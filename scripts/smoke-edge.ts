@@ -1,7 +1,7 @@
 import { writeFileSync } from "fs";
-import { EdgeProvider } from "../src/synthesis/edge";
-import { parseDocument } from "../src/core/document-model";
-import { buildChunks } from "../src/core/chunker";
+import { EdgeProvider } from "../packages/engine/src/synthesis/edge";
+import { parseDocument } from "../packages/engine/src/core/document-model";
+import { buildChunks } from "../packages/engine/src/core/chunker";
 
 async function main() {
   const model = parseDocument(

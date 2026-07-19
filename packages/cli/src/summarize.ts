@@ -10,6 +10,16 @@ export const OPENAI_MODEL = "gpt-4o-mini";
 const TIMEOUT_MS = 8000;
 const SUMMARIZERS = ["gemini", "openai"] as const;
 
+// Model-input cap that keeps BOTH ends: the ask to the user usually lives at
+// the tail, and a head-only slice would summarize it away (the same failure
+// speakText's summarize-before-cap ordering exists to prevent).
+export function limitForModel(text: string, max = 12000): string {
+  if (text.length <= max) return text;
+  const head = Math.floor(max * 2 / 3);
+  const tail = max - head;
+  return `${text.slice(0, head)}\n[... middle omitted ...]\n${text.slice(-tail)}`;
+}
+
 function buildPrompt(text: string): string {
   return [
     "You are summarizing an AI assistant's reply, to be read aloud to the user while they work.",
@@ -28,7 +38,7 @@ function buildPrompt(text: string): string {
     "- Be as tight as possible while still covering every point; never exceed about six short sentences.",
     "",
     "Message to summarize:",
-    String(text).slice(0, 12000),
+    limitForModel(String(text)),
   ].join("\n");
 }
 
