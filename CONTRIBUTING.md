@@ -16,7 +16,7 @@ See [AGENTS.md](AGENTS.md) for the full source layout and key invariants — rea
 
 ```bash
 npm run compile   # dev build
-npm test          # vitest — 63 tests, no VS Code runtime needed
+npm test          # vitest — 119 tests across the three workspaces, no VS Code runtime needed
 ```
 
 ## Before Submitting a PR
