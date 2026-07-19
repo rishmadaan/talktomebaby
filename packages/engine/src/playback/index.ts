@@ -33,8 +33,12 @@ export function detectPlayer(
   if (platform === "win32") {
     // PS single-quoted literal: apostrophes in the path (C:\Users\O'Connor)
     // are escaped by doubling them.
-    if (format === "wav") return { cmd: "powershell", args: (f) => ["-NoProfile", "-Command", `(New-Object Media.SoundPlayer '${f.replace(/'/g, "''")}').PlaySync()`] };
-    return null;
+    const esc = (f: string) => f.replace(/'/g, "''");
+    if (format === "wav") return { cmd: "powershell", args: (f) => ["-NoProfile", "-Command", `(New-Object Media.SoundPlayer '${esc(f)}').PlaySync()`] };
+    // MP3 (the default Edge provider's output): WPF MediaPlayer plays it with
+    // no external binary. Poll until the clip ends, with a deadline so a file
+    // that never opens cannot hang the player process forever.
+    return { cmd: "powershell", args: (f) => ["-NoProfile", "-STA", "-Command", `Add-Type -AssemblyName PresentationCore; $p = New-Object System.Windows.Media.MediaPlayer; $p.Open([Uri]::new('${esc(f)}')); $p.Play(); $deadline = (Get-Date).AddMinutes(30); while ((-not $p.NaturalDuration.HasTimeSpan -or $p.Position -lt $p.NaturalDuration.TimeSpan) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }; $p.Close()`] };
   }
 
   if (format === "mp3" && has("mpg123")) return { cmd: "mpg123", args: (f) => ["-q", f] };

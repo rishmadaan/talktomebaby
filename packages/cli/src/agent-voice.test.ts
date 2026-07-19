@@ -1,6 +1,17 @@
 import { describe, it, expect, vi } from "vitest";
-import { speakText } from "./agent-voice";
+import { speakText, splitAtProviderLimit } from "./agent-voice";
 import { DEFAULT_CONFIG } from "./config";
+
+describe("splitAtProviderLimit", () => {
+  it("passes small chunks through and hard-splits oversized ones at word boundaries", () => {
+    const chunk = { index: 0, text: "word ".repeat(100).trim(), sentenceIndexes: [0], words: [] };
+    expect(splitAtProviderLimit([chunk], 1000)).toHaveLength(1);
+    const split = splitAtProviderLimit([chunk], 120);
+    expect(split.length).toBeGreaterThan(1);
+    for (const c of split) expect(c.text.length).toBeLessThanOrEqual(120);
+    expect(split.map((c) => c.text).join(" ")).toBe(chunk.text); // nothing lost
+  });
+});
 
 describe("speakText", () => {
   it("cleans markdown and plays each chunk via the injected sink", async () => {

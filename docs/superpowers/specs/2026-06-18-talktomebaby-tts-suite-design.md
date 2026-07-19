@@ -163,7 +163,9 @@ host Stop hook fires
 - **Extension** -> VS Code Marketplace (`rishmadaan.talktomebaby`, already live).
   Republish from `packages/vscode-extension`, version-bumped. Non-destructive: do
   not break v0.3.2 installs.
-- **CLI** -> npm: `npm i -g talktomebaby`, or zero-install `npx talktomebaby ...`.
+- **CLI** -> npm: `npm i -g talktomebaby-cli`, or zero-install `npx talktomebaby-cli ...`
+  (the bin is still `talktomebaby`; the bare npm name is taken by the extension
+  workspace, whose marketplace identity cannot change — reconciled 2026-07-19).
 - Repo stays public on GitHub (LICENSE/CONTRIBUTING/SECURITY already present).
   README documents the suite (engine + two surfaces).
 - v1 = publish + share with the community directly; no marketing campaign.

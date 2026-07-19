@@ -127,8 +127,17 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           // A fresh install is an explicit opt-in to agent voice: enable it so
           // the advertised onboarding command works end to end. A re-run of
           // install leaves the user's on/off choice alone.
-          if (!cfg.enabled) saveConfig({ ...cfg, enabled: true });
-          console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON`);
+          const enabled = { ...cfg, enabled: true };
+          if (!cfg.enabled) saveConfig(enabled);
+          // Spec promise: one command from install to HEARING the agent. The
+          // test line is the dry-run that proves provider + player actually
+          // work; a silent success here would hide a broken setup.
+          const test = await speakText(`TalkToMeBaby is ready. I will read ${inst.name}'s replies aloud.`, enabled);
+          if (test.ok) {
+            console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON (test line spoken)`);
+          } else {
+            console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON, but the test line FAILED${test.error ? `: ${test.error}` : ""}. Check your provider/key with: talktomebaby config`);
+          }
         } else {
           console.log(`${inst.name} hook already present at ${inst.path}`);
         }
@@ -161,7 +170,17 @@ function doConfig(rest: string[]): number {
     saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`); return 0;
   }
   if (key === "scope" && (value === "full" || value === "first-paragraph" || value === "summary")) { saveConfig({ ...c, scope: value }); console.log(`scope = ${value}`); return 0; }
-  console.error("usage: talktomebaby config [provider <id> | scope <full|first-paragraph|summary>]"); return 1;
+  if (key === "voice" && value && rest[2]) {
+    const known = availableProviders(process.platform).map((p) => p.id);
+    if (!known.includes(value)) { console.error(`unknown or unavailable provider "${value}" (valid here: ${known.join(", ")})`); return 1; }
+    saveConfig({ ...c, voice: { ...c.voice, [value]: rest[2] } }); console.log(`voice.${value} = ${rest[2]}`); return 0;
+  }
+  if (key === "max-chars" && value) {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n <= 0) { console.error(`max-chars must be a positive integer, got "${value}"`); return 1; }
+    saveConfig({ ...c, maxChars: n }); console.log(`maxChars = ${n}`); return 0;
+  }
+  console.error("usage: talktomebaby config [provider <id> | scope <full|first-paragraph|summary> | voice <provider> <voice-id> | max-chars <n>]"); return 1;
 }
 
 main().then((code) => process.exit(code)).catch((e) => { log(`fatal: ${e}`); process.exit(0); });

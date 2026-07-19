@@ -8,9 +8,30 @@ export interface SpeakDeps {
   synthesizeAndPlay?: (chunks: Chunk[], providerId: string, voice: string, signal: AbortSignal) => Promise<void>;
 }
 
+// The semantic chunker only splits between sentences, so one giant sentence
+// can exceed a provider's per-request limit (Sarvam silently slices at its
+// cap). Hard-split any oversized chunk at word boundaries before synthesis;
+// word timing refs are dropped, which the CLI never uses (audio only).
+export function splitAtProviderLimit(chunks: Chunk[], limit: number): Chunk[] {
+  if (!limit || limit <= 0) return chunks;
+  const out: Chunk[] = [];
+  for (const chunk of chunks) {
+    if (chunk.text.length <= limit) { out.push({ ...chunk, index: out.length }); continue; }
+    let rest = chunk.text;
+    while (rest.length > limit) {
+      const slice = rest.slice(0, limit);
+      const cut = slice.lastIndexOf(" ") > limit * 0.5 ? slice.lastIndexOf(" ") : limit;
+      out.push({ index: out.length, text: rest.slice(0, cut).trim(), sentenceIndexes: chunk.sentenceIndexes, words: [] });
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) out.push({ index: out.length, text: rest, sentenceIndexes: chunk.sentenceIndexes, words: [] });
+  }
+  return out;
+}
+
 async function defaultSink(chunks: Chunk[], providerId: string, voice: string, signal: AbortSignal): Promise<void> {
   const provider = makeProvider(providerId);
-  for (const chunk of chunks) {
+  for (const chunk of splitAtProviderLimit(chunks, provider.maxCharsPerRequest)) {
     const out = await provider.synthesize(chunk, voice, signal);
     await play(out.audio, out.format, signal);
   }
