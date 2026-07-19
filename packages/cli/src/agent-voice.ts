@@ -16,7 +16,7 @@ async function defaultSink(chunks: Chunk[], providerId: string, voice: string, s
   }
 }
 
-export async function speakText(text: string, cfg: CliConfig, deps: SpeakDeps = {}): Promise<{ ok: boolean; spoken: string }> {
+export async function speakText(text: string, cfg: CliConfig, deps: SpeakDeps = {}): Promise<{ ok: boolean; spoken: string; error?: string }> {
   try {
     let spoken = cleanForSpeech(text, { scope: cfg.scope === "summary" ? "full" : cfg.scope, maxChars: cfg.maxChars });
     if (!spoken.trim()) return { ok: false, spoken: "" };
@@ -29,7 +29,9 @@ export async function speakText(text: string, cfg: CliConfig, deps: SpeakDeps = 
     const sink = deps.synthesizeAndPlay || defaultSink;
     await sink(chunks, cfg.provider, voice, new AbortController().signal);
     return { ok: true, spoken };
-  } catch {
-    return { ok: false, spoken: "" };
+  } catch (e) {
+    // Never throws to the caller, but the reason must survive so the agent
+    // path can log it: a missing key or dead player is otherwise invisible.
+    return { ok: false, spoken: "", error: e instanceof Error ? e.message : String(e) };
   }
 }

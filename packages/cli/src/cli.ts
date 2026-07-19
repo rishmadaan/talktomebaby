@@ -12,6 +12,9 @@ const LOG = join(tmpdir(), "talktomebaby.log");
 function log(m: string) { try { appendFileSync(LOG, `[${new Date().toISOString()}] ${m}\n`); } catch { /* never throw */ } }
 
 function readStdin(): string {
+  // Only read stdin when it is piped: readFileSync(0) on an interactive TTY
+  // blocks until EOF, which would hang a bare `talktomebaby agent`.
+  if (process.stdin.isTTY) return "";
   try { return readFileSync(0, "utf8"); } catch { return ""; }
 }
 
@@ -34,7 +37,8 @@ async function runAgent(argv: string[]): Promise<void> {
     if (resolvedHost === "unknown") return;
     const text = lastAssistantText(jsonl, resolvedHost);
     if (!text.trim()) return;
-    await speakText(text, cfg);
+    const res = await speakText(text, cfg);
+    if (!res.ok && res.error) log(`speak failed: ${res.error}`);
   } catch (e) {
     log(`agent error: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -56,9 +60,28 @@ async function main(): Promise<number> {
     case "config": { return doConfig(rest); }
     case "install": {
       const target = rest[0];
-      if (target === "claude") { const p = join(homedir(), ".claude", "settings.json"); console.log(installClaudeHook(p).changed ? `Installed Claude hook at ${p}` : `Claude hook already present at ${p}`); return 0; }
-      if (target === "codex") { const p = join(homedir(), ".codex", "hooks.json"); console.log(installCodexHook(p).changed ? `Installed Codex hook at ${p}` : `Codex hook already present at ${p}`); return 0; }
-      console.error("usage: talktomebaby install <claude|codex>"); return 1;
+      const installers: Record<string, { path: string; fn: (p: string) => { changed: boolean }; name: string }> = {
+        claude: { path: join(homedir(), ".claude", "settings.json"), fn: installClaudeHook, name: "Claude" },
+        codex: { path: join(homedir(), ".codex", "hooks.json"), fn: installCodexHook, name: "Codex" },
+      };
+      const inst = target ? installers[target] : undefined;
+      if (!inst) { console.error("usage: talktomebaby install <claude|codex>"); return 1; }
+      try {
+        if (inst.fn(inst.path).changed) {
+          // A fresh install is an explicit opt-in to agent voice: enable it so
+          // the advertised onboarding command works end to end. A re-run of
+          // install leaves the user's on/off choice alone.
+          const cfg = loadConfig();
+          if (!cfg.enabled) saveConfig({ ...cfg, enabled: true });
+          console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON`);
+        } else {
+          console.log(`${inst.name} hook already present at ${inst.path}`);
+        }
+        return 0;
+      } catch (e) {
+        console.error(e instanceof Error ? e.message : String(e));
+        return 1;
+      }
     }
     default:
       console.log("talktomebaby <agent|install|on|off|toggle|status|config>");

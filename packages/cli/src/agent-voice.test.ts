@@ -14,11 +14,12 @@ describe("speakText", () => {
     expect(played.join(" ")).toContain("test");
   });
 
-  it("never throws and reports ok:false when the sink fails", async () => {
+  it("never throws and reports ok:false with the reason when the sink fails", async () => {
     const res = await speakText("hello", { ...DEFAULT_CONFIG }, {
       synthesizeAndPlay: async () => { throw new Error("boom"); },
     });
     expect(res.ok).toBe(false);
+    expect(res.error).toContain("boom");
   });
 
   it("returns ok:false for empty text without calling the sink", async () => {

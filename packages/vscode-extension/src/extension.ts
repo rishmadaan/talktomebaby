@@ -3,7 +3,7 @@ import { parseDocument, DocumentModel } from "@talktomebaby/engine/core";
 import { buildChunks, Chunk } from "@talktomebaby/engine/core";
 import {
   SynthesisService, DiskCache, EdgeProvider, ElevenLabsProvider,
-  SayProvider, SarvamProvider, TtsProvider, availableProviders,
+  OpenAIProvider, SayProvider, SarvamProvider, TtsProvider, availableProviders,
   resolveProviderId, VoiceCache, withTimeout,
 } from "@talktomebaby/engine";
 import { ReaderPanel, ReaderSettings, SettingsData, SettingKey, ViewMsg } from "./ui/reader-panel";
@@ -216,6 +216,10 @@ async function makeProviderById(id: string, keys: ApiKeyManager): Promise<TtsPro
     case "elevenlabs": {
       const key = (await keys.getKey("elevenlabs")) ?? (await keys.promptAndStore("elevenlabs"));
       return key ? new ElevenLabsProvider(key) : undefined;
+    }
+    case "openai": {
+      const key = (await keys.getKey("openai")) ?? (await keys.promptAndStore("openai"));
+      return key ? new OpenAIProvider(key) : undefined;
     }
     case "sarvam": {
       const key = (await keys.getKey("sarvam")) ?? (await keys.promptAndStore("sarvam"));
@@ -510,7 +514,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (session) await reconfigureActive(session.provider, pick.id);
     }),
     vscode.commands.registerCommand("talktomebaby.setApiKey", async () => {
-      const pick = await vscode.window.showQuickPick(["elevenlabs", "sarvam"], { placeHolder: "Provider" });
+      const pick = await vscode.window.showQuickPick(["elevenlabs", "openai", "sarvam"], { placeHolder: "Provider" });
       if (!pick) return;
       const stored = await keys.promptAndStore(pick);
       // A new key may expose different voices (different plan tier), so evict

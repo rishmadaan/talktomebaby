@@ -28,6 +28,13 @@ describe("installClaudeHook", () => {
     installClaudeHook(p);
     expect(JSON.parse(readFileSync(p, "utf8")).model).toBe("x");
   });
+
+  it("refuses to overwrite a malformed settings file", async () => {
+    const p = join(dir, "settings.json");
+    await fs.writeFile(p, "{ not json");
+    expect(() => installClaudeHook(p)).toThrow(/not valid JSON/);
+    expect(readFileSync(p, "utf8")).toBe("{ not json"); // untouched
+  });
 });
 
 describe("installCodexHook", () => {

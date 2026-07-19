@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 const KEY_NAMES: Record<string, string> = {
   elevenlabs: "talktomebaby.key.elevenlabs",
+  openai: "talktomebaby.key.openai",
   sarvam: "talktomebaby.key.sarvam",
 };
 

@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "workspaces": ["packages/*"],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @talktomebaby/engine && npm run build --workspaces --if-present",
+    "pretest": "npm run build -w @talktomebaby/engine",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {

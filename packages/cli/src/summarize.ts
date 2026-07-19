@@ -60,11 +60,12 @@ async function summarizeGemini(text: string): Promise<string | null> {
   if (!key) return null;
   let lastErr: unknown = null;
   for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     try {
       const res = await fetchWithTimeout(url, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        // Key in a header, not the query string, so it cannot leak into logs.
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(text) }] }] }),
       });
       if (!res.ok) {

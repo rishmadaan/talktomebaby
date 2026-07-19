@@ -40,7 +40,8 @@ export function loadConfig(): CliConfig {
 export function saveConfig(c: CliConfig): CliConfig {
   const p = configPath();
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(c, null, 2));
+  // 600: the config may hold API keys.
+  writeFileSync(p, JSON.stringify(c, null, 2), { mode: 0o600 });
   return c;
 }
 
