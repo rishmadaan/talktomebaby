@@ -6,7 +6,10 @@
   "scripts": {
     "build": "npm run build -w @talktomebaby/engine && npm run build --workspaces --if-present",
     "pretest": "npm run build -w @talktomebaby/engine",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "compile": "npm run build -w @talktomebaby/engine && npm run compile -w talktomebaby",
+    "watch": "npm run watch -w talktomebaby",
+    "package": "npm run package -w talktomebaby"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

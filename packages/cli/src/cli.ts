@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { homedir, tmpdir } from "os";
 import { appendFileSync } from "fs";
 import { join } from "path";
@@ -20,11 +20,29 @@ function readStdin(): string {
   try { return readFileSync(0, "utf8"); } catch { return ""; }
 }
 
+const PIDFILE = join(tmpdir(), "talktomebaby-agent.pid");
+
+// Newest reply wins: a new turn hushes any speech still playing from the
+// previous one instead of talking over it. The detached child is a process
+// group leader (spawned detached), so kill(-pid) takes its audio player with
+// it; kill(pid) is the fallback for a directly-run --foreground process.
+// ponytail: pidfile, no locking; a recycled pid could be mis-killed in theory.
+function hushPrevious(): void {
+  try {
+    const pid = Number(readFileSync(PIDFILE, "utf8").trim());
+    if (pid > 0 && pid !== process.pid) {
+      try { process.kill(-pid); } catch { try { process.kill(pid); } catch { /* already gone */ } }
+    }
+  } catch { /* no previous job */ }
+}
+
 async function runAgent(argv: string[]): Promise<void> {
   // NEVER throws to the host: every path resolves and the caller exits 0.
   try {
     const cfg = loadConfig();
     if (!cfg.enabled) return;
+    hushPrevious();
+    try { writeFileSync(PIDFILE, String(process.pid)); } catch { /* best effort */ }
     const agentArg = argFor(argv, "--agent");
     const tpArg = argFor(argv, "--transcript");
     let host = (agentArg as "claude" | "codex" | "auto") || "auto";

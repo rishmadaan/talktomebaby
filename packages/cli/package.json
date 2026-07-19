@@ -6,8 +6,8 @@
   "bin": { "talktomebaby": "dist/cli.js" },
   "files": ["dist"],
   "scripts": {
-    "build": "esbuild src/cli.ts --bundle --outfile=dist/cli.js --platform=node --format=cjs --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.js",
-    "test": "vitest run"
+    "build": "esbuild src/cli.ts --bundle --outfile=dist/cli.js --platform=node --format=cjs --banner:js=\"#!/usr/bin/env node\"",
+    "test": "tsc -p tsconfig.json --noEmit && vitest run"
   },
   "dependencies": { "@talktomebaby/engine": "*" },
   "devDependencies": { "@types/node": "^20.0.0", "esbuild": "^0.28.0", "typescript": "^5.3.0", "vitest": "^3.0.0" }

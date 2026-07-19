@@ -21,14 +21,15 @@ export async function speakText(text: string, cfg: CliConfig, deps: SpeakDeps = 
     // Summary scope: clean WITHOUT the length cap (capping first would cut
     // the tail of a long reply, exactly where the ask to the user lives),
     // summarize, then cap the spoken result instead.
-    const summaryScope = cfg.scope === "summary";
-    let spoken = cleanForSpeech(text, { scope: summaryScope ? "full" : cfg.scope, maxChars: summaryScope ? Number.MAX_SAFE_INTEGER : cfg.maxChars });
+    let spoken = cleanForSpeech(text, cfg.scope === "summary"
+      ? { scope: "full", maxChars: Number.MAX_SAFE_INTEGER }
+      : { scope: cfg.scope, maxChars: cfg.maxChars });
     if (!spoken.trim()) return { ok: false, spoken: "" };
-    if (summaryScope) {
+    if (cfg.scope === "summary") {
       const s = await summarize(spoken);
       spoken = capLength(s ? s.text : firstParagraph(spoken), cfg.maxChars);
     }
-    const chunks = buildChunks(parseDocument(spoken));
+    const chunks = buildChunks(parseDocument(spoken, "talktomebaby-cli://agent", 0));
     const voice = cfg.voice[cfg.provider] || "";
     const sink = deps.synthesizeAndPlay || defaultSink;
     await sink(chunks, cfg.provider, voice, new AbortController().signal);
