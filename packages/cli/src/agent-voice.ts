@@ -1,6 +1,6 @@
 import { parseDocument, buildChunks, play, Chunk } from "@talktomebaby/engine";
 import { CliConfig } from "./config";
-import { cleanForSpeech, firstParagraph } from "./clean-text";
+import { capLength, cleanForSpeech, firstParagraph } from "./clean-text";
 import { summarize } from "./summarize";
 import { makeProvider } from "./providers";
 
@@ -18,11 +18,15 @@ async function defaultSink(chunks: Chunk[], providerId: string, voice: string, s
 
 export async function speakText(text: string, cfg: CliConfig, deps: SpeakDeps = {}): Promise<{ ok: boolean; spoken: string; error?: string }> {
   try {
-    let spoken = cleanForSpeech(text, { scope: cfg.scope === "summary" ? "full" : cfg.scope, maxChars: cfg.maxChars });
+    // Summary scope: clean WITHOUT the length cap (capping first would cut
+    // the tail of a long reply, exactly where the ask to the user lives),
+    // summarize, then cap the spoken result instead.
+    const summaryScope = cfg.scope === "summary";
+    let spoken = cleanForSpeech(text, { scope: summaryScope ? "full" : cfg.scope, maxChars: summaryScope ? Number.MAX_SAFE_INTEGER : cfg.maxChars });
     if (!spoken.trim()) return { ok: false, spoken: "" };
-    if (cfg.scope === "summary") {
+    if (summaryScope) {
       const s = await summarize(spoken);
-      spoken = s ? s.text : firstParagraph(spoken);
+      spoken = capLength(s ? s.text : firstParagraph(spoken), cfg.maxChars);
     }
     const chunks = buildChunks(parseDocument(spoken));
     const voice = cfg.voice[cfg.provider] || "";

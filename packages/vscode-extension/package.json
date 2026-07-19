@@ -47,11 +47,12 @@
       "properties": {
         "talktomebaby.provider": {
           "type": "string", "default": "auto",
-          "enum": ["auto", "edge", "elevenlabs", "say", "sarvam"],
+          "enum": ["auto", "edge", "elevenlabs", "openai", "say", "sarvam"],
           "enumDescriptions": [
             "Auto — macOS say on macOS (offline, official), Edge TTS elsewhere",
             "Edge TTS (unofficial, free, no key, word-level timing)",
             "ElevenLabs (premium voices, word-level timing, requires key)",
+            "OpenAI (premium voices, estimated timing, requires key)",
             "macOS say (offline, estimated timing, macOS only)",
             "Sarvam AI (Indian English, estimated timing, requires key)"
           ],
@@ -59,6 +60,7 @@
         },
         "talktomebaby.voice.edge": { "type": "string", "default": "en-US-AriaNeural" },
         "talktomebaby.voice.elevenlabs": { "type": "string", "default": "21m00Tcm4TlvDq8ikWAM" },
+        "talktomebaby.voice.openai": { "type": "string", "default": "alloy" },
         "talktomebaby.voice.say": { "type": "string", "default": "Samantha" },
         "talktomebaby.voice.sarvam": { "type": "string", "default": "shubh" },
         "talktomebaby.speed": { "type": "number", "default": 1.0, "minimum": 0.5, "maximum": 2.0, "description": "Playback speed (pitch preserved). Persisted from the player." },
@@ -79,6 +81,7 @@
     "compile:ext": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
     "compile:webview": "esbuild src/webview/main.ts --bundle --outfile=media/reader.js --format=iife --sourcemap",
     "watch": "npm run compile:ext -- --watch & npm run compile:webview -- --watch",
+    "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
     "build": "npm run compile:ext -- --minify && npm run compile:webview -- --minify",
     "test": "vitest run",
     "vscode:prepublish": "npm run build",

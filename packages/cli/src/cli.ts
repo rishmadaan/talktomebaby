@@ -2,7 +2,9 @@ import { readFileSync } from "fs";
 import { homedir, tmpdir } from "os";
 import { appendFileSync } from "fs";
 import { join } from "path";
+import { spawn } from "child_process";
 import { loadConfig, saveConfig } from "./config";
+import { KNOWN_PROVIDERS } from "./providers";
 import { detectHost, lastAssistantText } from "./transcripts/index";
 import { speakText } from "./agent-voice";
 import { installClaudeHook } from "./hooks/claude";
@@ -52,7 +54,24 @@ function argFor(argv: string[], flag: string): string | undefined {
 async function main(): Promise<number> {
   const [cmd, ...rest] = process.argv.slice(2);
   switch (cmd) {
-    case "agent": await runAgent(rest); return 0; // ALWAYS 0
+    case "agent": {
+      // The host's Stop hook waits for this command, so it must return
+      // immediately: read the hook JSON here (the stdin pipe dies with this
+      // process), then hand off to a detached child that does the slow
+      // summarize/synthesize/play work. --foreground is that child.
+      if (rest.includes("--foreground")) { await runAgent(rest); return 0; } // ALWAYS 0
+      if (!loadConfig().enabled) return 0;
+      let transcriptPath = argFor(rest, "--transcript") || "";
+      if (!transcriptPath) {
+        try { transcriptPath = JSON.parse(readStdin()).transcript_path || ""; } catch { /* not hook json */ }
+      }
+      if (!transcriptPath) return 0;
+      const args = [process.argv[1], "agent", "--foreground", "--transcript", transcriptPath];
+      const agentArg = argFor(rest, "--agent");
+      if (agentArg) args.push("--agent", agentArg);
+      spawn(process.execPath, args, { detached: true, stdio: "ignore" }).unref();
+      return 0; // ALWAYS 0
+    }
     case "on": { saveConfig({ ...loadConfig(), enabled: true }); console.log("talktomebaby voice ON"); return 0; }
     case "off": { saveConfig({ ...loadConfig(), enabled: false }); console.log("talktomebaby voice OFF"); return 0; }
     case "toggle": { const c = loadConfig(); saveConfig({ ...c, enabled: !c.enabled }); console.log(`talktomebaby voice ${!c.enabled ? "ON" : "OFF"}`); return 0; }
@@ -93,7 +112,10 @@ function doConfig(rest: string[]): number {
   const c = loadConfig();
   if (rest.length === 0) { console.log(JSON.stringify(c, null, 2)); return 0; }
   const [key, value] = rest;
-  if (key === "provider" && value) { saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`); return 0; }
+  if (key === "provider" && value) {
+    if (!(KNOWN_PROVIDERS as readonly string[]).includes(value)) { console.error(`unknown provider "${value}" (valid: ${KNOWN_PROVIDERS.join(", ")})`); return 1; }
+    saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`); return 0;
+  }
   if (key === "scope" && (value === "full" || value === "first-paragraph" || value === "summary")) { saveConfig({ ...c, scope: value }); console.log(`scope = ${value}`); return 0; }
   console.error("usage: talktomebaby config [provider <id> | scope <full|first-paragraph|summary>]"); return 1;
 }
