@@ -1,5 +1,14 @@
 node_modules/
-out/
+packages/*/out/
+packages/*/dist/
+# staged copies of root docs for vsce packaging (created by the prepackage script)
+packages/vscode-extension/README.md
+packages/vscode-extension/CHANGELOG.md
+packages/vscode-extension/LICENSE
+packages/vscode-extension/PRIVACY.md
+packages/vscode-extension/DISCLAIMER.md
+packages/vscode-extension/THIRD_PARTY_NOTICES.md
+packages/*/*.vsix
 *.vsix
 .env
 .env.*

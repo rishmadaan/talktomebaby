@@ -8,14 +8,14 @@ Before publishing, verify each of these:
 - [x] **Fragility review:** README and [docs/provider-architecture.md](docs/provider-architecture.md) disclose that the Edge TTS provider uses an **unofficial** Microsoft endpoint (`msedge-tts`). Microsoft offers no SLA; it has changed before and could break or become gated
 - [x] **Privacy disclosure:** README links to [PRIVACY.md](PRIVACY.md), which states that network TTS providers receive the text being read
 - [x] **Third-party notices:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) is present and packaged with the VSIX
-- [x] Extension icon (128x128 or 256x256 PNG) created and referenced as `"icon": "icon.png"` in `package.json`
-- [x] `publisher` field in `package.json` is `rishmadaan` (matches your marketplace publisher ID)
-- [x] `repository.url` in `package.json` points to your public GitHub repo (`https://github.com/rishmadaan/talktomebaby`)
+- [x] Extension icon (128x128 or 256x256 PNG) created and referenced as `"icon": "icon.png"` in `packages/vscode-extension/package.json`
+- [x] `publisher` field in `packages/vscode-extension/package.json` is `rishmadaan` (matches your marketplace publisher ID)
+- [x] `repository.url` in `packages/vscode-extension/package.json` points to your public GitHub repo (`https://github.com/rishmadaan/talktomebaby`)
 - [x] README.md has no broken image links (marketplace renders it directly)
 - [x] All images use HTTPS URLs (no SVGs except badges)
-- [x] CHANGELOG.md is up to date
+- [x] `CHANGELOG.md` is up to date
 - [x] Run `npm run build` — build passes clean
-- [x] Test the packaged extension: `npm run package` produces `talktomebaby-0.3.1.vsix`; install it with `code --install-extension talktomebaby-0.3.1.vsix` and verify it works
+- [x] Test the packaged extension: from `packages/vscode-extension`, `npm run package` produces `talktomebaby.vsix`; install it with `code --install-extension talktomebaby.vsix` and verify it works
 
 Built VSIX files are release artifacts. Upload them to Marketplace or attach them to GitHub Releases; do not commit them to the repository.
 
@@ -40,8 +40,10 @@ npm install -g @vscode/vsce
 # Login for manual publishing
 vsce login rishmadaan
 
-# Package (creates talktomebaby-0.3.1.vsix)
-vsce package
+cd packages/vscode-extension
+
+# Package (creates talktomebaby.vsix)
+npm run package
 
 # Publish to marketplace
 vsce publish --pre-release
@@ -53,11 +55,11 @@ vsce publish patch    # 0.3.1 → 0.3.2
 
 Manual web upload path:
 
-1. Run `npm run package`.
+1. From `packages/vscode-extension`, run `npm run package`.
 2. Open [marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage).
 3. Select publisher `rishmadaan`.
 4. Choose **New extension > Visual Studio Code**.
-5. Upload `talktomebaby-0.3.1.vsix`.
+5. Upload `packages/vscode-extension/talktomebaby.vsix`.
 
 ## Updating an Existing Extension
 

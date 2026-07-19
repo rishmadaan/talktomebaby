@@ -10,6 +10,7 @@ When you start reading, TalkToMeBaby turns the current document or selection int
 |---|---:|---|
 | Edge TTS | Yes | Uses the unofficial `msedge-tts` package against the same general service family used by Microsoft Edge Read Aloud. This is best effort and may change or stop working. |
 | ElevenLabs | Yes | Uses ElevenLabs' official API with your API key. |
+| OpenAI | Yes | Uses OpenAI's official text-to-speech API with your API key. |
 | Sarvam AI | Yes | Uses Sarvam AI's official API with your API key. |
 | macOS `say` | No | Runs locally through Apple's `say` command and does not send text to a network TTS provider. macOS only. |
 
@@ -17,7 +18,7 @@ Only the text needed for the requested audio chunk is sent. TalkToMeBaby does no
 
 ## API Keys
 
-ElevenLabs and Sarvam API keys are stored through VS Code SecretStorage, backed by the operating system credential store where available:
+ElevenLabs, OpenAI, and Sarvam API keys are stored through VS Code SecretStorage, backed by the operating system credential store where available:
 
 | OS | Backing store |
 |---|---|
@@ -26,6 +27,24 @@ ElevenLabs and Sarvam API keys are stored through VS Code SecretStorage, backed 
 | Linux | libsecret / desktop keyring |
 
 Keys are not written to `settings.json`, not synced by VS Code Settings Sync, not logged, and not committed by the extension.
+
+## The Terminal CLI (talktomebaby-cli)
+
+The `talktomebaby` terminal CLI (agent voice) has its own storage and data
+flows, separate from the extension:
+
+- **Keys:** read from environment variables (`OPENAI_API_KEY`,
+  `ELEVENLABS_API_KEY`, `SARVAM_API_KEY`, `GEMINI_API_KEY`) or, if you add
+  them there yourself, from `~/.config/talktomebaby/config.json`. That file is
+  written with owner-only permissions (0600) and is plain JSON, not an OS
+  credential store. `talktomebaby config` never prints stored key values.
+- **What is sent where:** the text spoken (your AI agent's latest reply, read
+  from the host's local transcript file) goes to the selected TTS provider,
+  same as the extension. In `summary` scope the reply text is additionally
+  sent to a summarizer (Gemini first, then OpenAI) to produce the short
+  spoken digest. Transcripts themselves are only ever read locally.
+- **Local state:** a log and a playback pid file live next to the config in
+  `~/.config/talktomebaby/`.
 
 ## Local Storage
 

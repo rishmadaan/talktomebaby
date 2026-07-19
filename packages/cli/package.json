@@ -1,0 +1,29 @@
+{
+  "name": "talktomebaby-cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "talktomebaby": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
+    "build": "esbuild src/cli.ts --bundle --outfile=dist/cli.js --platform=node --format=cjs --banner:js=\"#!/usr/bin/env node\"",
+    "prepack": "npm run build",
+    "pretest": "npm -C ../.. run build -w @talktomebaby/engine",
+    "test": "tsc -p tsconfig.json --noEmit && vitest run"
+  },
+  "devDependencies": {
+    "@talktomebaby/engine": "*",
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.3.0",
+    "vitest": "^3.0.0"
+  }
+}

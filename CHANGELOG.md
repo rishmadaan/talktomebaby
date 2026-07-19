@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Internal: extension now consumes the shared `@talktomebaby/engine` package in an npm workspaces monorepo (no user-facing change).
+
 ## [0.3.2] - 2026-06-10
 
 - New `auto` provider default: macOS now defaults to the built-in `say` voice (official, fully offline); Windows/Linux keep Edge TTS. Explicit provider choices are unchanged and always respected.

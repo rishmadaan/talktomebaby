@@ -1,6 +1,6 @@
 # TalkToMeBaby
 
-TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. On macOS it defaults to the built-in `say` command (official, fully offline, no data leaves the machine); on Windows and Linux it defaults to the free unofficial Edge TTS provider. Any provider can be chosen explicitly. Supported providers: Edge TTS, ElevenLabs, macOS say, and Sarvam AI.
+TalkToMeBaby is a Speechify-inspired read-aloud extension for VS Code. It reads your prose files aloud with a dedicated Reader panel, word-level karaoke highlighting, and click-to-jump navigation. On macOS it defaults to the built-in `say` command (official, fully offline, no data leaves the machine); on Windows and Linux it defaults to the free unofficial Edge TTS provider. Any provider can be chosen explicitly. Supported providers: Edge TTS, ElevenLabs, OpenAI, macOS say, and Sarvam AI.
 
 > 📖 **Docs site:** [talktomebaby.netlify.app](https://talktomebaby.netlify.app) — full guides for the reader, providers, and settings. (Source in [`site/`](site/).)
 
@@ -37,7 +37,7 @@ code --install-extension rishmadaan.talktomebaby
 ### From VSIX
 
 ```bash
-code --install-extension talktomebaby-0.3.2.vsix
+code --install-extension packages/vscode-extension/talktomebaby.vsix
 ```
 
 Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the file.
@@ -48,8 +48,9 @@ Or via the UI: `Cmd+Shift+P` > **Extensions: Install from VSIX...** > select the
 git clone https://github.com/rishmadaan/talktomebaby.git
 cd talktomebaby
 npm install
-npm run package   # produces talktomebaby-0.3.2.vsix
-code --install-extension talktomebaby-0.3.2.vsix
+cd packages/vscode-extension
+npm run package   # runs vsce package --no-dependencies --out talktomebaby.vsix
+code --install-extension talktomebaby.vsix
 ```
 
 ---
@@ -88,9 +89,10 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 | macOS say | Basic | Estimated | No | **Default on macOS.** Offline, official Apple CLI. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. macOS only. |
 | Edge TTS | Good | Word-level | No | **Default on Windows/Linux.** Free, unofficial, best effort. Requires internet. Many voices. |
 | ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
+| OpenAI | Premium | Estimated | Yes | OpenAI text-to-speech voices (gpt-4o-mini-tts). |
 | Sarvam AI | Good | Estimated | Yes | Indian English focus. |
 
-Network providers synthesize audio by sending the text being read to the selected provider. Edge, ElevenLabs, and Sarvam require internet access; macOS `say` runs locally and does not send text to a network TTS provider. See [PRIVACY.md](PRIVACY.md) for the full data-flow summary.
+Network providers synthesize audio by sending the text being read to the selected provider. Edge, ElevenLabs, OpenAI, and Sarvam require internet access; macOS `say` runs locally and does not send text to a network TTS provider. See [PRIVACY.md](PRIVACY.md) for the full data-flow summary.
 
 ### Switching provider and voice
 
@@ -133,9 +135,10 @@ While a session is active, the source editor stays in sync with the reader:
 
 | Setting | Default | Description |
 |---|---|---|
-| `talktomebaby.provider` | `auto` | TTS provider: `auto` (macOS say on macOS, Edge elsewhere), `edge`, `elevenlabs`, `say`, `sarvam` |
+| `talktomebaby.provider` | `auto` | TTS provider: `auto` (macOS say on macOS, Edge elsewhere), `edge`, `elevenlabs`, `openai`, `say`, `sarvam` |
 | `talktomebaby.voice.edge` | `en-US-AriaNeural` | Voice for Edge TTS |
 | `talktomebaby.voice.elevenlabs` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for ElevenLabs |
+| `talktomebaby.voice.openai` | `alloy` | Voice for OpenAI |
 | `talktomebaby.voice.say` | `Samantha` | Voice for macOS say |
 | `talktomebaby.voice.sarvam` | `shubh` | Voice for Sarvam AI |
 | `talktomebaby.speed` | `1.0` | Playback speed (0.5-2.0). Updated automatically when changed in the player. |
@@ -149,7 +152,7 @@ While a session is active, the source editor stays in sync with the reader:
 
 ## Privacy and API keys
 
-TalkToMeBaby does not include analytics or telemetry. When you use a network TTS provider, the text being read is sent to that provider to generate audio. Provider keys (ElevenLabs, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See [PRIVACY.md](PRIVACY.md), [DISCLAIMER.md](DISCLAIMER.md), and the [provider architecture notes](https://github.com/rishmadaan/talktomebaby/blob/main/docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
+TalkToMeBaby does not include analytics or telemetry. When you use a network TTS provider, the text being read is sent to that provider to generate audio. Provider keys (ElevenLabs, OpenAI, Sarvam) are stored via the VS Code SecretStorage API, which means your OS's encrypted credential store: Keychain on macOS, Credential Manager on Windows, libsecret on Linux. Keys are never written to settings.json, never synced, and never logged. See [PRIVACY.md](PRIVACY.md), [DISCLAIMER.md](DISCLAIMER.md), and the [provider architecture notes](https://github.com/rishmadaan/talktomebaby/blob/main/docs/provider-architecture.md) for the full picture, including honest fragility notes per provider and the roadmap for a fully offline, OS-agnostic voice engine.
 
 ## Keybindings
 
@@ -173,7 +176,7 @@ TalkToMeBaby does not include analytics or telemetry. When you use a network TTS
 | TalkToMeBaby: Jump Playback to Cursor | Jump to the word at cursor in the source editor |
 | TalkToMeBaby: Select TTS Provider | Pick a provider from a quick-pick list |
 | TalkToMeBaby: Select Voice | Pick a voice for the active provider |
-| TalkToMeBaby: Set API Key | Store an API key for ElevenLabs or Sarvam |
+| TalkToMeBaby: Set API Key | Store an API key for ElevenLabs, OpenAI, or Sarvam |
 
 ---
 
