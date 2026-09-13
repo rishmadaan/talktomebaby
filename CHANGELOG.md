@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## [0.4.0] - 2026-09-13
 
 - Licensing: migrate the suite to GNU GPL v3 or later, starting with extension 0.4.0, engine 0.2.0, and CLI 0.2.0. Earlier MIT releases retain their existing permissions.
 - Packaging: include complete license notices and matching source archives in the VSIX and both npm packages.
-
+- Packaging: reject untracked source and missing license notices; cache and revalidate upstream source archives for offline reuse.
+- Added a License and Source command that works in packaged extensions and the Extension Development Host.
 - Internal: extension now consumes the shared `@talktomebaby/engine` package in an npm workspaces monorepo (no user-facing change).
 
 ## [0.3.2] - 2026-06-10
