@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { dirname, join } from "path";

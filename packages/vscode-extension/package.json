@@ -2,10 +2,10 @@
   "name": "talktomebaby",
   "displayName": "TalkToMeBaby",
   "description": "Speechify-inspired read-aloud for VS Code: word-level highlighting, click-to-jump, and 2x speed without pitch shift.",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "publisher": "rishmadaan",
   "icon": "icon.png",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "repository": { "type": "git", "url": "https://github.com/rishmadaan/talktomebaby" },
   "homepage": "https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby",
   "bugs": { "url": "https://github.com/rishmadaan/talktomebaby/issues" },
@@ -17,6 +17,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      { "command": "talktomebaby.license", "title": "TalkToMeBaby: License and Source" },
       { "command": "talktomebaby.readDocument", "title": "TalkToMeBaby: Read Document", "icon": "$(unmute)" },
       { "command": "talktomebaby.readSelection", "title": "TalkToMeBaby: Read Selection" },
       { "command": "talktomebaby.readFromCursor", "title": "TalkToMeBaby: Read from Here" },
@@ -84,7 +85,7 @@
     "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
     "build": "npm run compile:ext -- --minify && npm run compile:webview -- --minify",
     "test": "vitest run",
-    "vscode:prepublish": "node ../../scripts/stage-extension-docs.js && npm run build",
+    "vscode:prepublish": "npm run build && node ../../scripts/stage-package-docs.js vscode-extension",
     "package": "npx @vscode/vsce package --no-dependencies --out talktomebaby.vsix"
   },
   "devDependencies": {

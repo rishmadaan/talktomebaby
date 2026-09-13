@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 // clean-text.ts - turn assistant markdown into something pleasant to hear.
 //
 // Speaking raw markdown aloud is unbearable: code blocks, URLs, table pipes and

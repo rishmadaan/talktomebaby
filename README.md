@@ -220,4 +220,4 @@ For vulnerability reports or sensitive security issues, see [SECURITY.md](https:
 
 ## License
 
-[MIT](LICENSE). Additional disclaimers are in [DISCLAIMER.md](DISCLAIMER.md). Third-party runtime dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[GNU GPL v3 or later](LICENSE) (`GPL-3.0-or-later`). Copyright (c) 2026 Rish. Distributed without warranty; redistribution is permitted under the GPL. Each npm package and VSIX includes matching source in `source.tar.gz`; see [licensing and rebuild instructions](LICENSING.md). Earlier MIT releases retain their MIT permissions. Additional disclaimers are in [DISCLAIMER.md](DISCLAIMER.md). Third-party runtime dependency notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

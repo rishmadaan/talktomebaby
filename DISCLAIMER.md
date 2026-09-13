@@ -2,7 +2,9 @@
 
 TalkToMeBaby is provided for convenience as an open-source VS Code extension. To the maximum extent permitted by applicable law, you use it entirely at your own risk.
 
-This document is not legal advice. It is a user-facing disclaimer for the project and does not replace the MIT license, third-party provider terms, VS Code Marketplace terms, or any agreement that applies to your use of a TTS provider.
+This document is not legal advice. It is a user-facing disclaimer for the project and does not replace the GNU GPL v3 or later license, third-party provider terms, VS Code Marketplace terms, or any agreement that applies to your use of a TTS provider.
+
+The GPL governs your rights to run, copy, modify, and distribute TalkToMeBaby. This document is informational and imposes no additional license conditions, acceptance requirement, or indemnity obligation. References to laws and external provider terms describe obligations that exist independently of this software license.
 
 ## No Warranty
 
@@ -62,16 +64,8 @@ To the maximum extent permitted by applicable law, the maintainers, contributors
 
 This includes, without limitation, damages or losses involving data, privacy, confidentiality, intellectual property, provider accounts, API usage, billing, subscriptions, business interruption, lost profits, lost opportunities, device problems, extension behavior, generated audio, third-party services, or reliance on synthesized output.
 
-## Indemnity
-
-To the maximum extent permitted by applicable law, you are responsible for claims, disputes, losses, costs, damages, liabilities, and expenses, including reasonable attorneys' fees, that arise from your use or misuse of TalkToMeBaby, your content, your generated audio, your provider accounts, your violation of provider terms, your violation of law, or your infringement or alleged infringement of another person's rights.
-
 ## No Affiliation
 
 TalkToMeBaby is independent. It is not affiliated with, endorsed by, sponsored by, or approved by Speechify, Microsoft, ElevenLabs, Sarvam AI, Apple, Visual Studio Code, or any TTS provider mentioned in the project, except where explicitly stated otherwise.
 
 All third-party names, trademarks, services, and product names belong to their respective owners and are used only for identification, compatibility, or descriptive comparison.
-
-## Acceptance
-
-By installing, running, modifying, packaging, publishing, distributing, or using TalkToMeBaby, you acknowledge these disclaimers and accept responsibility for your use to the maximum extent permitted by applicable law.

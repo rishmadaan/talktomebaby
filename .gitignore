@@ -1,4 +1,12 @@
 node_modules/
+.artifacts/
+upstream-sources/
+packages/*/source.tar.gz
+packages/*/LICENSE
+packages/*/LICENSING.md
+packages/*/THIRD_PARTY_NOTICES.md
+packages/cli/README.md
+packages/engine/README.md
 packages/*/out/
 packages/*/dist/
 # staged copies of root docs for vsce packaging (created by the prepackage script)

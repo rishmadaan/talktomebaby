@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { appendFileSync } from "fs";
@@ -195,6 +200,8 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
     }
     default:
       console.log("talktomebaby <agent|install|on|off|toggle|status|config>");
+      console.log("Copyright (c) 2026 Rish. GPL-3.0-or-later; no warranty. Redistribution is permitted under the GPL.");
+      console.log("See LICENSE and LICENSING.md beside this package's dist directory; matching source is in source.tar.gz.");
       return cmd ? 1 : 0;
   }
 }

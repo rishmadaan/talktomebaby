@@ -44,3 +44,7 @@ Use the GitHub issue template. Include:
 
 - Please follow the [Code of Conduct](CODE_OF_CONDUCT.md)
 - Report sensitive security issues privately; see [SECURITY.md](SECURITY.md)
+
+## Licensing contributions
+
+By submitting a contribution for inclusion, you agree to license it under GPL-3.0-or-later. Keep applicable copyright and third-party license notices, and identify any imported code and its license. Only contribute material you have the right to submit under these terms. See [LICENSING.md](LICENSING.md).

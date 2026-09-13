@@ -1,12 +1,14 @@
 {
   "name": "talktomebaby-suite",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "version": "0.0.0",
   "workspaces": ["packages/*"],
   "scripts": {
     "build": "npm run build -w @talktomebaby/engine && npm run build --workspaces --if-present",
     "pretest": "npm run build -w @talktomebaby/engine",
-    "test": "npm run test --workspaces --if-present",
+    "test": "node --test scripts/packaging.test.js && npm run test --workspaces --if-present",
+    "test:packaging": "python scripts/check-packages.py",
     "compile": "npm run build -w @talktomebaby/engine && npm run compile -w talktomebaby",
     "prewatch": "npm run build -w @talktomebaby/engine",
     "watch": "npm run watch -w @talktomebaby/engine & npm run watch -w talktomebaby",

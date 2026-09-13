@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import * as vscode from "vscode";
 import { parseDocument, DocumentModel } from "@talktomebaby/engine/core";
 import { buildChunks, Chunk } from "@talktomebaby/engine/core";
@@ -429,6 +434,11 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("talktomebaby.license", () => {
+      const root = context.extensionMode === vscode.ExtensionMode.Development
+        ? vscode.Uri.joinPath(context.extensionUri, "..", "..") : context.extensionUri;
+      return vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.joinPath(root, "LICENSING.md"));
+    }),
     vscode.commands.registerCommand("talktomebaby.readDocument", async () => {
       const doc = await resolveActiveDocument();
       if (!doc) {

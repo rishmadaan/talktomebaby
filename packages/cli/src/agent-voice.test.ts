@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import { describe, it, expect, vi } from "vitest";
 import { speakText, splitAtProviderLimit } from "./agent-voice";
 import { DEFAULT_CONFIG } from "./config";
