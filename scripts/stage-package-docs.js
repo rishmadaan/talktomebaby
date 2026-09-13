@@ -8,11 +8,23 @@ const { execFileSync } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const { dependencies, notices } = require("./third-party-notices");
 
+function sourceFiles(root) {
+  const manifest = path.join(root, "SOURCE_FILES.json");
+  if (fs.existsSync(manifest)) return JSON.parse(fs.readFileSync(manifest, "utf8"));
+  const gitFiles = (...args) => execFileSync("git", ["ls-files", "-z", ...args], {
+    cwd: root, encoding: "utf8",
+  }).split("\0").filter(Boolean);
+  const untracked = gitFiles("--others", "--exclude-standard");
+  if (untracked.length) throw new Error(`Stage or ignore untracked files before packaging:\n${untracked.join("\n")}`);
+  return gitFiles();
+}
+
 async function main() {
   const root = path.join(__dirname, "..");
   const target = process.argv[2];
   if (!["engine", "cli", "vscode-extension"].includes(target)) throw new Error("Expected engine, cli, or vscode-extension");
   const dest = path.join(root, "packages", target);
+  const files = sourceFiles(root);
   if (fs.readFileSync(path.join(root, "THIRD_PARTY_NOTICES.md"), "utf8").replace(/\r\n/g, "\n") !== notices())
     throw new Error("Stale notices: run node scripts/third-party-notices.js and review the changes");
   const docs = ["README.md", "LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md"];
@@ -28,9 +40,6 @@ async function main() {
   try {
     // Use current tracked files, including staged additions. Extracted source archives
     // have the same explicit file list so repackaging does not require a Git checkout.
-    const manifest = path.join(root, "SOURCE_FILES.json");
-    const files = fs.existsSync(manifest) ? JSON.parse(fs.readFileSync(manifest, "utf8")) :
-      execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
     for (const file of files) {
       if (path.isAbsolute(file) || file.split(/[\\/]/).includes("..")) throw new Error(`Invalid source path: ${file}`);
       fs.mkdirSync(path.dirname(path.join(stage, file)), { recursive: true });
@@ -59,6 +68,10 @@ async function main() {
       }
       if (createHash("sha256").update(bytes).digest("hex") !== source.sha256)
         throw new Error(`Source checksum mismatch: ${source.name}`);
+      if (!fs.existsSync(saved)) {
+        fs.mkdirSync(path.dirname(saved), { recursive: true });
+        fs.writeFileSync(saved, bytes);
+      }
       fs.writeFileSync(path.join(upstreamDir, filename), bytes);
     }
     execFileSync("tar", ["-czf", path.join(dest, "source.tar.gz"), "-C", stage, "."], { stdio: "inherit" });
@@ -66,4 +79,5 @@ async function main() {
     fs.rmSync(stage, { recursive: true, force: true });
   }
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
+module.exports = { sourceFiles };

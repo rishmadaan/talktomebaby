@@ -434,8 +434,11 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("talktomebaby.license", () =>
-      vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.joinPath(context.extensionUri, "LICENSING.md"))),
+    vscode.commands.registerCommand("talktomebaby.license", () => {
+      const root = context.extensionMode === vscode.ExtensionMode.Development
+        ? vscode.Uri.joinPath(context.extensionUri, "..", "..") : context.extensionUri;
+      return vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.joinPath(root, "LICENSING.md"));
+    }),
     vscode.commands.registerCommand("talktomebaby.readDocument", async () => {
       const doc = await resolveActiveDocument();
       if (!doc) {

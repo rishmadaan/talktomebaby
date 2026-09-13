@@ -9,6 +9,12 @@ const lock = JSON.parse(fs.readFileSync(path.join(root, "package-lock.json"), "u
 const dependencies = Object.entries(lock.packages).filter(([dir, pkg]) =>
   dir.includes("node_modules/") && !pkg.dev && !pkg.link);
 
+function readmeLicense(body) {
+  const start = body.indexOf("(The MIT License)");
+  if (start < 0) throw new Error("Missing MIT license marker in dependency README; review its license notice");
+  return body.slice(start).split(/\n\[/)[0].trim();
+}
+
 function notices() {
   let output = "# Third-Party Notices\n\nTalkToMeBaby is licensed under GPL-3.0-or-later. Dependencies retain their own licenses below.\n\nGenerated from the installed production dependencies in package-lock.json with `node scripts/third-party-notices.js`. Includes dependencies bundled into the CLI and VS Code extension, and used by the engine.\n";
   for (const [dir, pkg] of dependencies) {
@@ -24,7 +30,7 @@ function notices() {
     output += `\n## ${installed.name} ${pkg.version} (${pkg.license})\n\nLocation: \`${dir}\`\n`;
     for (const file of files) {
       let body = fs.readFileSync(path.join(root, dir, file), "utf8").replace(/\r\n/g, "\n");
-      if (file === "README.md") body = body.slice(body.indexOf("(The MIT License)")).split(/\n\[/)[0].trim();
+      if (file === "README.md") body = readmeLicense(body);
       output += `\nFrom ${file}:\n\n\`\`\`text\n${body.trim()}\n\`\`\`\n`;
     }
   }
@@ -32,4 +38,4 @@ function notices() {
 }
 
 if (require.main === module) fs.writeFileSync(path.join(root, "THIRD_PARTY_NOTICES.md"), notices());
-module.exports = { dependencies, notices };
+module.exports = { dependencies, notices, readmeLicense };
