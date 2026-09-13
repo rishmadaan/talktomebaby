@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Licensing: migrate the suite to GNU GPL v3 or later, starting with extension 0.4.0, engine 0.2.0, and CLI 0.2.0. Earlier MIT releases retain their existing permissions.
+- Packaging: include complete license notices and matching source archives in the VSIX and both npm packages.
+
 - Internal: extension now consumes the shared `@talktomebaby/engine` package in an npm workspaces monorepo (no user-facing change).
 
 ## [0.3.2] - 2026-06-10

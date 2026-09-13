@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 :root { --reader-font-size: 16px;
   --sentence-color: color-mix(in srgb, var(--vscode-editor-selectionBackground) 55%, transparent);
   --word-color: var(--vscode-editor-findMatchBackground); }

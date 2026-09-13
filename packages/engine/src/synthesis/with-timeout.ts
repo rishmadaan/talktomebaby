@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 /**
  * Race `promise` against a timer. If the timer fires first, return `fallback`.
  * The original promise continues running — callers that need to cancel it must

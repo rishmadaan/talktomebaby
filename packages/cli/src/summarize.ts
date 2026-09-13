@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import { resolveKey } from "./config";
 
 // Gemini models tried in order, Flash-Lite first: a per-turn summarizer is a

@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import { writeFileSync } from "fs";
 import { EdgeProvider } from "../packages/engine/src/synthesis/edge";
 import { parseDocument } from "../packages/engine/src/core/document-model";

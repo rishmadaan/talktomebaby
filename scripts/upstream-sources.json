@@ -1,0 +1,20 @@
+[
+  {
+    "name": "agent-base",
+    "version": "6.0.2",
+    "url": "https://codeload.github.com/TooTallNate/node-agent-base/tar.gz/c4b8ea2e1a11bae023bb09b708050a50418204e9",
+    "sha256": "526c6c08c5e83d741fc67b6aa2a04179e79a5073b96fe2be56e63f6b8fc7426a"
+  },
+  {
+    "name": "https-proxy-agent",
+    "version": "5.0.1",
+    "url": "https://codeload.github.com/TooTallNate/node-https-proxy-agent/tar.gz/d0d80cc0482f20495aa8595f802e1a9f3b1b3409",
+    "sha256": "a5f198b7bd57a8c2e9500d7f9782bc16aa6d419534560c305a27f9b86e962534"
+  },
+  {
+    "name": "msedge-tts",
+    "version": "2.0.5",
+    "url": "https://codeload.github.com/Migushthe2nd/MsEdgeTTS/tar.gz/af80142bc7a60c0b335fd72a6019bb42bda8119b",
+    "sha256": "4d35d1650b7358ec086f241f1b611cef05501a249044b2ce4b8ae75bb0ceb6c5"
+  }
+]

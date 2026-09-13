@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 export class HighlightController {
   private activeSentence: HTMLElement | null = null;
   private activeWord: HTMLElement | null = null;

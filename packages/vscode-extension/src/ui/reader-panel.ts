@@ -1,3 +1,8 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
 import * as vscode from "vscode";
 import { DocumentModel } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
