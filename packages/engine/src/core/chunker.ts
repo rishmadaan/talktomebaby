@@ -8,7 +8,16 @@ import { DocumentModel } from "./document-model";
 export interface ChunkWordRef { wordIndex: number; charStart: number; charEnd: number }
 export interface Chunk { index: number; text: string; sentenceIndexes: number[]; words: ChunkWordRef[] }
 
-export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 1400): Chunk[] {
+// Caps of the chunks from the start sentence on, before the normal targets:
+// the start sentence alone (0), then ramps up, so the first audio arrives fast
+// and each chunk is synthesized while the shorter one before it plays.
+const RAMP = [0, 500, 1000];
+
+/** @param startWordIndex where reading starts; its sentence opens a short first chunk. */
+export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 1400, startWordIndex = 0): Chunk[] {
+  const startSentence =
+    model.sentences.find((s) => s.words.some((w) => w.index >= startWordIndex))?.index ?? 0;
+  let sinceStart = -1; // chunks emitted since the start sentence; -1 before it
   // Map sentence index -> block index so we can prefer block boundaries
   const blockOf = new Map<number, number>();
   model.blocks.forEach((b, bi) => b.sentences.forEach((s) => blockOf.set(s.index, bi)));
@@ -38,15 +47,19 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
       pos += s.text.length;
     }
     chunks.push({ index: chunks.length, text: parts.join(""), sentenceIndexes: cur, words });
+    if (sinceStart >= 0) sinceStart++;
     cur = [];
     curLen = 0;
   };
 
   for (const s of model.sentences) {
+    if (s.index === startSentence) { flush(); sinceStart = 0; }
+    const ramping = sinceStart >= 0 && sinceStart < RAMP.length;
+    const cap = ramping ? Math.min(RAMP[sinceStart], maxChars) : maxChars;
     const addLen = s.text.length + (cur.length ? 1 : 0);
-    if (cur.length && curLen + addLen > maxChars) flush();
+    if (cur.length && curLen + addLen > cap) flush();
     const prevBlock = cur.length ? blockOf.get(cur[cur.length - 1]) : undefined;
-    if (cur.length && curLen >= minChars && blockOf.get(s.index) !== prevBlock) flush();
+    if (cur.length && curLen >= (ramping ? 0 : minChars) && blockOf.get(s.index) !== prevBlock) flush();
     cur.push(s.index);
     curLen += addLen;
   }

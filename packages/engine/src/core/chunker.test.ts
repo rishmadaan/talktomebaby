@@ -40,4 +40,18 @@ describe("buildChunks", () => {
       if (c.sentenceIndexes.length > 1) expect(c.text.length).toBeLessThanOrEqual(400);
     }
   });
+
+  it("opens a short first chunk at the start sentence, then ramps up", () => {
+    const start = doc.sentences[20];
+    const chunks = buildChunks(doc, 2200, 1400, start.words[2].index);
+    const first = chunks.findIndex((c) => c.sentenceIndexes[0] === 20);
+    expect(chunks[first].sentenceIndexes).toEqual([20]);
+    expect(chunks[first + 1].text.length).toBeLessThanOrEqual(500);
+    expect(chunks[first + 2].text.length).toBeLessThanOrEqual(1000);
+    expect(chunks.flatMap((c) => c.sentenceIndexes)).toEqual([...Array(doc.sentences.length).keys()]);
+  });
+
+  it("starts fast from the top by default", () => {
+    expect(buildChunks(doc)[0].sentenceIndexes).toEqual([0]);
+  });
 });
