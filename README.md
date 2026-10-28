@@ -8,7 +8,7 @@ TalkToMeBaby is independent and is not affiliated with, endorsed by, or sponsore
 
 Use of TalkToMeBaby is at your own risk. You are responsible for choosing a provider, complying with provider terms, ensuring you have rights to send or synthesize the text you read, and protecting confidential or regulated content. See [DISCLAIMER.md](DISCLAIMER.md) and [PRIVACY.md](PRIVACY.md).
 
-> **Microsoft Edge voices: use at your own risk.** The Edge TTS provider (the extension's default on Windows and Linux, and the CLI's default voice) uses Microsoft's unofficial online "Read Aloud" speech service. TalkToMeBaby is not affiliated with or authorized by Microsoft, and does not bundle, host, resell, or redistribute Microsoft voices or audio: audio is generated between your computer and Microsoft only when you press play. Do not sell, republish, or broadcast audio made with these voices unless you have confirmed you have the rights. See [DISCLAIMER.md](DISCLAIMER.md#microsoft-edge-voices-edge-tts).
+> **Microsoft Edge voices: use at your own risk.** The Edge TTS provider (the extension's default on Windows and Linux, and the CLI's default voice) makes unofficial use of Microsoft's online "Read Aloud" speech service. TalkToMeBaby is not affiliated with, endorsed by, or under any agreement with Microsoft, and does not bundle, host, resell, or redistribute Microsoft voices or audio: audio is requested directly from Microsoft by the machine running TalkToMeBaby, only while you use it. Do not sell, republish, or broadcast audio made with these voices unless you have confirmed you have the rights. See [DISCLAIMER.md](DISCLAIMER.md#microsoft-edge-voices-edge-tts).
 
 Core features:
 - **Reader panel** - rendered reading view with dual-layer highlighting: sentence band + moving word sweep
@@ -89,7 +89,7 @@ Speed is set via the player bar in the Reader panel. Presets: 0.5, 0.75, 1.0, 1.
 | Provider | Quality | Word timing | Key required | Notes |
 |---|---|---|---|---|
 | macOS say | Basic | Estimated | No | **Default on macOS.** Offline, official Apple CLI. Novelty voices (Zarvox, Boing, ...) are filtered out of the voice list. macOS only. |
-| Edge TTS | Good | Word-level | No | **Default on Windows/Linux.** Free, unofficial Microsoft service, best effort, **use at your own risk** ([details](DISCLAIMER.md#microsoft-edge-voices-edge-tts)). Requires internet. Many voices. |
+| Edge TTS | Good | Word-level | No | **Default on Windows/Linux.** Free, unofficial use of a Microsoft service, best effort, **use at your own risk** ([details](DISCLAIMER.md#microsoft-edge-voices-edge-tts)). Requires internet. Many voices. |
 | ElevenLabs | Premium | Word-level | Yes | High-quality voices. Free tier may 401 on TTS calls; paid plan recommended. |
 | OpenAI | Premium | Estimated | Yes | OpenAI text-to-speech voices (gpt-4o-mini-tts). |
 | Sarvam AI | Good | Estimated | Yes | Indian English focus. |
