@@ -32,6 +32,8 @@ function readStdin(): string {
 
 const PIDFILE = join(STATE_DIR, "agent.pid");
 
+const EDGE_NOTICE = "Note: Edge TTS makes unofficial use of Microsoft's online voice service and is not affiliated with Microsoft. Use at your own risk: https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts (switch with: talktomebaby config provider <id>)";
+
 // Newest reply wins: a new turn hushes any speech still playing from the
 // previous one instead of talking over it. The detached child is a process
 // group leader (spawned detached), so kill(-pid) takes its audio player with
@@ -180,6 +182,7 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           const enabled = { ...cfg, enabled: true };
           if (!cfg.enabled) saveConfig(enabled);
           inst.fn(inst.path, command);
+          if (enabled.provider === "edge") console.log(EDGE_NOTICE); // before the test line reaches Microsoft
           // Spec promise: one command from install to HEARING the agent. The
           // test line is the dry-run that proves provider + player actually
           // work; a silent success here would hide a broken setup.
@@ -189,11 +192,9 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           } else {
             console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON, but the test line FAILED${test.error ? `: ${test.error}` : ""}. Check your provider/key with: talktomebaby config`);
           }
-          if (enabled.provider === "edge") {
-            console.log("Note: Edge TTS uses Microsoft's unofficial online voice service and is not affiliated with Microsoft. Use at your own risk: https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts (switch with: talktomebaby config provider <id>)");
-          }
         } else {
           console.log(`${inst.name} hook already present at ${inst.path}`);
+          if (loadConfig().provider === "edge") console.log(EDGE_NOTICE);
         }
         return 0;
       } catch (e) {
@@ -203,6 +204,7 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
     }
     default:
       console.log("talktomebaby <agent|install|on|off|toggle|status|config>");
+      console.log("Edge TTS (the default voice) is unofficial use of a Microsoft service; use at your own risk. See DISCLAIMER.md.");
       console.log("Copyright (c) 2026 Rish. GPL-3.0-or-later; no warranty. Redistribution is permitted under the GPL.");
       console.log("See LICENSE and LICENSING.md beside this package's dist directory; matching source is in source.tar.gz.");
       return cmd ? 1 : 0;
@@ -223,7 +225,9 @@ function doConfig(rest: string[]): number {
     // platform keeps "say" out on non-macOS, where it cannot run.
     const valid = availableProviders(process.platform).map((p) => p.id);
     if (!valid.includes(value)) { console.error(`unknown or unavailable provider "${value}" (valid here: ${valid.join(", ")})`); return 1; }
-    saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`); return 0;
+    saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`);
+    if (value === "edge") console.log(EDGE_NOTICE);
+    return 0;
   }
   if (key === "scope" && (value === "full" || value === "first-paragraph" || value === "summary")) { saveConfig({ ...c, scope: value }); console.log(`scope = ${value}`); return 0; }
   if (key === "voice" && value && rest[2]) {
