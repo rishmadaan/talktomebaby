@@ -72,6 +72,11 @@ class ReadingSession {
     this._voice = voice;
     this.model = parseDocument(text, docUri.toString(), version);
     const startAtWord = pickStart(this.model);
+    // Known before the webview's first report, so a voice switch while loading replans from here.
+    this.position = {
+      wordIndex: startAtWord,
+      sentenceIndex: this.model.sentences.find((s) => s.words.some((w) => w.index >= startAtWord))?.index ?? 0,
+    };
     // Planned from the start word, so its sentence is a short first chunk and
     // audio starts fast, instead of waiting behind the top of the document.
     this.chunks = buildChunks(this.model, undefined, undefined, startAtWord);
@@ -186,6 +191,7 @@ class ReadingSession {
     this.synthesis = new SynthesisService(provider, voice, this.cache);
     // All audio is new for the new voice, so re-plan from here for a fast start.
     this.chunks = buildChunks(this.model, undefined, undefined, startAtWord);
+    this.position = { wordIndex: startAtWord, sentenceIndex: idx };
 
     const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const settings: ReaderSettings = {

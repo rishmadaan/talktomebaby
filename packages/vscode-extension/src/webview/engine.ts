@@ -84,6 +84,7 @@ export class Engine {
     if (chunkIndex === undefined) return;
     this.currentChunk = chunkIndex;
     this.currentWord = wordIndex;
+    this.reportPosition(wordIndex);
     this.playing = false;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
@@ -95,6 +96,12 @@ export class Engine {
     }
     this.prefetch(chunkIndex + 1);
     this.cb.onState("paused");
+  }
+
+  // A seek reports at once: the host replans a voice switch from it, and a tick
+  // landing on this same word would not report it again.
+  private reportPosition(wordIndex: number) {
+    this.cb.onPosition(wordIndex, this.wordToSentence.get(wordIndex) ?? 0);
   }
 
   private prefetch(from: number) {
@@ -192,6 +199,7 @@ export class Engine {
     prev?.audio.pause();
     this.currentChunk = chunkIndex;
     this.currentWord = wordIndex;
+    this.reportPosition(wordIndex);
     this.playing = true;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
@@ -239,7 +247,7 @@ export class Engine {
     }
     if (word >= 0 && word !== this.currentWord) {
       this.currentWord = word;
-      this.cb.onPosition(word, this.wordToSentence.get(word) ?? 0);
+      this.reportPosition(word);
     }
   }
 

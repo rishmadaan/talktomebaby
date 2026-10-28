@@ -165,6 +165,27 @@ describe("Engine", () => {
     expect(cb.onPosition).toHaveBeenLastCalledWith(1, 0);
   });
 
+  it("reports a seek's word at once, while its chunk is still loading", () => {
+    const { engine, cb } = setup();
+    engine.start(0);
+    engine.jumpToWord(3); // chunk 1 not loaded: the host must still learn word 3, sentence 1
+    expect(cb.onPosition).toHaveBeenLastCalledWith(3, 1);
+    engine.primeAt(2);    // a paused prime (voice switch) reports too
+    expect(cb.onPosition).toHaveBeenLastCalledWith(2, 1);
+  });
+
+  it("seeking straight to a sentence's last word reports that word, even when the tick lands on it", () => {
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    audios[0].currentTime = 0.2;
+    engine.tick();                         // word 0
+    engine.jumpToWord(1);                  // last word of sentence 0, same chunk
+    engine.tick();                         // lands on word 1
+    expect(cb.onPosition).toHaveBeenLastCalledWith(1, 0);
+  });
+
   it("keeps the chosen speed on audio that arrives after a speed change", () => {
     const { engine, audios } = setup();
     engine.setSpeed(1.5);
