@@ -17,6 +17,7 @@ const NOTICE = "Note: Edge TTS makes unofficial use of Microsoft's online voice 
 let bundle = "";
 let bundleDir = "";
 let home = "";
+let lastErr = "";
 
 beforeAll(() => {
   // The folder name carries "talktomebaby" so the dev fallback hook command is recognised as ours.
@@ -32,6 +33,7 @@ afterAll(() => rmSync(bundleDir, { recursive: true, force: true }));
 function cli(args: string[]): string[] {
   const env = { ...process.env, HOME: home, USERPROFILE: home, XDG_CONFIG_HOME: join(home, ".config"), CODEX_HOME: join(home, ".codex") };
   const r = spawnSync(process.execPath, [bundle, ...args], { env, encoding: "utf8", timeout: 20000 });
+  lastErr = String(r.stderr);
   return String(r.stdout).split("\n");
 }
 
@@ -92,6 +94,15 @@ describe("Edge use-at-your-own-risk notice", () => {
     const off = run(["toggle"], { enabled: true, provider: "edge" });
     expect(off).toContain("talktomebaby voice OFF");
     expect(off.some((l) => l.startsWith(NOTICE))).toBe(false);
+  });
+
+  it("bare config keeps stdout as JSON and puts the Edge notice on stderr", () => {
+    const edge = run(["config"], { provider: "edge" });
+    expect(JSON.parse(edge.join("\n")).provider).toBe("edge");
+    expect(lastErr.startsWith(NOTICE)).toBe(true);
+    const other = run(["config"], { provider: "openai" });
+    expect(JSON.parse(other.join("\n")).provider).toBe("openai");
+    expect(lastErr).not.toContain(NOTICE);
   });
 
   it("status prints the notice when the provider is Edge", () => {
