@@ -30,6 +30,15 @@ describe("speakText", () => {
     expect(played.join(" ")).toContain("test");
   });
 
+  it("hands a short multi-sentence reply to the sink as one chunk (no ramp: the CLI has no prefetch)", async () => {
+    const played: string[] = [];
+    const reply = "Done. I fixed the bug in the parser and added a test. All tests pass now.";
+    await speakText(reply, { ...DEFAULT_CONFIG, provider: "edge" }, {
+      synthesizeAndPlay: async (chunks) => { for (const c of chunks) played.push(c.text); },
+    });
+    expect(played).toEqual([reply]);
+  });
+
   it("never throws and reports ok:false with the reason when the sink fails", async () => {
     const res = await speakText("hello", { ...DEFAULT_CONFIG }, {
       synthesizeAndPlay: async () => { throw new Error("boom"); },

@@ -13,9 +13,12 @@ export interface Chunk { index: number; text: string; sentenceIndexes: number[];
 // and each chunk is synthesized while the shorter one before it plays.
 const RAMP = [0, 500, 1000];
 
-/** @param startWordIndex where reading starts; its sentence opens a short first chunk. */
-export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 1400, startWordIndex = 0): Chunk[] {
-  const startSentence =
+/**
+ * @param startWordIndex where reading starts; its sentence opens a short first chunk.
+ * Leave it out for the plain plan (the CLI: it has no prefetch, so a ramp is audible gaps).
+ */
+export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 1400, startWordIndex?: number): Chunk[] {
+  const startSentence = startWordIndex === undefined ? -1 :
     model.sentences.find((s) => s.words.some((w) => w.index >= startWordIndex))?.index ?? 0;
   let sinceStart = -1; // chunks emitted since the start sentence; -1 before it
   // Map sentence index -> block index so we can prefer block boundaries

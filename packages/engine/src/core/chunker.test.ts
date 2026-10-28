@@ -51,7 +51,13 @@ describe("buildChunks", () => {
     expect(chunks.flatMap((c) => c.sentenceIndexes)).toEqual([...Array(doc.sentences.length).keys()]);
   });
 
-  it("starts fast from the top by default", () => {
-    expect(buildChunks(doc)[0].sentenceIndexes).toEqual([0]);
+  it("starts fast from the top when asked to start at word 0", () => {
+    expect(buildChunks(doc, 2200, 1400, 0)[0].sentenceIndexes).toEqual([0]);
+  });
+
+  it("without a start word, keeps the plain plan: a short reply is one chunk", () => {
+    const reply = parseDocument("Done. I fixed the bug in the parser and added a test. All tests pass now.", "r", 1);
+    const chunks = buildChunks(reply);
+    expect(chunks.map((c) => c.text)).toEqual(["Done. I fixed the bug in the parser and added a test. All tests pass now."]);
   });
 });
