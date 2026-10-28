@@ -1,0 +1,41 @@
+/*!
+ * Copyright (c) 2026 Rish
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * See LICENSE and LICENSING.md for licensing and warranty information.
+ */
+// @vitest-environment happy-dom
+import { describe, it, expect, vi, beforeAll } from "vitest";
+import { parseDocument, buildChunks } from "@talktomebaby/engine/core";
+
+const posted: { type: string }[] = [];
+
+beforeAll(async () => {
+  vi.useFakeTimers(); // main.ts starts a tick interval
+  document.body.innerHTML = `<div id="content"></div><div id="player-bar"></div>`;
+  (globalThis as { acquireVsCodeApi?: unknown }).acquireVsCodeApi = () => ({ postMessage: (m: { type: string }) => posted.push(m) });
+  await import("./main");
+});
+
+function init(text: string) {
+  const model = parseDocument(text, "t.md", 1);
+  posted.length = 0;
+  window.dispatchEvent(new MessageEvent("message", { data: {
+    type: "init", model, chunks: buildChunks(model, undefined, undefined, 0),
+    settings: { speed: 1, fontSize: 16, sentenceColor: "", wordColor: "" }, startAtWord: 0, autoplay: true,
+  } }));
+}
+
+describe("webview init", () => {
+  it.each([["blank", "   \n\n  \n"], ["code-only", "```\nconst x = 1;\n```\n"]])(
+    "a %s document requests no audio and says there is nothing to read", (_, text) => {
+      init(text);
+      expect(posted.map((m) => m.type)).not.toContain("requestChunk");
+      expect(document.getElementById("player-status")!.textContent).toBe("Nothing to read.");
+    });
+
+  it("a document with words starts reading from the top", () => {
+    init("Hello there. Second sentence.");
+    expect(posted).toContainEqual({ type: "requestChunk", chunkIndex: 0, priority: true });
+    expect(document.getElementById("player-status")!.textContent).toBe("Loading…");
+  });
+});

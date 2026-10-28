@@ -108,11 +108,13 @@ function init(
 
   const clamped = Math.max(0, Math.min(model.words.length - 1, startAtWord));
   const startWord = model.words[clamped];
-  if (!autoplay && startWord) {
+  if (!startWord) {
+    playerBar.showEmpty();              // blank or code-only: nothing to synthesize, so no "Loading…"
+  } else if (!autoplay) {
     // Reconfigure of a paused session: prime the new voice at the same spot,
     // do not play. A later resume/play picks up from here.
     engine.primeAt(startWord.index);
-  } else if (startWord && clamped > 0) {
+  } else if (clamped > 0) {
     engine.jumpToWord(startWord.index); // autoplay, but resume at the prior position
   } else {
     engine.start(0);                    // fresh read from the top
