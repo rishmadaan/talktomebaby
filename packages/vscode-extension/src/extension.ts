@@ -40,7 +40,7 @@ async function resolveActiveDocument(): Promise<vscode.TextDocument | undefined>
 
 class ReadingSession {
   readonly model: DocumentModel;
-  readonly chunks: Chunk[];
+  chunks: Chunk[];
   readonly panel: ReaderPanel;
   readonly editorSync: EditorSync;
   private synthesis: SynthesisService;
@@ -65,22 +65,22 @@ class ReadingSession {
     private readonly cache: DiskCache,
     extensionUri: vscode.Uri,
     private onEvent: (s: ReadingSession) => void,
-    private onSettingsMessage: (msg: ViewMsg, session: ReadingSession) => Promise<void>
+    private onSettingsMessage: (msg: ViewMsg, session: ReadingSession) => Promise<void>,
+    pickStart: (model: DocumentModel) => number = () => 0
   ) {
     this._provider = provider;
     this._voice = voice;
     this.model = parseDocument(text, docUri.toString(), version);
-    this.chunks = buildChunks(this.model);
+    const startAtWord = pickStart(this.model);
+    // Planned from the start word, so its sentence is a short first chunk and
+    // audio starts fast, instead of waiting behind the top of the document.
+    this.chunks = buildChunks(this.model, undefined, undefined, startAtWord);
     this.synthesis = new SynthesisService(provider, voice, cache);
     this.panel = new ReaderPanel(extensionUri, vscode.workspace.asRelativePath(docUri));
     this.editorSync = new EditorSync(docUri, this.model, (idx) => this.jumpToWord(idx));
 
-    // Send init eagerly so it is queued ahead of any jumpToWord that a command
-    // issues immediately after construction (readFromCursor / readSelection).
-    // post() buffers until the webview reports "ready", flushing in FIFO order;
-    // queuing init first guarantees the webview builds its engine before any
-    // seekToWord arrives. Waiting for the "ready" message instead would flush
-    // the already-queued seekToWord BEFORE init ran — losing the jump.
+    // Send init eagerly: post() buffers until the webview reports "ready",
+    // flushing in FIFO order, so init always precedes any later seekToWord.
     const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const settings: ReaderSettings = {
       speed: cfg.get("speed", 1.0),
@@ -88,7 +88,7 @@ class ReadingSession {
       sentenceColor: cfg.get("highlight.sentenceColor", ""),
       wordColor: cfg.get("highlight.wordColor", ""),
     };
-    this.panel.sendInit(this.model, this.chunks.length, settings);
+    this.panel.sendInit(this.model, this.chunks, settings, startAtWord);
 
     this.panel.onMessage(async (msg) => {
       switch (msg.type) {
@@ -184,6 +184,8 @@ class ReadingSession {
     this._provider = provider;
     this._voice = voice;
     this.synthesis = new SynthesisService(provider, voice, this.cache);
+    // All audio is new for the new voice, so re-plan from here for a fast start.
+    this.chunks = buildChunks(this.model, undefined, undefined, startAtWord);
 
     const cfg = vscode.workspace.getConfiguration("talktomebaby");
     const settings: ReaderSettings = {
@@ -194,7 +196,7 @@ class ReadingSession {
     };
     // Re-init the SAME webview. main.ts init() tears down its prior engine and
     // (because the settings panel lives outside #content) keeps the panel open.
-    this.panel.sendInit(this.model, this.chunks.length, settings, startAtWord, false);
+    this.panel.sendInit(this.model, this.chunks, settings, startAtWord, false);
   }
 
   dispose() {
@@ -285,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
     return result;
   }
 
-  async function startSession(doc: vscode.TextDocument): Promise<boolean> {
+  async function startSession(doc: vscode.TextDocument, pickStart?: (model: DocumentModel) => number): Promise<boolean> {
     const provider = await makeProvider(keys);
     if (!provider) return false;
     session?.dispose();
@@ -314,7 +316,8 @@ export function activate(context: vscode.ExtensionContext) {
           void context.workspaceState.update(LAST_SESSION_KEY, undefined);
         }
       },
-      handleSettingsMessage
+      handleSettingsMessage,
+      pickStart
     );
     session.panel.onDispose(() => { statusBar.hide(); session = undefined; });
     // Prefetch the active provider's voices so the first gear-open is instant.
@@ -450,18 +453,15 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("talktomebaby.readFromCursor", async () => {
       const editor = needEditor();
       if (!editor) return;
-      if (!(await startSession(editor.document)) || !session) return;
       const offset = editor.document.offsetAt(editor.selection.active);
-      const word = session.model.words.find((w) => w.source.end > offset) ?? session.model.words[0];
-      if (word) session.jumpToWord(word.index);
+      await startSession(editor.document, (model) => model.words.find((w) => w.source.end > offset)?.index ?? 0);
     }),
     vscode.commands.registerCommand("talktomebaby.readSelection", async () => {
       const editor = needEditor();
       if (!editor || editor.selection.isEmpty) return;
-      if (!(await startSession(editor.document)) || !session) return; // selection = start at selection, read on
       const offset = editor.document.offsetAt(editor.selection.start);
-      const word = session.model.words.find((w) => w.source.end > offset);
-      if (word) session.jumpToWord(word.index);
+      // selection = start at selection, read on
+      await startSession(editor.document, (model) => model.words.find((w) => w.source.end > offset)?.index ?? 0);
     }),
     vscode.commands.registerCommand("talktomebaby.jumpToCursor", () => {
       const editor = vscode.window.activeTextEditor;
@@ -566,11 +566,10 @@ export function activate(context: vscode.ExtensionContext) {
           return;
         }
         await vscode.window.showTextDocument(doc, { preserveFocus: false });
-        if (!(await startSession(doc)) || !session) return;
-        const model = session.model;
-        const clampedIdx = Math.max(0, Math.min(model.sentences.length - 1, last.sentenceIndex));
-        const firstWord = model.sentences[clampedIdx]?.words[0];
-        if (firstWord) session.jumpToWord(firstWord.index);
+        await startSession(doc, (model) => {
+          const clampedIdx = Math.max(0, Math.min(model.sentences.length - 1, last.sentenceIndex));
+          return model.sentences[clampedIdx]?.words[0]?.index ?? 0;
+        });
       });
   }
 

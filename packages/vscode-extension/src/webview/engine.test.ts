@@ -10,8 +10,12 @@ import { Chunk } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 
 class FakeAudio implements AudioLike {
-  currentTime = 0; duration = NaN; playbackRate = 1; preservesPitch = true;
-  paused = true; src = "";
+  currentTime = 0; duration = NaN; playbackRate = 1; defaultPlaybackRate = 1; preservesPitch = true;
+  paused = true;
+  private _src = "";
+  get src() { return this._src; }
+  // Like a browser: loading a source resets playbackRate to defaultPlaybackRate.
+  set src(v: string) { this._src = v; this.playbackRate = this.defaultPlaybackRate; }
   onended: (() => void) | null = null;
   onloadedmetadata: (() => void) | null = null;
   play() { this.paused = false; return Promise.resolve(); }
@@ -159,5 +163,29 @@ describe("Engine", () => {
     audios[0].currentTime = 1.2;
     engine.tick();
     expect(cb.onPosition).toHaveBeenLastCalledWith(1, 0);
+  });
+
+  it("keeps the chosen speed on audio that arrives after a speed change", () => {
+    const { engine, audios } = setup();
+    engine.setSpeed(1.5);
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    expect(audios[0].playbackRate).toBe(1.5);
+  });
+
+  it("reports loading while it waits for audio, and not after it plays or pauses", () => {
+    const { engine, audios, cb } = setup();
+    const onLoading = vi.fn();
+    cb.onLoading = onLoading;
+    engine.start(0);
+    expect(onLoading).toHaveBeenLastCalledWith(true);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    expect(onLoading).toHaveBeenLastCalledWith(false);
+    engine.jumpToWord(2); // chunk 1 not loaded yet
+    expect(onLoading).toHaveBeenLastCalledWith(true);
+    engine.pause();
+    expect(onLoading).toHaveBeenLastCalledWith(false);
+    expect(onLoading).toHaveBeenCalledTimes(4);
   });
 });

@@ -6,7 +6,7 @@
 import { Engine, AudioLike } from "./engine";
 import { renderModel } from "./renderer";
 import { HighlightController } from "./highlight";
-import { buildChunks, Chunk } from "@talktomebaby/engine/core";
+import { Chunk } from "@talktomebaby/engine/core";
 import { DocumentModel } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 import { initPlayerBar, PlayerBar } from "./player-bar";
@@ -77,6 +77,7 @@ function init(
       playerBar?.setState(state);
       vscode.postMessage({ type: "state", state });
     },
+    onLoading: (loading) => playerBar?.setLoading(loading),
     createAudio: () => new Audio() as unknown as AudioLike,
     // Uint8Array -> BlobPart cast: TS 5.9's typed-array generic widens the backing
     // buffer to ArrayBufferLike (incl. SharedArrayBuffer), which isn't a BlobPart.
@@ -126,8 +127,8 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   switch (msg.type) {
     case "init": {
-      const chunks = buildChunks(msg.model);
-      init(msg.model, chunks, msg.settings, msg.startAtWord ?? 0, msg.autoplay ?? true);
+      // The host plans the chunks (from the start word) and sends them, so both sides always agree.
+      init(msg.model, msg.chunks as Chunk[], msg.settings, msg.startAtWord ?? 0, msg.autoplay ?? true);
       break;
     }
     case "chunkAudio":

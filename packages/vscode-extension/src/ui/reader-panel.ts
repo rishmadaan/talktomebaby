@@ -4,7 +4,7 @@
  * See LICENSE and LICENSING.md for licensing and warranty information.
  */
 import * as vscode from "vscode";
-import { DocumentModel } from "@talktomebaby/engine/core";
+import { Chunk, DocumentModel } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 
 export interface ReaderSettings { speed: number; fontSize: number; sentenceColor: string; wordColor: string }
@@ -78,8 +78,8 @@ export class ReaderPanel {
    * @param startAtWord first word to begin/prime at (clamped by the caller). 0 for a fresh read.
    * @param autoplay    true = play immediately; false = prime paused at startAtWord (reconfigure of a paused session).
    */
-  sendInit(model: DocumentModel, chunkCount: number, settings: ReaderSettings, startAtWord = 0, autoplay = true) {
-    this.post({ type: "init", model, chunkCount, settings, startAtWord, autoplay });
+  sendInit(model: DocumentModel, chunks: Chunk[], settings: ReaderSettings, startAtWord = 0, autoplay = true) {
+    this.post({ type: "init", model, chunks, settings, startAtWord, autoplay });
   }
   sendChunk(chunkIndex: number, audio: Uint8Array, format: string, timings: ChunkTimings) {
     this.post({ type: "chunkAudio", chunkIndex, audio, format, timings });
