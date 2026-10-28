@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- CLI: plain `talktomebaby config` now prints the Edge use-at-your-own-risk notice too, on stderr so its JSON output stays parseable.
+- Docs: the "no contract with Microsoft" lines now speak only for TalkToMeBaby.
+
 ## [0.4.2] - 2026-10-28
 
 - New homepage at https://rishmadaan.github.io/talktomebaby/, published from GitHub. The extension's homepage link on the VS Code Marketplace and Open VSX now points there.
