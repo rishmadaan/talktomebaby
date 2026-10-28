@@ -50,8 +50,8 @@
           "type": "string", "default": "auto",
           "enum": ["auto", "edge", "elevenlabs", "openai", "say", "sarvam"],
           "enumDescriptions": [
-            "Auto — macOS say on macOS (offline, official), Edge TTS elsewhere (unofficial Microsoft service, use at your own risk)",
-            "Edge TTS (unofficial Microsoft service, not affiliated with Microsoft, use at your own risk; free, no key, word-level timing)",
+            "Auto — macOS say on macOS (offline, official), Edge TTS elsewhere (unofficial use of a Microsoft service, use at your own risk)",
+            "Edge TTS (unofficial use of a Microsoft service, not affiliated with Microsoft, use at your own risk; free, no key, word-level timing)",
             "ElevenLabs (premium voices, word-level timing, requires key)",
             "OpenAI (premium voices, estimated timing, requires key)",
             "macOS say (offline, estimated timing, macOS only)",

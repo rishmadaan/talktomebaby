@@ -18,7 +18,7 @@ const FALLBACK_VOICES: VoiceInfo[] = [
 
 export class EdgeProvider implements TtsProvider {
   readonly id = "edge";
-  readonly label = "Edge TTS (free)";
+  readonly label = "Edge TTS (free, unofficial, use at your own risk)";
   readonly requiresKey = false;
   readonly timingQuality = "exact" as const;
   readonly maxCharsPerRequest = 6000;
