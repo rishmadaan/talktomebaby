@@ -1,8 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.2] - 2026-10-28
 
-- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, the Select Voice picker label, the CLI messages for install, on, toggle, status, `config provider edge` and help, and the new homepage. The engine and CLI npm packages now ship DISCLAIMER.md.
+- New homepage at https://rishmadaan.github.io/talktomebaby/, published from GitHub. The extension's homepage link on the VS Code Marketplace and Open VSX now points there.
+- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, the Select Voice picker label, the CLI messages for install, on, toggle, status, `config provider edge` and help. The homepage carries an own-risk note with a disclaimer link (it names no vendor). The engine and CLI packages now ship DISCLAIMER.md; their versions are 0.2.2.
 
 ## [0.4.1] - 2026-10-28
 
