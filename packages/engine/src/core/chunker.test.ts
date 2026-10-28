@@ -54,6 +54,16 @@ describe("buildChunks", () => {
     expect(chunks.flatMap((c) => c.sentenceIndexes)).toEqual([...Array(long.sentences.length).keys()]);
   });
 
+  it("does not give a heading after the start sentence a chunk of its own", () => {
+    const md = parseDocument(["Intro one. Intro two.", "# Setup", longPara(1), longPara(2)].join("\n\n"), "h.md", 1);
+    const heading = md.sentences[2];
+    expect(heading.text).toBe("Setup");
+    const chunks = buildChunks(md, 2200, 1400, md.sentences[1].words[0].index);
+    const at = chunks.findIndex((c) => c.sentenceIndexes[0] === 1);
+    expect(chunks[at].sentenceIndexes).toEqual([1]);
+    expect(chunks[at + 1].text).toBe(["Setup", longPara(1)].join(" "));
+  });
+
   describe("from a start word, rejoins the plain plan (so later chunks stay cache hits)", () => {
     const plain = buildChunks(long);
     const holding = (si: number) => plain.findIndex((c) => c.sentenceIndexes.includes(si));

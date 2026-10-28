@@ -56,7 +56,7 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
       for (const cap of caps) {
         if (a >= b) return;
         const max = Math.min(cap, maxChars);
-        const end = take(a, b, max, 0);
+        const end = take(a, b, max, Math.floor(max / 2)); // half full first, so a heading does not ride alone
         ranges.push([a, end]);
         a = end;
       }
