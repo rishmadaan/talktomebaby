@@ -13,8 +13,8 @@
   },
   {
     "name": "msedge-tts",
-    "version": "2.0.5",
-    "url": "https://codeload.github.com/Migushthe2nd/MsEdgeTTS/tar.gz/af80142bc7a60c0b335fd72a6019bb42bda8119b",
-    "sha256": "4d35d1650b7358ec086f241f1b611cef05501a249044b2ce4b8ae75bb0ceb6c5"
+    "version": "2.1.1",
+    "url": "https://codeload.github.com/Migushthe2nd/MsEdgeTTS/tar.gz/c8722b3b3412e2a4117cddfd5547ae2f687b555a",
+    "sha256": "66e68c207213b38b713bb81ccd9ef9b7d2032f61aac40b25a3b5de30a7c454b6"
   }
 ]
