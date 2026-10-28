@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.1] - 2026-10-28
+
+- Fix: Edge TTS (Microsoft voices) works again. Microsoft now refuses the old access token with a 403; msedge-tts 2.1.1 sends the new v2 token. The engine and CLI versions are 0.2.1.
+
 ## [0.4.0] - 2026-09-13
 
 - Licensing: migrate the suite to GNU GPL v3 or later, starting with extension 0.4.0, engine 0.2.0, and CLI 0.2.0. Earlier MIT releases retain their existing permissions.
