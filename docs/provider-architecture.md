@@ -34,7 +34,7 @@ do that.
 
 | Provider | Quality | Word timing | Key | Offline | Fragility |
 |---|---|---|---|---|---|
-| Edge TTS | Neural, very good | Exact (word boundaries) | No | No | **Unofficial.** Uses the same endpoint Edge's "Read Aloud" uses, via the `msedge-tts` package. Microsoft offers no contract; it has changed before (we already had to move from package v1 to v2) and could break or get gated at any time. That is the price of free. |
+| Edge TTS | Neural, very good | Exact (word boundaries) | No | No | **Unofficial.** Uses the same endpoint Edge's "Read Aloud" uses, via the `msedge-tts` package. There is no contract with Microsoft for this endpoint; it has changed before (we already had to move from package v1 to v2) and could break or get gated at any time. That is the price of free. |
 | ElevenLabs | Best-in-class | Exact (char alignment) | Yes | No | Official API, stable. Paid. |
 | macOS `say` | Decent (Enhanced voices) | Estimated | No | **Yes** | Official Apple CLI, stable. **macOS only.** |
 | Sarvam AI | Good (Indian English) | Estimated | Yes | No | Official API. |
