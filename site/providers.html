@@ -63,7 +63,7 @@
           <td>Exact (word boundaries)</td>
           <td>No</td>
           <td>No</td>
-          <td><strong>Unofficial endpoint.</strong> Uses the same endpoint Edge's "Read Aloud" feature uses, via the <code>msedge-tts</code> package. Microsoft offers no contract; it has broken before and could change or get gated at any time. That is the price of free.</td>
+          <td><strong>Unofficial endpoint.</strong> Uses the same endpoint Edge's "Read Aloud" feature uses, via the <code>msedge-tts</code> package. Microsoft offers no contract; it has broken before and could change or get gated at any time. That is the price of free. <strong>Use at your own risk</strong> (<a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts">disclaimer</a>).</td>
         </tr>
         <tr>
           <td>ElevenLabs</td>
@@ -105,6 +105,10 @@
       <p>Default voice: <code>en-US-AriaNeural</code>. You can change it from the gear panel or via <strong>TalkToMeBaby: Select Voice</strong> in the command palette.</p>
       <div class="callout">
         <p><strong>Unofficial endpoint.</strong> Edge TTS uses an undocumented Microsoft endpoint. There is no SLA, no public support channel, and it has broken before — the extension already had to migrate from <code>msedge-tts</code> v1 to v2 due to an upstream change. If it breaks again, Windows and Linux users will lose audio until a fix ships. See <a href="roadmap.html">Roadmap</a> for the plan to replace this with a bundled local TTS engine.</p>
+      </div>
+      <div class="callout">
+        <p><strong>Use at your own risk.</strong> TalkToMeBaby is not affiliated with or authorized by Microsoft. It does not bundle, host, resell, or redistribute Microsoft voices or audio: audio is generated between your computer and Microsoft only when you press play, and cached only on your device. Do not sell, republish, or broadcast audio made with these voices unless you have confirmed you have the rights.</p>
+        <p>Other open-source tools use the same voices — Nous Research's <a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/tts">Hermes Agent</a>, for example, makes Edge TTS its default free voice — but wide use is not permission from Microsoft. Read the full <a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts">Microsoft Edge voices disclaimer</a>.</p>
       </div>
     </div>
 
@@ -164,6 +168,7 @@
 <footer class="site-footer">
   <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
   <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">GPL-3.0-or-later</a> from v0.4.0</p>
+  <p>Use at your own risk. Not affiliated with Microsoft, Speechify, or any voice provider. <a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md">Disclaimer</a></p>
 </footer>
 </body>
 </html>

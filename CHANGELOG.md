@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, and the CLI install message. The engine and CLI npm packages now ship DISCLAIMER.md.
+
 ## [0.4.1] - 2026-10-28
 
 - Fix: Edge TTS (Microsoft voices) works again. Microsoft now refuses the old access token with a 403; msedge-tts 2.1.1 sends the new v2 token. The engine and CLI versions are 0.2.1.

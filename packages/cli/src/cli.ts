@@ -189,6 +189,9 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           } else {
             console.log(`Installed ${inst.name} hook at ${inst.path}; voice ON, but the test line FAILED${test.error ? `: ${test.error}` : ""}. Check your provider/key with: talktomebaby config`);
           }
+          if (enabled.provider === "edge") {
+            console.log("Note: Edge TTS uses Microsoft's unofficial online voice service and is not affiliated with Microsoft. Use at your own risk: https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts (switch with: talktomebaby config provider <id>)");
+          }
         } else {
           console.log(`${inst.name} hook already present at ${inst.path}`);
         }

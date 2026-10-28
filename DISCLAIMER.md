@@ -36,7 +36,21 @@ TalkToMeBaby can send text chunks to third-party TTS providers when you choose a
 
 The project maintainers do not control third-party providers and are not responsible for their behavior, availability, pricing, outputs, data handling, account actions, policy enforcement, or changes.
 
-The Edge TTS provider is unofficial and best effort. It uses the `msedge-tts` package and may stop working, be rate-limited, become gated, change behavior, or become unsuitable for your use without notice. You are responsible for deciding whether use of that provider is allowed for your situation.
+The Edge TTS provider is unofficial and best effort. It uses the `msedge-tts` package and may stop working, be rate-limited, become gated, change behavior, or become unsuitable for your use without notice. You are responsible for deciding whether use of that provider is allowed for your situation. See [Microsoft Edge Voices (Edge TTS)](#microsoft-edge-voices-edge-tts) below.
+
+## Microsoft Edge Voices (Edge TTS)
+
+**Use the Edge TTS provider entirely at your own risk.** It is the default provider in the VS Code extension on Windows and Linux, and the default voice in the `talktomebaby` CLI on every platform. You can switch to another provider at any time.
+
+**What it is.** The Edge TTS provider connects your computer directly to Microsoft's online speech service, the one behind the "Read Aloud" feature in the Microsoft Edge browser, through the open-source `msedge-tts` package (MIT). This service is not a public, documented, or separately licensed API. Microsoft has not authorized, endorsed, reviewed, or contracted with TalkToMeBaby for this use, and offers no service level, support, or guarantee for it.
+
+**What TalkToMeBaby does not do.** TalkToMeBaby does not include, bundle, host, proxy, resell, sublicense, or redistribute Microsoft voices, voice models, or Microsoft-generated audio. No Microsoft audio ships in any TalkToMeBaby release, package, website, or demo. Audio is generated only when you choose to play text, by a connection between your own computer and Microsoft, and is cached only on your own device. The project charges nothing for Edge TTS and makes no money from it. Microsoft voice names such as `en-US-AriaNeural` are listed only so you can choose one; the voices, names, and service belong to Microsoft.
+
+**Your responsibility.** You alone decide whether Microsoft's terms, your employer's rules, and the laws where you live permit your use of this service. Microsoft may change, rate-limit, block, or shut down the service at any time, for you or for everyone. Do not sell, resell, republish, broadcast, publicly perform, use commercially, or use to train models any audio produced with Microsoft Edge voices, and do not present such audio as licensed by Microsoft or by TalkToMeBaby, unless you have confirmed you have the rights to do so. If you need audio with clear usage rights, use a provider you have your own agreement with (such as ElevenLabs, OpenAI, or Sarvam AI) or macOS `say`.
+
+**Other projects do the same, and that is not permission.** Using Microsoft Edge's online voices is common in open-source software. For example, Nous Research's [Hermes Agent](https://hermes-agent.nousresearch.com/docs/user-guide/features/tts) offers Edge TTS as its default free voice provider, through the open-source [`edge-tts`](https://github.com/rany2/edge-tts) library. That wide use does not mean Microsoft has authorized it, and neither TalkToMeBaby nor any other project passes Microsoft rights on to you.
+
+**No Microsoft affiliation.** Microsoft, Microsoft Edge, and Microsoft voice names are trademarks of Microsoft Corporation. TalkToMeBaby uses them only to describe compatibility and is not affiliated with, endorsed by, or sponsored by Microsoft.
 
 ## Content, Copyright, and Generated Audio
 

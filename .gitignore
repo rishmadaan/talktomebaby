@@ -5,6 +5,7 @@ packages/*/source.tar.gz
 packages/*/LICENSE
 packages/*/LICENSING.md
 packages/*/THIRD_PARTY_NOTICES.md
+packages/*/DISCLAIMER.md
 packages/cli/README.md
 packages/engine/README.md
 packages/*/out/

@@ -27,8 +27,8 @@ async function main() {
   const files = sourceFiles(root);
   if (fs.readFileSync(path.join(root, "THIRD_PARTY_NOTICES.md"), "utf8").replace(/\r\n/g, "\n") !== notices())
     throw new Error("Stale notices: run node scripts/third-party-notices.js and review the changes");
-  const docs = ["README.md", "LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md"];
-  if (target === "vscode-extension") docs.push("CHANGELOG.md", "PRIVACY.md", "DISCLAIMER.md");
+  const docs = ["README.md", "LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md", "DISCLAIMER.md"];
+  if (target === "vscode-extension") docs.push("CHANGELOG.md", "PRIVACY.md");
   for (const file of docs) {
     let content = fs.readFileSync(path.join(root, file), "utf8");
     // vsce renames LICENSE to LICENSE.txt inside the installed extension.

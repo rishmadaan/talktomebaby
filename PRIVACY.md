@@ -8,7 +8,7 @@ When you start reading, TalkToMeBaby turns the current document or selection int
 
 | Provider | Text leaves your machine? | Notes |
 |---|---:|---|
-| Edge TTS | Yes | Uses the unofficial `msedge-tts` package against the same general service family used by Microsoft Edge Read Aloud. This is best effort and may change or stop working. |
+| Edge TTS | Yes | Uses the unofficial `msedge-tts` package against the same general service family used by Microsoft Edge Read Aloud. This is best effort and may change or stop working. Use at your own risk; see [DISCLAIMER.md](DISCLAIMER.md#microsoft-edge-voices-edge-tts). |
 | ElevenLabs | Yes | Uses ElevenLabs' official API with your API key. |
 | OpenAI | Yes | Uses OpenAI's official text-to-speech API with your API key. |
 | Sarvam AI | Yes | Uses Sarvam AI's official API with your API key. |

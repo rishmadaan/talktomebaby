@@ -10,7 +10,7 @@
     "talktomebaby": "dist/cli.js"
   },
   "files": [
-    "dist", "LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md", "source.tar.gz"
+    "dist", "LICENSE", "LICENSING.md", "THIRD_PARTY_NOTICES.md", "DISCLAIMER.md", "source.tar.gz"
   ],
   "scripts": {
     "prebuild": "npm -C ../.. run build -w @talktomebaby/engine",
