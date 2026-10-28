@@ -21,7 +21,7 @@ body:
     attributes:
       label: TTS Provider
       options:
-        - Edge TTS (default)
+        - Edge TTS (default on Windows/Linux)
         - ElevenLabs
         - macOS say
         - Sarvam AI

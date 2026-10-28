@@ -1,5 +1,7 @@
 # Provider Architecture — API Keys, Platform Coverage, and the OS-Agnostic Roadmap
 
+> **Microsoft Edge voices: use at your own risk.** See the [Microsoft Edge voices disclaimer](../DISCLAIMER.md#microsoft-edge-voices-edge-tts).
+
 **Last updated:** 2026-06-10
 
 ## How API keys are stored (and why it's safe)
