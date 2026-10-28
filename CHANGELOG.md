@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+- Faster start: Read from Here, Read Selection, resume after reload and a voice switch begin with the starting sentence on its own, then slightly longer pieces, so the first audio arrives quickly instead of waiting behind the top of the document. After those first pieces the parts match a read from the top, so audio already cached for the rest of the document still plays free.
+- The player bar shows "Loading…" while it waits for audio, and "Nothing to read." for a blank or code-only document.
+- Fix: the chosen speed holds when the next part of the audio loads (it used to drop back to 1x).
+- Fix: sentences ending in words like "first." or "last." are no longer joined to the next one (they were read as the abbreviation "St.").
+- Fix: after an edit above the reading position, cached audio highlights the right words again.
+- Fix: a request cancelled by a voice switch or stop is no longer synthesized a second time.
+- Fix: switching voice while paused prepares only the current part; nothing further is synthesized until Play. A switch while the first audio is still loading keeps the requested position.
+- Fix: a word the voice gave no timing for starts playback just before it, not at the start of that part.
+- Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
+- Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged.
+
 - Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, and the CLI install message. The engine and CLI npm packages now ship DISCLAIMER.md.
 
 ## [0.4.1] - 2026-10-28
