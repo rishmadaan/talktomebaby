@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, the Select Voice picker label, the CLI install, `config provider edge` and help messages, and the new homepage. The engine and CLI npm packages now ship DISCLAIMER.md.
+- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, the Select Voice picker label, the CLI messages for install, on, toggle, status, `config provider edge` and help, and the new homepage. The engine and CLI npm packages now ship DISCLAIMER.md.
 
 ## [0.4.1] - 2026-10-28
 

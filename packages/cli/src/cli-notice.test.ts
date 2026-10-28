@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  * See LICENSE and LICENSING.md for licensing and warranty information.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -79,6 +79,52 @@ describe("Edge use-at-your-own-risk notice", () => {
   });
 
   it("help mentions Edge TTS is used at your own risk", () => {
-    expect(run([]).some((l) => l.startsWith("Edge TTS (the default voice) is unofficial use of a Microsoft service; use at your own risk."))).toBe(true);
+    expect(run([]).some((l) => l.startsWith("Edge TTS (the default voice) makes unofficial use of a Microsoft service; use at your own risk."))).toBe(true);
+  });
+
+  it("on prints the notice for Edge; another provider does not", () => {
+    expect(run(["on"], { enabled: false, provider: "edge" }).some((l) => l.startsWith(NOTICE))).toBe(true);
+    expect(run(["on"], { enabled: false, provider: "openai" }).some((l) => l.startsWith(NOTICE))).toBe(false);
+  });
+
+  it("toggle prints the notice only when it turns Edge on", () => {
+    expect(run(["toggle"], { enabled: false, provider: "edge" }).some((l) => l.startsWith(NOTICE))).toBe(true);
+    const off = run(["toggle"], { enabled: true, provider: "edge" });
+    expect(off).toContain("talktomebaby voice OFF");
+    expect(off.some((l) => l.startsWith(NOTICE))).toBe(false);
+  });
+
+  it("status prints the notice when the provider is Edge", () => {
+    expect(run(["status"], { enabled: true, provider: "edge" }).some((l) => l.startsWith(NOTICE))).toBe(true);
+  });
+});
+
+// In-process: the real install code with speakText replaced by a marker, so the
+// test sees the notice land before synthesis is even called, not just before
+// the final "Installed" line.
+const events = vi.hoisted(() => [] as string[]);
+vi.mock("./agent-voice", () => ({ speakText: async () => { events.push("SPEAK"); return { ok: true }; } }));
+
+describe("install ordering", () => {
+  const keys = ["HOME", "USERPROFILE", "XDG_CONFIG_HOME", "CODEX_HOME"] as const;
+  const saved: Record<string, string | undefined> = {};
+  afterEach(() => { for (const k of keys) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } vi.restoreAllMocks(); });
+
+  it("prints the Edge notice before speakText is called", async () => {
+    home = mkdtempSync(join(tmpdir(), "ttmb-cli-home-")); // removed by afterEach(dropHome)
+    for (const k of keys) saved[k] = process.env[k];
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, XDG_CONFIG_HOME: join(home, ".config"), CODEX_HOME: join(home, ".codex") });
+    mkdirSync(join(home, ".config", "talktomebaby"), { recursive: true });
+    writeFileSync(join(home, ".config", "talktomebaby", "config.json"), JSON.stringify({ enabled: true, provider: "edge" }));
+    events.length = 0;
+    vi.spyOn(console, "log").mockImplementation((m: unknown) => { events.push(String(m)); });
+    vi.resetModules(); // STATE_DIR is computed at load, after the env above
+    const { dispatch } = await import("./cli");
+    expect(await dispatch("install", ["codex"])).toBe(0);
+    const notice = events.findIndex((l) => l.startsWith(NOTICE));
+    const speak = events.indexOf("SPEAK");
+    expect(speak).toBeGreaterThan(-1);
+    expect(notice).toBeGreaterThan(-1);
+    expect(notice).toBeLessThan(speak);
   });
 });

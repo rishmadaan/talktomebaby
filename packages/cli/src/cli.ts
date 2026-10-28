@@ -33,6 +33,8 @@ function readStdin(): string {
 const PIDFILE = join(STATE_DIR, "agent.pid");
 
 const EDGE_NOTICE = "Note: Edge TTS makes unofficial use of Microsoft's online voice service and is not affiliated with Microsoft. Use at your own risk: https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts (switch with: talktomebaby config provider <id>)";
+// Every command that turns Edge on or reports it says so; never the agent path (run by Stop hooks).
+function noteEdge(c: { provider: string }) { if (c.provider === "edge") console.log(EDGE_NOTICE); }
 
 // Newest reply wins: a new turn hushes any speech still playing from the
 // previous one instead of talking over it. The detached child is a process
@@ -133,7 +135,7 @@ async function main(): Promise<number> {
   }
 }
 
-async function dispatch(cmd: string | undefined, rest: string[]): Promise<number> {
+export async function dispatch(cmd: string | undefined, rest: string[]): Promise<number> {
   switch (cmd) {
     case "agent": {
       // The host's Stop hook waits for this command, so it must return
@@ -154,10 +156,10 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
       spawn(process.execPath, args, { detached: true, stdio: "ignore" }).unref();
       return 0; // ALWAYS 0
     }
-    case "on": { saveConfig({ ...loadConfig({ strict: true }), enabled: true }); console.log("talktomebaby voice ON"); return 0; }
+    case "on": { const c = { ...loadConfig({ strict: true }), enabled: true }; saveConfig(c); console.log("talktomebaby voice ON"); noteEdge(c); return 0; }
     case "off": { saveConfig({ ...loadConfig({ strict: true }), enabled: false }); console.log("talktomebaby voice OFF"); return 0; }
-    case "toggle": { const c = loadConfig({ strict: true }); saveConfig({ ...c, enabled: !c.enabled }); console.log(`talktomebaby voice ${!c.enabled ? "ON" : "OFF"}`); return 0; }
-    case "status": { const c = loadConfig(); console.log(`talktomebaby voice ${c.enabled ? "ON" : "OFF"} (${c.provider}, ${c.scope})`); return 0; }
+    case "toggle": { const c = loadConfig({ strict: true }); saveConfig({ ...c, enabled: !c.enabled }); console.log(`talktomebaby voice ${!c.enabled ? "ON" : "OFF"}`); if (!c.enabled) noteEdge(c); return 0; }
+    case "status": { const c = loadConfig(); console.log(`talktomebaby voice ${c.enabled ? "ON" : "OFF"} (${c.provider}, ${c.scope})`); noteEdge(c); return 0; }
     case "config": { return doConfig(rest); }
     case "install": {
       const target = rest[0];
@@ -182,7 +184,7 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           const enabled = { ...cfg, enabled: true };
           if (!cfg.enabled) saveConfig(enabled);
           inst.fn(inst.path, command);
-          if (enabled.provider === "edge") console.log(EDGE_NOTICE); // before the test line reaches Microsoft
+          noteEdge(enabled); // before the test line reaches Microsoft
           // Spec promise: one command from install to HEARING the agent. The
           // test line is the dry-run that proves provider + player actually
           // work; a silent success here would hide a broken setup.
@@ -194,7 +196,7 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
           }
         } else {
           console.log(`${inst.name} hook already present at ${inst.path}`);
-          if (loadConfig().provider === "edge") console.log(EDGE_NOTICE);
+          noteEdge(loadConfig());
         }
         return 0;
       } catch (e) {
@@ -204,7 +206,7 @@ async function dispatch(cmd: string | undefined, rest: string[]): Promise<number
     }
     default:
       console.log("talktomebaby <agent|install|on|off|toggle|status|config>");
-      console.log("Edge TTS (the default voice) is unofficial use of a Microsoft service; use at your own risk. See DISCLAIMER.md.");
+      console.log("Edge TTS (the default voice) makes unofficial use of a Microsoft service; use at your own risk. See DISCLAIMER.md.");
       console.log("Copyright (c) 2026 Rish. GPL-3.0-or-later; no warranty. Redistribution is permitted under the GPL.");
       console.log("See LICENSE and LICENSING.md beside this package's dist directory; matching source is in source.tar.gz.");
       return cmd ? 1 : 0;
@@ -226,7 +228,7 @@ function doConfig(rest: string[]): number {
     const valid = availableProviders(process.platform).map((p) => p.id);
     if (!valid.includes(value)) { console.error(`unknown or unavailable provider "${value}" (valid here: ${valid.join(", ")})`); return 1; }
     saveConfig({ ...c, provider: value }); console.log(`provider = ${value}`);
-    if (value === "edge") console.log(EDGE_NOTICE);
+    noteEdge({ provider: value });
     return 0;
   }
   if (key === "scope" && (value === "full" || value === "first-paragraph" || value === "summary")) { saveConfig({ ...c, scope: value }); console.log(`scope = ${value}`); return 0; }
@@ -243,4 +245,5 @@ function doConfig(rest: string[]): number {
   console.error("usage: talktomebaby config [provider <id> | scope <full|first-paragraph|summary> | voice <provider> <voice-id> | max-chars <n>]"); return 1;
 }
 
-main().then((code) => process.exit(code)).catch((e) => { log(`fatal: ${e}`); process.exit(0); });
+// Run only as the entry (dist/cli.js or the npm bin); a test importing this file drives dispatch() itself.
+if (require.main === module) main().then((code) => process.exit(code)).catch((e) => { log(`fatal: ${e}`); process.exit(0); });
