@@ -186,6 +186,40 @@ describe("Engine", () => {
     expect(cb.onPosition).toHaveBeenLastCalledWith(1, 0);
   });
 
+  it("seeks an untimed word to the end of the nearest earlier timed word, not the chunk start", () => {
+    // The provider skipped word 3's boundary: only word 2 (0-400ms) is timed.
+    const sparse: ChunkTimings = { unit: "ms", words: [{ wordIndex: 2, start: 0, end: 400 }] };
+    const chunk1 = () => ({ audio: new Uint8Array(1), format: "mp3", timings: sparse });
+
+    const pending = setup();                       // seek before the audio arrives
+    pending.engine.jumpToWord(3);
+    pending.engine.receiveChunk(1, chunk1());
+    pending.audios[0]._loaded(1.0);
+    expect(pending.audios[0].currentTime).toBeCloseTo(0.4);
+
+    const loaded = setup();                        // seek into audio already loaded
+    loaded.engine.start(0);
+    loaded.engine.receiveChunk(1, chunk1());
+    loaded.audios[0]._loaded(1.0);
+    loaded.engine.jumpToWord(3);
+    expect(loaded.audios[0].currentTime).toBeCloseTo(0.4);
+
+    const primed = setup();                        // paused prime into loaded audio
+    primed.engine.start(0);
+    primed.engine.receiveChunk(1, chunk1());
+    primed.audios[0]._loaded(1.0);
+    primed.engine.primeAt(3);
+    expect(primed.audios[0].currentTime).toBeCloseTo(0.4);
+
+    const none = setup();                          // nothing earlier is timed: chunk start
+    none.engine.jumpToWord(2);
+    none.engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3",
+      timings: { unit: "ms", words: [{ wordIndex: 3, start: 500, end: 900 }] } });
+    none.audios[0].currentTime = 0.9;
+    none.audios[0]._loaded(1.0);
+    expect(none.audios[0].currentTime).toBe(0);
+  });
+
   it("keeps the chosen speed on audio that arrives after a speed change", () => {
     const { engine, audios } = setup();
     engine.setSpeed(1.5);

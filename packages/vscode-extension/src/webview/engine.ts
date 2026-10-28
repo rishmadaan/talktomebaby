@@ -88,14 +88,23 @@ export class Engine {
     this.playing = false;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, wordIndex);
     } else {
       this.pendingJumpWord = wordIndex;
       this.cb.requestChunk(chunkIndex, true);
     }
     this.prefetch(chunkIndex + 1);
     this.cb.onState("paused");
+  }
+
+  /** Seconds to seek to for a word: its start, else the end of the nearest earlier timed word (Edge can skip a boundary), else 0. */
+  private seekTime(lc: LoadedChunk, wordIndex: number): number {
+    let best: number | null = null;
+    for (const w of lc.timingsMs!) {
+      if (w.wordIndex === wordIndex) return w.start / 1000;
+      if (w.wordIndex < wordIndex) best = w.end;
+    }
+    return best !== null ? best / 1000 : 0;
   }
 
   // A seek reports at once: the host replans a voice switch from it, and a tick
@@ -145,8 +154,7 @@ export class Engine {
     // Apply a pending seek whether we're going to play or just prime-in-place,
     // so a paused prime still lands the audio at the right word.
     if (this.pendingJumpWord !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === this.pendingJumpWord);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, this.pendingJumpWord);
       this.pendingJumpWord = null;
     }
     if (!this.playing) return; // primed but paused — loaded and seeked, do not play
@@ -203,8 +211,7 @@ export class Engine {
     this.playing = true;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, wordIndex);
       this.setLoading(false);
       lc.audio.play().catch(() => this.cb.onState("paused"));
       this.cb.onState("playing");
