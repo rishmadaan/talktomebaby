@@ -17,6 +17,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "msedge-tts": "^2.0.5"
+    "msedge-tts": "^2.1.1"
   }
 }

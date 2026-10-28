@@ -897,7 +897,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## msedge-tts 2.0.5 (MIT)
+## msedge-tts 2.1.1 (MIT)
 
 Location: `node_modules/msedge-tts`
 
@@ -1160,7 +1160,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## ws 8.21.0 (MIT)
+## ws 8.22.0 (MIT)
 
 Location: `node_modules/ws`
 
