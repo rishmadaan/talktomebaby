@@ -219,6 +219,8 @@ function doConfig(rest: string[]): number {
     // Never print stored key values; show which providers have one.
     const shown = { ...c, keys: c.keys ? Object.fromEntries(Object.keys(c.keys).map((k) => [k, "<set>"])) : undefined };
     console.log(JSON.stringify(shown, null, 2));
+    // stderr, so stdout stays parseable JSON.
+    if (c.provider === "edge") console.error(EDGE_NOTICE);
     return 0;
   }
   const [key, value] = rest;
