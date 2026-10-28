@@ -93,7 +93,7 @@ export class Engine {
       this.pendingJumpWord = wordIndex;
       this.cb.requestChunk(chunkIndex, true);
     }
-    this.prefetch(chunkIndex + 1);
+    // No prefetch while paused: chunks ahead are synthesized (and billed) only after Play.
     this.cb.onState("paused");
   }
 

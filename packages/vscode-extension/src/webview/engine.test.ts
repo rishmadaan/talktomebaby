@@ -130,6 +130,17 @@ describe("Engine", () => {
     expect(engine.currentSentence).toBe(1);
   });
 
+  it("primeAt requests only the primed chunk; the chunks ahead wait for Play", () => {
+    const { engine, audios, cb } = setup();
+    engine.primeAt(0);
+    expect(vi.mocked(cb.requestChunk).mock.calls).toEqual([[0, true]]);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    expect(vi.mocked(cb.requestChunk).mock.calls).toEqual([[0, true]]);
+    engine.resume();
+    expect(vi.mocked(cb.requestChunk).mock.calls).toEqual([[0, true], [1, false]]);
+  });
+
   it("primeAt then resume plays from the primed word's sentence", () => {
     const { engine, audios, cb } = setup();
     engine.primeAt(2);
