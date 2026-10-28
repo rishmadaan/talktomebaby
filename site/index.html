@@ -1,125 +1,593 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TalkToMeBaby — read-aloud for VS Code</title>
-  <meta name="description" content="Speechify-inspired read-aloud for VS Code: word-level karaoke highlighting, click-to-jump navigation, and 2x speed without pitch shift.">
-  <meta property="og:title" content="TalkToMeBaby — listen to your docs in VS Code">
-  <meta property="og:description" content="Speechify-style reading for VS Code: word-level highlighting, click-to-jump, 2x speed without pitch shift.">
-  <meta property="og:image" content="assets/og.png">
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/style.css">
-  <!-- NOTE: nav/footer are duplicated across all pages (no build step). A nav change means editing every .html file. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TalkToMeBaby · open-source read-aloud for VS Code</title>
+<meta name="description" content="TalkToMeBaby reads your prose files aloud inside VS Code, with word-by-word highlighting, click-to-jump and 0.5x to 2x speed. Free and open source under GPL-3.0-or-later.">
+<link rel="canonical" href="https://rishmadaan.github.io/talktomebaby/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://rishmadaan.github.io/talktomebaby/">
+<meta property="og:title" content="TalkToMeBaby · open-source read-aloud for VS Code">
+<meta property="og:description" content="Hear your draft, word by word, where you wrote it. Free and open source.">
+<meta property="og:image" content="https://rishmadaan.github.io/talktomebaby/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<meta name="description" content="A free, open-source VS Code extension that reads your prose files aloud in a Reader panel, with the current sentence banded and the current word lit. GPL-3.0-or-later.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f1ec;
+    --bg-2: #e9e7e0;
+    --ink: #16131c;
+    --ink-2: #4b4657;
+    --ink-3: #7b7489;
+    --rule: #d6d3ca;
+    --amber: #ffb347;
+    --coral: #ff5470;
+    --on-coral: #16131c;
+    --btn-bg: #16131c;
+    --btn-fg: #f2f1ec;
+    --ed-bg: #0e0c12;
+    --ed-panel: #16131d;
+    --ed-rule: #2a2634;
+    --ed-text: #e8e3d7;
+    --ed-dim: #6e6779;
+    --ed-band: rgba(255, 179, 71, 0.2);
+    --ed-tab: #1d1a26;
+    --ed-status: #0a090d;
+    --oss-bg: #16131c;
+    --oss-fg: #ece8df;
+    --oss-dim: #a8a1b3;
+    --oss-rule: #2f2a3a;
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --sans: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+    --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e0c12;
+      --bg-2: #15121b;
+      --ink: #ece8df;
+      --ink-2: #b4adc0;
+      --ink-3: #7d7689;
+      --rule: #2a2634;
+      --btn-bg: #ece8df;
+      --btn-fg: #0e0c12;
+      --ed-bg: #16131d;
+      --ed-panel: #1b1824;
+      --ed-rule: #302b3b;
+      --ed-tab: #221e2c;
+      --ed-status: #110f16;
+      --oss-bg: #ece8df;
+      --oss-fg: #16131c;
+      --oss-dim: #5c5668;
+      --oss-rule: #cfcbc2;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e0c12;
+    --bg-2: #15121b;
+    --ink: #ece8df;
+    --ink-2: #b4adc0;
+    --ink-3: #7d7689;
+    --rule: #2a2634;
+    --btn-bg: #ece8df;
+    --btn-fg: #0e0c12;
+    --ed-bg: #16131d;
+    --ed-panel: #1b1824;
+    --ed-rule: #302b3b;
+    --ed-tab: #221e2c;
+    --ed-status: #110f16;
+    --oss-bg: #ece8df;
+    --oss-fg: #16131c;
+    --oss-dim: #5c5668;
+    --oss-rule: #cfcbc2;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-color: var(--coral); text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; border-radius: 2px; }
+  code { font-family: var(--mono); font-size: 0.92em; }
+  kbd { font-family: var(--mono); font-size: 0.86em; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 500; letter-spacing: -0.01em; margin: 0; }
+  p { margin: 0 0 1em; }
+
+  .wrap {
+    padding-left: var(--gutter-l);
+    padding-right: var(--gutter-r);
+  }
+  .inner { max-width: 1160px; margin: 0 auto; }
+
+  /* masthead */
+  .mast { border-bottom: 1px solid var(--rule); }
+  .mast .inner { display: flex; align-items: center; gap: 14px; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 19px; }
+  .brand svg { width: 28px; height: 28px; border-radius: 6px; flex: none; }
+  .mast nav { margin-left: auto; display: flex; gap: 22px; font-size: 14.5px; }
+  .mast nav a { text-decoration: none; color: var(--ink-2); }
+  .mast nav a:hover { color: var(--ink); }
+  @media (max-width: 560px) { .mast nav a.hide-sm { display: none; } }
+
+  /* hero */
+  .hero { padding-block: 56px 28px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-2); letter-spacing: 0.02em; margin: 0 0 22px; }
+  .eyebrow b { color: var(--ink); font-weight: 500; }
+  .eyebrow a { text-decoration-color: var(--rule); }
+  h1 { font-size: clamp(38px, 6.2vw, 76px); line-height: 1.0; max-width: 14ch; font-variation-settings: "opsz" 96; }
+  h1 .hl { background: var(--amber); color: #16131c; padding: 0 0.08em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  h1 .hl .w { background: var(--coral); color: var(--on-coral); border-radius: 3px; padding: 0 0.06em; }
+  .lede { font-size: clamp(18px, 2vw, 22px); line-height: 1.45; max-width: 52ch; color: var(--ink-2); margin: 28px 0 30px; }
+  .lede b { color: var(--ink); font-weight: 500; }
+  .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--btn-bg); color: var(--btn-fg);
+    text-decoration: none; font-weight: 500; font-size: 16px;
+    padding: 13px 20px; border-radius: 5px; border: 1px solid var(--btn-bg);
+  }
+  .btn:hover { background: var(--coral); border-color: var(--coral); color: #16131c; }
+  .btn svg { width: 16px; height: 16px; }
+  .cmd {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 14px; color: var(--ink-2);
+    border: 1px solid var(--rule); border-radius: 5px; padding: 10px 12px; background: var(--bg-2);
+  }
+  .cmd code { color: var(--ink); user-select: all; }
+  .cmd button {
+    font: inherit; font-size: 12px; color: var(--ink-2); background: transparent; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 3px 8px; cursor: pointer;
+  }
+  .cmd button:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* the stage: editor recreation */
+  .stage { margin: 48px 0 0; }
+  .win {
+    background: var(--ed-bg); color: var(--ed-text);
+    border: 1px solid var(--ed-rule); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 30px 80px -30px rgba(14, 12, 18, 0.55);
+    font-family: var(--mono); font-size: 13.5px;
+  }
+  .win .titlebar {
+    height: 36px; display: flex; align-items: center; justify-content: center;
+    background: var(--ed-tab); border-bottom: 1px solid var(--ed-rule); color: var(--ed-dim); font-size: 12px; position: relative;
+  }
+  .win .dots { position: absolute; left: 14px; top: 12px; display: flex; gap: 7px; }
+  .win .dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--ed-rule); display: block; }
+  .win .body { display: grid; grid-template-columns: 46px minmax(0, 1fr) minmax(0, 1fr); min-height: 440px; }
+  .act { background: var(--ed-tab); border-right: 1px solid var(--ed-rule); display: flex; flex-direction: column; align-items: center; padding-top: 10px; gap: 18px; }
+  .act svg { width: 22px; height: 22px; stroke: var(--ed-dim); fill: none; stroke-width: 1.6; }
+  .act svg.on { stroke: var(--ed-text); }
+  .grp { display: flex; flex-direction: column; min-width: 0; }
+  .grp + .grp { border-left: 1px solid var(--ed-rule); }
+  .tabs { display: flex; background: var(--ed-tab); border-bottom: 1px solid var(--ed-rule); height: 36px; font-size: 12.5px; }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--ed-dim); border-right: 1px solid var(--ed-rule); white-space: nowrap; }
+  .tab.on { background: var(--ed-bg); color: var(--ed-text); box-shadow: inset 0 1px 0 var(--amber); }
+  .tab .ico { width: 14px; height: 14px; display: inline-block; }
+  .src { flex: 1; padding: 12px 0; overflow: hidden; line-height: 1.7; }
+  .ln { white-space: pre; }
+  .ln .n { display: inline-block; width: 44px; text-align: right; padding-right: 14px; color: var(--ed-dim); user-select: none; }
+  .ln .h { color: var(--amber); font-weight: 500; }
+  .ln .mk { color: var(--ed-dim); }
+  .ln .deco { border-radius: 2px; }
+  .ln .deco.on { background: var(--ed-band); box-shadow: 0 0 0 2px var(--ed-band); }
+  .ln .cursor { display: inline-block; width: 2px; height: 1.15em; vertical-align: text-bottom; background: var(--ed-text); margin-left: 1px; }
+
+  .reader { flex: 1; padding: 26px 30px 18px; font-family: var(--serif); font-size: 17.5px; line-height: 1.7; color: var(--ed-text); font-variation-settings: "opsz" 18; }
+  .reader h3 { font-family: var(--serif); font-weight: 600; font-size: 22px; margin: 0 0 14px; letter-spacing: 0; }
+  .reader p { margin: 0; }
+  .reader .s { border-radius: 3px; padding: 1px 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .reader .s.cur { background: var(--ed-band); box-shadow: 0 0 0 3px var(--ed-band); }
+  .reader .w { cursor: pointer; border-radius: 3px; padding: 0 1px; margin: 0 -1px; }
+  .reader .w:hover { text-decoration: underline; text-decoration-color: var(--amber); text-underline-offset: 3px; }
+  .reader .w.lit { background: var(--coral); color: var(--on-coral); }
+  .reader .hint { margin-top: 18px; font-family: var(--mono); font-size: 11.5px; color: var(--ed-dim); }
+
+  .player { border-top: 1px solid var(--ed-rule); background: var(--ed-panel); padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; }
+  .player button { font: inherit; color: var(--ed-text); background: transparent; border: 1px solid var(--ed-rule); border-radius: 4px; padding: 4px 9px; cursor: pointer; }
+  .player button:hover { border-color: var(--ed-dim); }
+  .player .play { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .player .play svg { width: 13px; height: 13px; fill: var(--ed-text); }
+  .player .presets { display: flex; gap: 4px; }
+  .player .presets button.on { background: var(--amber); color: #16131c; border-color: var(--amber); }
+  .player input[type=range] { accent-color: var(--amber); width: 110px; }
+  .player .pos { margin-left: auto; color: var(--ed-dim); }
+  .player .gear { padding: 4px 6px; }
+  .player .gear svg { width: 14px; height: 14px; stroke: var(--ed-dim); fill: none; stroke-width: 1.6; display: block; }
+  .status { background: var(--ed-status); border-top: 1px solid var(--ed-rule); height: 24px; display: flex; align-items: center; gap: 18px; padding: 0 14px; font-size: 11.5px; color: var(--ed-dim); }
+  .status .r { margin-left: auto; display: flex; gap: 18px; }
+  .status .live { color: var(--ed-text); }
+
+  .stage figcaption { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); margin-top: 14px; max-width: 70ch; }
+
+  @media (max-width: 820px) {
+    .win .body { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    .act { display: none; }
+    .grp + .grp { border-left: 0; border-top: 1px solid var(--ed-rule); }
+    .src { max-height: 190px; }
+    .ln.sm-hide { display: none; }
+    .reader { padding: 20px 18px 14px; font-size: 16.5px; }
+    .player .pos { width: 100%; margin-left: 0; }
+    .status { white-space: nowrap; overflow: hidden; }
+    .status .r { display: none; }
+  }
+
+  /* editorial sections */
+  .sec { padding-block: 72px 0; }
+  .sec .inner { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; }
+  .sec .label { font-family: var(--mono); font-size: 13px; color: var(--ink-3); padding-top: 6px; }
+  .sec h2 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; max-width: 22ch; margin-bottom: 22px; }
+  @media (max-width: 760px) { .sec .inner { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+
+  .facts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .facts li { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 6px 32px; padding: 22px 0; border-bottom: 1px solid var(--rule); }
+  .facts h3 { font-size: 20px; }
+  .facts p { color: var(--ink-2); margin: 0; max-width: 58ch; }
+  @media (max-width: 760px) { .facts li { grid-template-columns: minmax(0, 1fr); } }
+
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th, td { text-align: left; vertical-align: top; padding: 14px 18px 14px 0; border-bottom: 1px solid var(--rule); }
+  th { font-family: var(--mono); font-weight: 400; font-size: 13px; color: var(--ink-3); border-top: 1px solid var(--rule); }
+  td:first-child { font-weight: 500; white-space: nowrap; }
+  td { color: var(--ink-2); }
+  td:first-child { color: var(--ink); }
+  .note { font-size: 15px; color: var(--ink-3); margin-top: 16px; max-width: 64ch; }
+  @media (max-width: 600px) {
+    table, thead, tbody, tr, th, td { display: block; }
+    thead { display: none; }
+    tr { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+    td { border: 0; padding: 2px 0; }
+    td:first-child { white-space: normal; }
+  }
+
+  /* open source: the inverted band */
+  .oss { margin-top: 80px; background: var(--oss-bg); color: var(--oss-fg); padding-block: 64px 56px; }
+  .oss .inner { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px 64px; }
+  .oss h2 { font-size: clamp(34px, 4.6vw, 58px); line-height: 1.0; max-width: 12ch; }
+  .oss .lic { font-family: var(--mono); font-size: 13px; color: var(--oss-dim); margin: 18px 0 22px; }
+  .oss p { color: var(--oss-fg); max-width: 46ch; font-size: 18px; }
+  .oss p.dim { color: var(--oss-dim); font-size: 15.5px; }
+  .ledger { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--oss-rule); font-size: 15.5px; }
+  .ledger li { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--oss-rule); }
+  .ledger .k { font-family: var(--mono); font-size: 13px; color: var(--oss-dim); padding-top: 2px; }
+  .ledger a { word-break: break-all; }
+  .ledger a:hover { text-decoration-color: var(--amber); }
+  .repo { margin-top: 28px; }
+  .repo h3 { font-family: var(--mono); font-weight: 400; font-size: 13px; color: var(--oss-dim); margin-bottom: 10px; }
+  .repo ul { margin: 0; padding: 0 0 0 1.1em; color: var(--oss-fg); }
+  .repo li { margin: 4px 0; }
+  .repo li span { color: var(--oss-dim); }
+  @media (max-width: 760px) { .oss .inner { grid-template-columns: minmax(0, 1fr); } .ledger li { grid-template-columns: 100px minmax(0, 1fr); } }
+
+  /* install */
+  .install { padding-block: 72px 48px; }
+  .install .inner { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px 48px; }
+  .install h2 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; margin-bottom: 18px; }
+  .install .steps { margin: 0 0 22px; padding: 0; list-style: none; color: var(--ink-2); max-width: 60ch; }
+  .install .steps li { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .install .big { font-size: 16px; }
+  .install .alt { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 15.5px; }
+  @media (max-width: 760px) { .install .inner { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+
+  footer { border-top: 1px solid var(--rule); padding-block: 26px 40px; font-size: 14px; color: var(--ink-3); }
+  footer .inner { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+  footer svg { width: 22px; height: 22px; border-radius: 5px; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 18px; margin-left: auto; }
+  footer a { text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reader .w.lit { transition: background-color 90ms linear; }
+  }
+</style>
 </head>
 <body>
-<header class="site-header">
-  <a class="logo" href="index.html"><span class="logo-mark" aria-hidden="true">▶</span> TalkToMeBaby</a>
-  <nav aria-label="Main">
-    <a href="getting-started.html">Getting started</a>
-    <a href="reader.html">Reader</a>
-    <a href="providers.html">Providers</a>
-    <a href="reference.html">Reference</a>
-    <a href="troubleshooting.html">Troubleshooting</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="architecture.html">Architecture</a>
-    <a href="roadmap.html">Roadmap</a>
-    <a href="changelog.html">Changelog</a>
-    <a href="https://github.com/rishmadaan/talktomebaby" class="nav-gh">GitHub ↗</a>
-  </nav>
-</header>
-<main>
 
-  <!-- ── Hero ────────────────────────────────────────────────── -->
-  <section class="hero">
-    <h1 class="karaoke">
-      <span style="--i:0">Your</span> <span style="--i:1">docs,</span>
-      <span style="--i:2">read</span> <span style="--i:3">aloud,</span>
-      <span style="--i:4">word</span> <span style="--i:5">by</span>
-      <span style="--i:6">word.</span>
-    </h1>
-    <p class="hero-sub">
-      A Speechify-inspired read-aloud extension for VS Code — word-level highlighting,
-      click-to-jump navigation, and 2x speed without pitch shift.
-    </p>
-    <div class="hero-actions">
-      <a class="btn" href="getting-started.html">Get started</a>
-      <a class="btn-ghost" href="https://github.com/rishmadaan/talktomebaby">GitHub ↗</a>
-    </div>
-
-    <!-- Works with -->
-    <p class="muted" style="margin-bottom:0.75rem;">Works with</p>
-    <div class="works-with">
-      <span class="ext-pill">.md</span>
-      <span class="ext-pill">.mdx</span>
-      <span class="ext-pill">.txt</span>
-      <span class="ext-pill">.rst</span>
-      <span class="ext-pill">.org</span>
-      <span class="ext-pill">.tex</span>
-      <span class="ext-pill">.adoc</span>
-    </div>
-  </section>
-
-  <!-- ── Feature cards ───────────────────────────────────────── -->
-  <section aria-labelledby="features-heading">
-    <h2 id="features-heading" style="text-align:center;margin-bottom:0.25rem;">Core features</h2>
-    <div class="card-grid">
-      <div class="card">
-        <span class="card-icon" aria-hidden="true">🎯</span>
-        <h3>Dual-layer highlighting</h3>
-        <p>The Reader panel shows a sentence band behind the current sentence and a moving word sweep on top — so you always know exactly where you are.</p>
-      </div>
-      <div class="card">
-        <span class="card-icon" aria-hidden="true">🖱️</span>
-        <h3>Click any word to jump</h3>
-        <p>Click any word in the Reader panel to jump playback there instantly. Press <code>alt+j</code> from the source editor to jump to your cursor position.</p>
-      </div>
-      <div class="card">
-        <span class="card-icon" aria-hidden="true">⚡</span>
-        <h3>Speed 0.5–2x, pitch preserved</h3>
-        <p>Change speed on the fly with presets or the fine slider. No re-synthesis — speed is applied locally, so pitch stays natural and it's instant.</p>
-      </div>
-      <div class="card">
-        <span class="card-icon" aria-hidden="true">💾</span>
-        <h3>200 MB disk cache</h3>
-        <p>Synthesized audio is cached to disk (default 200 MB, LRU eviction). Re-read the same document as many times as you like — no extra API credits spent.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Providers teaser ────────────────────────────────────── -->
-  <div class="providers-section">
-    <h2>Voices &amp; providers</h2>
-    <p>TalkToMeBaby works out of the box on every platform — no API key required to start.</p>
-    <ul class="provider-list">
-      <li><strong>macOS say</strong> — the default on macOS. Fully offline; no data leaves your machine. Uses the official macOS speech synthesis command.</li>
-      <li><strong>Edge TTS</strong> — the default on Windows and Linux. Free, no key needed. Uses an unofficial Microsoft endpoint and is not affiliated with Microsoft — <strong>use at your own risk</strong> (<a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md#microsoft-edge-voices-edge-tts">disclaimer</a>).</li>
-      <li><strong>ElevenLabs</strong> — high-quality neural voices. Requires an ElevenLabs API key.</li>
-      <li><strong>Sarvam AI</strong> — Indian-language voices. Requires a Sarvam AI API key.</li>
-    </ul>
-    <a href="providers.html">Compare providers →</a>
-  </div>
-
-  <!-- ── Final CTA ───────────────────────────────────────────── -->
-  <div class="cta-band">
-    <h2>Go on. Talk to me, baby.</h2>
-    <p>Install from the VS Code Marketplace and start listening in under a minute.</p>
-    <a class="btn"
-       href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">
-      Install from Marketplace ↗
+<header class="mast wrap">
+  <div class="inner">
+    <a class="brand" href="#top" aria-label="TalkToMeBaby, home">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+        <rect width="256" height="256" rx="52" ry="52" fill="#0e0c12"/>
+        <path d="M 60 52 Q 60 44 68 44 L 188 44 Q 196 44 196 52 L 196 162 Q 196 170 188 170 L 100 170 L 76 196 L 76 170 L 68 170 Q 60 170 60 162 Z" fill="#f3ede2"/>
+        <rect x="80" y="82" width="60" height="10" rx="5" fill="#2c2638"/>
+        <rect x="148" y="82" width="28" height="10" rx="5" fill="#2c2638"/>
+        <rect x="80" y="108" width="96" height="14" rx="4" fill="#ffb347"/>
+        <rect x="80" y="110" width="38" height="10" rx="4" fill="#ff5470"/>
+        <rect x="124" y="110" width="52" height="10" rx="4" fill="#1a1200"/>
+        <rect x="80" y="138" width="44" height="10" rx="5" fill="#2c2638"/>
+        <rect x="132" y="138" width="36" height="10" rx="5" fill="#2c2638"/>
+      </svg>
+      TalkToMeBaby
     </a>
-    <br>
-    <span class="cta-install">ext install rishmadaan.talktomebaby</span>
+    <nav aria-label="Primary">
+      <a href="https://github.com/rishmadaan/talktomebaby">Source</a>
+      <a class="hide-sm" href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">Marketplace</a>
+      <a class="hide-sm" href="https://open-vsx.org/extension/rishmadaan/talktomebaby">Open VSX</a>
+      <a href="#install">Install</a>
+    </nav>
   </div>
+</header>
 
+<main id="top">
+<section class="hero wrap">
+  <div class="inner">
+    <p class="eyebrow">A free VS Code extension &nbsp;·&nbsp; <b>GPL-3.0-or-later</b> &nbsp;·&nbsp; <a href="https://github.com/rishmadaan/talktomebaby">Source on GitHub</a></p>
+    <h1>Hear your draft, <span class="hl">word <span class="w">by</span> word,</span> where you wrote it.</h1>
+    <p class="lede">TalkToMeBaby reads prose files aloud inside VS Code. Markdown, txt, rst, org, tex, adoc. A Reader panel opens beside your file. <b>The sentence being read gets a band. The word being spoken lights up.</b> Click any word to jump there.</p>
+    <div class="cta">
+      <a class="btn" href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9M4.5 6.5 8 10l3.5-3.5M2 13h12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Install from Marketplace
+      </a>
+      <span class="cmd"><code>ext install rishmadaan.talktomebaby</code><button type="button" data-copy="ext install rishmadaan.talktomebaby">Copy</button></span>
+    </div>
+
+    <figure class="stage">
+      <div class="win" aria-label="A recreation of VS Code with a Markdown file open on the left and the TalkToMeBaby Reader panel on the right">
+        <div class="titlebar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>field-notes.md · notes</div>
+        <div class="body">
+          <div class="act" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="on"><path d="M5 4h8l6 6v10H5z"/><path d="M13 4v6h6"/></svg>
+            <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M6 4v16M6 8a4 4 0 0 1 4-4h8M18 20a4 4 0 0 1-4-4H6"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>
+          </div>
+
+          <div class="grp">
+            <div class="tabs"><span class="tab on"><span class="ico" aria-hidden="true" style="background:var(--amber);border-radius:2px"></span>field-notes.md</span></div>
+            <div class="src" aria-label="Markdown source">
+              <div class="ln"><span class="n">1</span><span class="h"><span class="mk"># </span>Field notes, Tuesday</span></div>
+              <div class="ln"><span class="n">2</span></div>
+              <div class="ln"><span class="n">3</span><span class="deco" data-s="0">The tide tables were wrong again.</span> <span class="deco" data-s="1">We rowed out at six</span></div>
+              <div class="ln"><span class="n">4</span><span class="deco" data-s="1">anyway, because the light was good and nobody wanted</span></div>
+              <div class="ln"><span class="n">5</span><span class="deco" data-s="1">to say so.</span> <span class="deco on" data-s="2">By the time the fog lifted, the island had</span></div>
+              <div class="ln"><span class="n">6</span><span class="deco on" data-s="2">moved.</span> <span class="deco" data-s="3">Or we had.</span> <span class="deco" data-s="4">Marta checked the compass twice and</span></div>
+              <div class="ln"><span class="n">7</span><span class="deco" data-s="4">put it away without a word.</span><span class="cursor" aria-hidden="true"></span></div>
+              <div class="ln sm-hide"><span class="n">8</span></div>
+              <div class="ln sm-hide"><span class="n">9</span><span class="h"><span class="mk">## </span>What we found</span></div>
+              <div class="ln sm-hide"><span class="n">10</span></div>
+              <div class="ln sm-hide"><span class="n">11</span>Nothing, at first. Then the gulls.</div>
+              <div class="ln sm-hide"><span class="n">12</span></div>
+              <div class="ln sm-hide"><span class="n">13</span><span class="mk">- </span>Two oars, one of them ours</div>
+              <div class="ln sm-hide"><span class="n">14</span><span class="mk">- </span>A tin of matches, dry</div>
+              <div class="ln sm-hide"><span class="n">15</span><span class="mk">- </span>Footprints that stopped</div>
+            </div>
+          </div>
+
+          <div class="grp">
+            <div class="tabs"><span class="tab on"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h10v7H7l-3 3v-3H3z" fill="#f3ede2"/><rect x="5" y="6" width="6" height="2" rx="1" fill="#ffb347"/></svg>Reader: field-notes.md</span></div>
+            <div class="reader" id="reader">
+              <h3>Field notes, Tuesday</h3>
+              <p>
+                <span class="s"><span class="w">The</span> <span class="w">tide</span> <span class="w">tables</span> <span class="w">were</span> <span class="w">wrong</span> <span class="w">again.</span></span>
+                <span class="s"><span class="w">We</span> <span class="w">rowed</span> <span class="w">out</span> <span class="w">at</span> <span class="w">six</span> <span class="w">anyway,</span> <span class="w">because</span> <span class="w">the</span> <span class="w">light</span> <span class="w">was</span> <span class="w">good</span> <span class="w">and</span> <span class="w">nobody</span> <span class="w">wanted</span> <span class="w">to</span> <span class="w">say</span> <span class="w">so.</span></span>
+                <span class="s cur"><span class="w">By</span> <span class="w">the</span> <span class="w">time</span> <span class="w">the</span> <span class="w">fog</span> <span class="w">lifted,</span> <span class="w">the</span> <span class="w lit">island</span> <span class="w">had</span> <span class="w">moved.</span></span>
+                <span class="s"><span class="w">Or</span> <span class="w">we</span> <span class="w">had.</span></span>
+                <span class="s"><span class="w">Marta</span> <span class="w">checked</span> <span class="w">the</span> <span class="w">compass</span> <span class="w">twice</span> <span class="w">and</span> <span class="w">put</span> <span class="w">it</span> <span class="w">away</span> <span class="w">without</span> <span class="w">a</span> <span class="w">word.</span></span>
+              </p>
+              <div class="hint">Click a word to jump playback there.</div>
+            </div>
+            <div class="player" aria-label="Player bar">
+              <button type="button" class="play" id="play" aria-label="Pause" aria-pressed="true">
+                <svg id="ico-pause" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1" width="3" height="10"/><rect x="7.5" y="1" width="3" height="10"/></svg>
+                <svg id="ico-play" viewBox="0 0 12 12" aria-hidden="true" hidden><path d="M2 1l9 5-9 5z"/></svg>
+              </button>
+              <button type="button" aria-label="Stop">Stop</button>
+              <span class="presets" id="presets" role="group" aria-label="Speed presets">
+                <button type="button" data-speed="0.75">0.75×</button>
+                <button type="button" data-speed="1">1×</button>
+                <button type="button" data-speed="1.25" class="on">1.25×</button>
+                <button type="button" data-speed="1.5">1.5×</button>
+                <button type="button" data-speed="1.75">1.75×</button>
+                <button type="button" data-speed="2">2×</button>
+              </span>
+              <input type="range" id="speed" min="0.5" max="2" step="0.05" value="1.25" aria-label="Speed, fine control">
+              <span class="pos" id="pos">Sentence 3 / 31</span>
+              <button type="button" class="gear" aria-label="Settings"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="status">
+          <span class="live" id="st-pos">TalkToMeBaby · Sentence 3 / 31 · <span id="st-speed">1.25×</span></span>
+          <span class="r"><span>Ln 7, Col 29</span><span>Markdown</span></span>
+        </div>
+      </div>
+      <figcaption>This is a recreation in HTML, not a screenshot. The band follows the sentence in both panes; the word sweep runs on top. Click a word in the Reader, or change the speed, and watch the status bar follow.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="sec wrap" id="reading">
+  <div class="inner">
+    <div class="label">Reading</div>
+    <div>
+      <h2>Built so you always know where the voice is.</h2>
+      <ul class="facts">
+        <li>
+          <h3>Sentence band, word sweep</h3>
+          <p>A band sits behind the sentence being read. The sweep moves across the words on top of it, one at a time. The same band appears in the source editor.</p>
+        </li>
+        <li>
+          <h3>Jump by clicking</h3>
+          <p>Click any word in the Reader and playback moves there. From the source editor, press <kbd>alt</kbd>+<kbd>j</kbd> to jump to wherever your cursor is.</p>
+        </li>
+        <li>
+          <h3>Speed from 0.5× to 2×</h3>
+          <p>Pitch stays put. Speed is applied locally, so changing it never re-synthesises audio. Presets for the common steps, a fine slider for the rest. Your setting is remembered.</p>
+        </li>
+        <li>
+          <h3>A cache that saves credits</h3>
+          <p>Audio is kept on disk, 200 MB by default. Reading a file a second time costs no extra API credits.</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec wrap" id="voices">
+  <div class="inner">
+    <div class="label">Voices</div>
+    <div>
+      <h2>Offline by default. Premium voices with your own key.</h2>
+      <table>
+        <thead><tr><th scope="col">Where</th><th scope="col">Voice</th><th scope="col">What leaves your machine</th></tr></thead>
+        <tbody>
+          <tr><td>macOS</td><td>The system <code>say</code> voice. The default. No setup.</td><td>Nothing. Fully offline.</td></tr>
+          <tr><td>Windows, Linux</td><td>A free voice, ready out of the box. No API key.</td><td>See <a href="https://github.com/rishmadaan/talktomebaby/blob/main/PRIVACY.md">PRIVACY.md</a> for the details.</td></tr>
+          <tr><td>Optional</td><td>ElevenLabs, OpenAI, or Sarvam AI for Indian languages. You bring your own key. Keys live in VS Code's secret storage.</td><td>The text being read is sent to that provider.</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Independent project. Not affiliated with Speechify.</p>
+    </div>
+  </div>
+</section>
+
+<section class="oss wrap" id="source">
+  <div class="inner">
+    <div>
+      <h2>Free software. All of it.</h2>
+      <p class="lic">GPL-3.0-or-later</p>
+      <p>Every release ships with its full source and its license notices. You can read it, change it, run your changed copy, and pass it on under the same terms.</p>
+      <p class="dim">Contributions are welcome. Open an issue first if the change is large, so nobody builds the same thing twice.</p>
+      <div class="repo">
+        <h3>What the repository holds</h3>
+        <ul>
+          <li>The VS Code extension <span>(this page)</span></li>
+          <li>The shared speech engine <span>the extension is built on</span></li>
+          <li>A terminal CLI <span>that reads your AI coding agent's replies aloud</span></li>
+        </ul>
+      </div>
+    </div>
+    <ul class="ledger">
+      <li><span class="k">Source</span><a href="https://github.com/rishmadaan/talktomebaby">github.com/rishmadaan/talktomebaby</a></li>
+      <li><span class="k">License</span><a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">LICENSE, GPL-3.0-or-later</a></li>
+      <li><span class="k">Contributing</span><a href="https://github.com/rishmadaan/talktomebaby/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></li>
+      <li><span class="k">Issues</span><a href="https://github.com/rishmadaan/talktomebaby/issues">Report a bug or ask for something</a></li>
+      <li><span class="k">Privacy</span><a href="https://github.com/rishmadaan/talktomebaby/blob/main/PRIVACY.md">PRIVACY.md, what each voice receives</a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="install wrap" id="install">
+  <div class="inner">
+    <div class="label">Install</div>
+    <div>
+      <h2>Two ways in. Both free.</h2>
+      <ul class="steps">
+        <li>Press <kbd>⌘</kbd><kbd>P</kbd> on macOS or <kbd>Ctrl</kbd><kbd>P</kbd> on Windows and Linux, paste the command, press Enter.</li>
+        <li>Open a Markdown or text file and run <strong>TalkToMeBaby: Read Document</strong> from the Command Palette.</li>
+      </ul>
+      <span class="cmd big"><code>ext install rishmadaan.talktomebaby</code><button type="button" data-copy="ext install rishmadaan.talktomebaby">Copy</button></span>
+      <div class="alt">
+        <a href="https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby">VS Code Marketplace</a>
+        <a href="https://open-vsx.org/extension/rishmadaan/talktomebaby">Open VSX, for VSCodium and others</a>
+        <a href="https://github.com/rishmadaan/talktomebaby">Build it from source</a>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
-<footer class="site-footer">
-  <p><strong>TalkToMeBaby</strong> — listen to your docs. <em>Talk to me, baby.</em></p>
-  <p><a href="https://github.com/rishmadaan/talktomebaby">GitHub</a> · <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">GPL-3.0-or-later</a> from v0.4.0</p>
-  <p>Use at your own risk. Not affiliated with Microsoft, Speechify, or any voice provider. <a href="https://github.com/rishmadaan/talktomebaby/blob/main/DISCLAIMER.md">Disclaimer</a></p>
+
+<footer class="wrap">
+  <div class="inner">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+      <rect width="256" height="256" rx="52" ry="52" fill="#0e0c12"/>
+      <path d="M 60 52 Q 60 44 68 44 L 188 44 Q 196 44 196 52 L 196 162 Q 196 170 188 170 L 100 170 L 76 196 L 76 170 L 68 170 Q 60 170 60 162 Z" fill="#f3ede2"/>
+      <rect x="80" y="82" width="60" height="10" rx="5" fill="#2c2638"/>
+      <rect x="148" y="82" width="28" height="10" rx="5" fill="#2c2638"/>
+      <rect x="80" y="108" width="96" height="14" rx="4" fill="#ffb347"/>
+      <rect x="80" y="110" width="38" height="10" rx="4" fill="#ff5470"/>
+      <rect x="124" y="110" width="52" height="10" rx="4" fill="#1a1200"/>
+      <rect x="80" y="138" width="44" height="10" rx="5" fill="#2c2638"/>
+      <rect x="132" y="138" width="36" height="10" rx="5" fill="#2c2638"/>
+    </svg>
+    <span>TalkToMeBaby · GPL-3.0-or-later · Independent, not affiliated with Speechify</span>
+    <nav aria-label="Footer">
+      <a href="https://github.com/rishmadaan/talktomebaby">GitHub</a>
+      <a href="https://github.com/rishmadaan/talktomebaby/blob/main/LICENSE">License</a>
+      <a href="https://github.com/rishmadaan/talktomebaby/blob/main/PRIVACY.md">Privacy</a>
+      <a href="https://github.com/rishmadaan/talktomebaby/blob/main/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/rishmadaan/talktomebaby/issues">Issues</a>
+    </nav>
+  </div>
 </footer>
+
+<script>
+(function () {
+  var reader = document.getElementById('reader');
+  var words = Array.prototype.slice.call(reader.querySelectorAll('.w'));
+  var sents = Array.prototype.slice.call(reader.querySelectorAll('.s'));
+  var decos = Array.prototype.slice.call(document.querySelectorAll('.ln .deco'));
+  var pos = document.getElementById('pos'), stPos = document.getElementById('st-pos'), stSpeed = document.getElementById('st-speed');
+  var playBtn = document.getElementById('play'), icoPlay = document.getElementById('ico-play'), icoPause = document.getElementById('ico-pause');
+  var slider = document.getElementById('speed'), presets = document.getElementById('presets');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cur = words.indexOf(reader.querySelector('.w.lit'));
+  var timer = null;
+
+  function show(n) {
+    cur = n;
+    var w = words[n], s = w.parentNode, si = sents.indexOf(s);
+    words.forEach(function (x) { x.classList.remove('lit'); });
+    sents.forEach(function (x) { x.classList.remove('cur'); });
+    decos.forEach(function (d) { d.classList.toggle('on', d.getAttribute('data-s') === String(si)); });
+    w.classList.add('lit'); s.classList.add('cur');
+    pos.textContent = 'Sentence ' + (si + 1) + ' / 31';
+    stPos.firstChild.nodeValue = 'TalkToMeBaby · Sentence ' + (si + 1) + ' / 31 · ';
+  }
+  function tick() { show((cur + 1) % words.length); timer = setTimeout(tick, 420 / parseFloat(slider.value)); }
+  function setPlaying(on) {
+    clearTimeout(timer); timer = null;
+    if (on) timer = setTimeout(tick, 420 / parseFloat(slider.value));
+    icoPlay.hidden = on; icoPause.hidden = !on;
+    playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play');
+    playBtn.setAttribute('aria-pressed', String(on));
+  }
+  words.forEach(function (w, n) { w.addEventListener('click', function () { show(n); }); });
+  playBtn.addEventListener('click', function () { setPlaying(!timer); });
+  presets.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    slider.value = b.getAttribute('data-speed'); setSpeed();
+  });
+  slider.addEventListener('input', setSpeed);
+  function setSpeed() {
+    var v = parseFloat(slider.value);
+    Array.prototype.forEach.call(presets.children, function (b) { b.classList.toggle('on', parseFloat(b.getAttribute('data-speed')) === v); });
+    stSpeed.textContent = v + '×';
+    if (timer) setPlaying(true);
+  }
+  // At rest the page already shows one lit word; motion only starts when allowed.
+  setPlaying(!reduce);
+
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      try {
+        navigator.clipboard.writeText(b.getAttribute('data-copy')).then(function () {
+          b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+        });
+      } catch (e) {}
+    });
+  });
+})();
+</script>
 </body>
 </html>

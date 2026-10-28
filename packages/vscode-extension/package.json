@@ -7,7 +7,7 @@
   "icon": "icon.png",
   "license": "GPL-3.0-or-later",
   "repository": { "type": "git", "url": "https://github.com/rishmadaan/talktomebaby" },
-  "homepage": "https://marketplace.visualstudio.com/items?itemName=rishmadaan.talktomebaby",
+  "homepage": "https://rishmadaan.github.io/talktomebaby/",
   "bugs": { "url": "https://github.com/rishmadaan/talktomebaby/issues" },
   "galleryBanner": { "color": "#101828", "theme": "dark" },
   "engines": { "vscode": "^1.85.0" },
