@@ -92,7 +92,6 @@ export class Engine {
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
       lc.audio.currentTime = this.seekTime(lc, wordIndex);
-      this.pendingJumpWord = null; // an earlier seek into an unloaded chunk is superseded
     } else {
       this.pendingJumpWord = wordIndex;
       this.cb.requestChunk(chunkIndex, true);
@@ -258,7 +257,6 @@ export class Engine {
       else break;
     }
     if (word < 0 || (this.seekFloor !== null && word < this.seekFloor)) return;
-    this.seekFloor = null;
     if (word !== this.currentWord) {
       this.currentWord = word;
       this.reportPosition(word);
