@@ -25,9 +25,10 @@ export interface SettingsData {
 
 export type ViewMsg =
   | { type: "ready" }
-  | { type: "requestChunk"; chunkIndex: number; priority: boolean }
-  | { type: "position"; wordIndex: number; sentenceIndex: number }
-  | { type: "state"; state: "playing" | "paused" | "ended" }
+  // gen: the init (chunk plan and voice) the message was sent under; the host drops older ones.
+  | { type: "requestChunk"; chunkIndex: number; priority: boolean; gen: number }
+  | { type: "position"; wordIndex: number; sentenceIndex: number; gen: number }
+  | { type: "state"; state: "playing" | "paused" | "ended"; gen: number }
   | { type: "speedChanged"; rate: number }
   | { type: "error"; message: string }
   | { type: "settingsRequest" }
@@ -75,11 +76,12 @@ export class ReaderPanel {
   }
 
   /**
+   * @param gen         the plan's generation; the webview echoes it on requestChunk, position and state.
    * @param startAtWord first word to begin/prime at (clamped by the caller). 0 for a fresh read.
    * @param autoplay    true = play immediately; false = prime paused at startAtWord (reconfigure of a paused session).
    */
-  sendInit(model: DocumentModel, chunks: Chunk[], settings: ReaderSettings, startAtWord = 0, autoplay = true) {
-    this.post({ type: "init", model, chunks, settings, startAtWord, autoplay });
+  sendInit(model: DocumentModel, chunks: Chunk[], settings: ReaderSettings, gen: number, startAtWord = 0, autoplay = true) {
+    this.post({ type: "init", model, chunks, settings, gen, startAtWord, autoplay });
   }
   sendChunk(chunkIndex: number, audio: Uint8Array, format: string, timings: ChunkTimings) {
     this.post({ type: "chunkAudio", chunkIndex, audio, format, timings });

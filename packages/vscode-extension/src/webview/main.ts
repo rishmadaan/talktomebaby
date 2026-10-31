@@ -11,9 +11,9 @@ import { DocumentModel } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 import { initPlayerBar, PlayerBar } from "./player-bar";
 import { initSettingsPanel, SettingsPanel } from "./settings-panel";
-import { SettingsData } from "../ui/reader-panel";
+import { SettingsData, ViewMsg } from "../ui/reader-panel";
 
-declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
+declare function acquireVsCodeApi(): { postMessage(msg: ViewMsg): void };
 const vscode = acquireVsCodeApi();
 
 let engine: Engine | null = null;
@@ -28,6 +28,7 @@ function init(
   model: DocumentModel,
   chunks: Chunk[],
   settings: { speed: number; fontSize: number; sentenceColor: string; wordColor: string },
+  gen: number,
   startAtWord = 0,
   autoplay = true
 ) {
@@ -67,15 +68,15 @@ function init(
   });
 
   engine = new Engine(model, chunks, {
-    requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority }),
+    requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority, gen }),
     onPosition: (wordIndex, sentenceIndex) => {
       highlight?.setActive(wordIndex, sentenceIndex);
       playerBar?.setPosition(sentenceIndex, model.sentences.length);
-      vscode.postMessage({ type: "position", wordIndex, sentenceIndex });
+      vscode.postMessage({ type: "position", wordIndex, sentenceIndex, gen });
     },
     onState: (state) => {
       playerBar?.setState(state);
-      vscode.postMessage({ type: "state", state });
+      vscode.postMessage({ type: "state", state, gen });
     },
     onLoading: (loading) => playerBar?.setLoading(loading),
     createAudio: () => new Audio() as unknown as AudioLike,
@@ -130,7 +131,7 @@ window.addEventListener("message", (event) => {
   switch (msg.type) {
     case "init": {
       // The host plans the chunks (from the start word) and sends them, so both sides always agree.
-      init(msg.model, msg.chunks as Chunk[], msg.settings, msg.startAtWord ?? 0, msg.autoplay ?? true);
+      init(msg.model, msg.chunks as Chunk[], msg.settings, msg.gen, msg.startAtWord ?? 0, msg.autoplay ?? true);
       break;
     }
     case "chunkAudio":

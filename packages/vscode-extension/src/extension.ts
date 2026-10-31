@@ -38,7 +38,7 @@ async function resolveActiveDocument(): Promise<vscode.TextDocument | undefined>
   return undefined;
 }
 
-class ReadingSession {
+export class ReadingSession {
   readonly model: DocumentModel;
   chunks: Chunk[];
   readonly panel: ReaderPanel;
@@ -48,6 +48,8 @@ class ReadingSession {
   private editPrompted = false;
   state: "playing" | "paused" | "ended" = "paused";
   position = { wordIndex: -1, sentenceIndex: -1 };
+  // Bumped by every reconfigure: a webview message from an older init names a chunk of the old plan.
+  private gen = 0;
   // provider/voice are mutable so an in-place reconfigure can swap them without
   // tearing down the webview. Read via the getters below.
   private _provider: TtsProvider;
@@ -93,9 +95,11 @@ class ReadingSession {
       sentenceColor: cfg.get("highlight.sentenceColor", ""),
       wordColor: cfg.get("highlight.wordColor", ""),
     };
-    this.panel.sendInit(this.model, this.chunks, settings, startAtWord);
+    this.panel.sendInit(this.model, this.chunks, settings, this.gen, startAtWord);
 
     this.panel.onMessage(async (msg) => {
+      // Before reading this.chunks or this.synthesis: both belong to the current gen only.
+      if ("gen" in msg && msg.gen !== this.gen) return;
       switch (msg.type) {
         case "ready":
           // init was already queued in the constructor and flushes first.
@@ -189,6 +193,7 @@ class ReadingSession {
     this._provider = provider;
     this._voice = voice;
     this.synthesis = new SynthesisService(provider, voice, this.cache);
+    this.gen++;
     // All audio is new for the new voice, so re-plan from here for a fast start.
     this.chunks = buildChunks(this.model, undefined, undefined, startAtWord);
     this.position = { wordIndex: startAtWord, sentenceIndex: idx };
@@ -202,7 +207,7 @@ class ReadingSession {
     };
     // Re-init the SAME webview. main.ts init() tears down its prior engine and
     // (because the settings panel lives outside #content) keeps the panel open.
-    this.panel.sendInit(this.model, this.chunks, settings, startAtWord, false);
+    this.panel.sendInit(this.model, this.chunks, settings, this.gen, startAtWord, false);
   }
 
   dispose() {

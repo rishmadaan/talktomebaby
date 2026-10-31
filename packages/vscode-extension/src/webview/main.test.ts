@@ -21,7 +21,7 @@ function init(text: string) {
   posted.length = 0;
   window.dispatchEvent(new MessageEvent("message", { data: {
     type: "init", model, chunks: buildChunks(model, undefined, undefined, 0),
-    settings: { speed: 1, fontSize: 16, sentenceColor: "", wordColor: "" }, startAtWord: 0, autoplay: true,
+    settings: { speed: 1, fontSize: 16, sentenceColor: "", wordColor: "" }, gen: 4, startAtWord: 0, autoplay: true,
   } }));
 }
 
@@ -35,7 +35,7 @@ describe("webview init", () => {
 
   it("a document with words starts reading from the top", () => {
     init("Hello there. Second sentence.");
-    expect(posted).toContainEqual({ type: "requestChunk", chunkIndex: 0, priority: true });
+    expect(posted).toContainEqual({ type: "requestChunk", chunkIndex: 0, priority: true, gen: 4 }); // echoes init's gen
     expect(document.getElementById("player-status")!.textContent).toBe("Loading…");
   });
 });
