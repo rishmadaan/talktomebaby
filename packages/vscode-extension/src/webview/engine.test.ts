@@ -266,13 +266,12 @@ describe("Engine", () => {
     const oneChunk: Chunk[] = [{ index: 0, text: "a b. c d.", sentenceIndexes: [0, 1], words: [0, 1, 2, 3].map(
       (i) => ({ wordIndex: i, charStart: 2 * i, charEnd: 2 * i + 1 })) }];
     const { engine, audios, cb } = setup(oneChunk);
-    engine.primeAt(0);
+    engine.primeAt(2);             // a voice switch primes a fresh engine; the audio is not here yet
     engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: { unit: "ms", words: [
       { wordIndex: 0, start: 0, end: 200 }, { wordIndex: 1, start: 300, end: 500 },
       { wordIndex: 3, start: 700, end: 900 } ] } });
-    audios[0]._loaded(1.0);
-    vi.mocked(cb.onPosition).mockClear();
-    engine.primeAt(2);             // lands at word 1's end, 500ms
+    audios[0]._loaded(1.0);        // the pending seek lands at word 1's end, 500ms
+    expect(audios[0].currentTime).toBeCloseTo(0.5);
     engine.tick();
     engine.tick();                 // the tick runs while paused
     expect(audios[0].paused).toBe(true);
