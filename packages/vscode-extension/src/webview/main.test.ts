@@ -38,4 +38,21 @@ describe("webview init", () => {
     expect(posted).toContainEqual({ type: "requestChunk", chunkIndex: 0, priority: true, gen: 4 }); // echoes init's gen
     expect(document.getElementById("player-status")!.textContent).toBe("Loading…");
   });
+
+  it("seeks while the audio is loading keep \"Loading…\"; the last one's sentence shows when loading ends", () => {
+    init("One fish here. Two fish there. Red fish now.");
+    const status = document.getElementById("player-status")!;
+    const send = (data: unknown) => window.dispatchEvent(new MessageEvent("message", { data }));
+    send({ type: "seekToWord", wordIndex: 3 });   // "Two", sentence 2
+    send({ type: "seekToWord", wordIndex: 6 });   // "Red", sentence 3
+    expect(status.textContent).toBe("Loading…");
+    send({ type: "control", action: "pause" });
+    expect(status.textContent).toBe("Sentence 3 / 3");
+  });
+
+  it("a failed chunk's error stays when loading ends", () => {
+    init("One fish here. Two fish there.");
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "chunkFailed", chunkIndex: 0, error: "boom" } }));
+    expect(document.getElementById("player-status")!.textContent).toBe("⚠ Couldn't synthesize part 1: boom");
+  });
 });

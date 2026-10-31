@@ -66,6 +66,7 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
 
   setSpeedUI(opts.initialSpeed);
   let positionText = "";
+  let loading = false;
 
   return {
     setState(state) {
@@ -75,12 +76,13 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
     },
     setPosition(sentenceIndex, totalSentences) {
       positionText = `Sentence ${sentenceIndex + 1} / ${totalSentences}`;
-      status.textContent = positionText;
+      if (!loading) status.textContent = positionText; // a seek while waiting keeps "Loading…"; shown when it ends
     },
     showError(message) {
       status.textContent = `⚠ ${message}`;
     },
-    setLoading(loading) {
+    setLoading(on) {
+      loading = on;
       // A failed chunk ends loading too: leave its error showing until the next try.
       if (!loading && status.textContent?.startsWith("⚠")) return;
       status.textContent = loading ? "Loading…" : positionText;
