@@ -41,6 +41,9 @@ export class Engine {
   private speed = 1;
   private playing = false;
   private pendingJumpWord: number | null = null;
+  // The last seek's word: tick reports nothing below it until the audio reaches it (an
+  // untimed word seeks to its neighbour's end, and 1.001 s reads back as 1000.999… ms).
+  private seekFloor: number | null = null;
   private loading = false;
   private wordToSentence = new Map<number, number>();
   private wordToChunk = new Map<number, number>();
@@ -83,7 +86,7 @@ export class Engine {
     const chunkIndex = this.wordToChunk.get(wordIndex);
     if (chunkIndex === undefined) return;
     this.currentChunk = chunkIndex;
-    this.currentWord = wordIndex;
+    this.currentWord = this.seekFloor = wordIndex;
     this.reportPosition(wordIndex);
     this.playing = false;
     const lc = this.loaded.get(chunkIndex);
@@ -206,7 +209,7 @@ export class Engine {
     const prev = this.loaded.get(this.currentChunk);
     prev?.audio.pause();
     this.currentChunk = chunkIndex;
-    this.currentWord = wordIndex;
+    this.currentWord = this.seekFloor = wordIndex;
     this.reportPosition(wordIndex);
     this.playing = true;
     const lc = this.loaded.get(chunkIndex);
@@ -252,7 +255,9 @@ export class Engine {
       if (ms >= w.start) word = w.wordIndex;
       else break;
     }
-    if (word >= 0 && word !== this.currentWord) {
+    if (word < 0 || (this.seekFloor !== null && word < this.seekFloor)) return;
+    this.seekFloor = null;
+    if (word !== this.currentWord) {
       this.currentWord = word;
       this.reportPosition(word);
     }

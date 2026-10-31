@@ -50,14 +50,14 @@ const msTimings: ChunkTimings = { unit: "ms", words: [
 const msTimings2: ChunkTimings = { unit: "ms", words: [
   { wordIndex: 2, start: 0, end: 400 }, { wordIndex: 3, start: 500, end: 900 } ] };
 
-function setup() {
+function setup(plan: Chunk[] = chunks) {
   const audios: FakeAudio[] = [];
   const cb: EngineCallbacks = {
     requestChunk: vi.fn(), onPosition: vi.fn(), onState: vi.fn(),
     createAudio: () => { const a = new FakeAudio(); audios.push(a); return a; },
     makeUrl: () => "blob:x", revokeUrl: vi.fn(),
   };
-  const engine = new Engine(model, chunks, cb);
+  const engine = new Engine(model, plan, cb);
   return { engine, audios, cb };
 }
 
@@ -229,6 +229,55 @@ describe("Engine", () => {
     none.audios[0].currentTime = 0.9;
     none.audios[0]._loaded(1.0);
     expect(none.audios[0].currentTime).toBe(0);
+  });
+
+  it("after seeking to an untimed word, the next ticks report that word, not the timed one before it", () => {
+    // Word 3's boundary is missing, so the seek lands at the end of word 2 (400ms).
+    const sparse: ChunkTimings = { unit: "ms", words: [{ wordIndex: 2, start: 0, end: 400 }] };
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3", timings: sparse });
+    audios[0]._loaded(1.0);
+    vi.mocked(cb.onPosition).mockClear();
+    engine.jumpToWord(3);
+    engine.tick();
+    audios[0].currentTime = 0.6;   // still inside word 3's untimed stretch
+    engine.tick();
+    expect(vi.mocked(cb.onPosition).mock.calls).toEqual([[3, 1]]);
+    expect(engine.currentSentence).toBe(1);
+  });
+
+  it("a seek to a word starting at 1001ms reports that word, though the audio reads back 1000.999…ms", () => {
+    const at1001: ChunkTimings = { unit: "ms", words: [
+      { wordIndex: 0, start: 0, end: 900 }, { wordIndex: 1, start: 1001, end: 1500 } ] };
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: at1001 });
+    audios[0]._loaded(2.0);
+    vi.mocked(cb.onPosition).mockClear();
+    engine.jumpToWord(1);
+    expect(audios[0].currentTime * 1000).toBeLessThan(1001); // the float read-back the floor covers
+    engine.tick();
+    expect(vi.mocked(cb.onPosition).mock.calls).toEqual([[1, 0]]);
+  });
+
+  it("paused at an untimed sentence start, ticks keep that sentence (a voice switch replans from it)", () => {
+    // One chunk holding both sentences; word 2, the first word of sentence 1, has no timing.
+    const oneChunk: Chunk[] = [{ index: 0, text: "a b. c d.", sentenceIndexes: [0, 1], words: [0, 1, 2, 3].map(
+      (i) => ({ wordIndex: i, charStart: 2 * i, charEnd: 2 * i + 1 })) }];
+    const { engine, audios, cb } = setup(oneChunk);
+    engine.primeAt(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: { unit: "ms", words: [
+      { wordIndex: 0, start: 0, end: 200 }, { wordIndex: 1, start: 300, end: 500 },
+      { wordIndex: 3, start: 700, end: 900 } ] } });
+    audios[0]._loaded(1.0);
+    vi.mocked(cb.onPosition).mockClear();
+    engine.primeAt(2);             // lands at word 1's end, 500ms
+    engine.tick();
+    engine.tick();                 // the tick runs while paused
+    expect(audios[0].paused).toBe(true);
+    expect(vi.mocked(cb.onPosition).mock.calls).toEqual([[2, 1]]);
+    expect(engine.currentSentence).toBe(1);
   });
 
   it("keeps the chosen speed on audio that arrives after a speed change", () => {
