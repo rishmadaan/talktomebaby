@@ -280,6 +280,22 @@ describe("Engine", () => {
     expect(engine.currentSentence).toBe(1);
   });
 
+  it("a click into a loaded chunk drops an earlier click's pending seek; the late next chunk plays from its start", () => {
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    engine.jumpToWord(3);          // chunk 1 not loaded yet: a pending seek to word 3
+    engine.jumpToWord(0);          // then a click back into the playing chunk 0
+    audios[0]._ended();            // chunk 0 ends before chunk 1 arrives
+    engine.receiveChunk(1, { audio: new Uint8Array(1), format: "mp3", timings: msTimings2 });
+    audios[1]._loaded(1.0);
+    engine.tick();
+    expect(audios[1].paused).toBe(false);
+    expect(audios[1].currentTime).toBe(0);
+    expect(cb.onPosition).toHaveBeenLastCalledWith(2, 1); // word 2 is read, not skipped
+  });
+
   it("keeps the chosen speed on audio that arrives after a speed change", () => {
     const { engine, audios } = setup();
     engine.setSpeed(1.5);
