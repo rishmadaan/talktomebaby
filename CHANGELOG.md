@@ -9,7 +9,7 @@
 - Fix: after an edit above the reading position, cached audio highlights the right words again.
 - Fix: a request cancelled by a voice switch or stop is no longer synthesized a second time.
 - Fix: switching voice while paused prepares only the current part; nothing further is synthesized until Play. A switch while the first audio is still loading keeps the requested position.
-- Fix: a word the voice gave no timing for starts playback just before it, not at the start of that part.
+- Fix: jumping to a word the voice gave no timing for starts playback at the end of the nearest earlier timed word (approximate), or at the start of that part when no earlier word is timed, and the highlight stays on the word you chose.
 - Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
 - Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged.
 
