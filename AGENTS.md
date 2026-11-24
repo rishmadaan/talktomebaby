@@ -9,7 +9,7 @@ npm run compile        # dev build: esbuild ext (→ out/extension.js) + webview
 npm run watch          # incremental rebuild on save
 npm run build          # production build (minified, no sourcemaps)
 npm run package        # npx @vscode/vsce package — runs build first via vscode:prepublish
-npm test               # vitest run — 169 tests across 24 files, plus 3 packaging checks (no vscode runtime needed)
+npm test               # vitest run — 173 tests across 24 files, plus 3 packaging checks (no vscode runtime needed)
 ```
 
 Press F5 in VS Code to launch the Extension Development Host (runs `npm: watch` as the default build task). Reload the dev host window to pick up changes.
@@ -55,7 +55,7 @@ Tests live alongside the files they test (`*.test.ts` co-located in `src/`). Vit
 
 ## Key Invariants
 
-- **Document model is the single source of truth.** `DocumentModel` is built once from raw text and never mutated. All offsets (word positions, sentence ranges) are bounding boxes into the original text. The host plans the chunks from the model and the start word (the start sentence is a short first chunk; one with more than 200 chars from the start word opens with a head of at most 160 chars from that word, its earlier words a chunk of their own; then 500 and 1000 char caps, then the normal 1400-2200 targets) and sends them in `init`, so host and webview always agree on chunk boundaries. Disk-cached timings are chunk-relative, so identical text at shifted word indexes highlights its own words.
+- **Document model is the single source of truth.** `DocumentModel` is built once from raw text and never mutated. All offsets (word positions, sentence ranges) are bounding boxes into the original text. The host plans the chunks from the model and the start word (the start sentence is a short first chunk; a start sentence over 200 chars, unless the start is word 0, is cut from its own first word into cells of at most 160 chars, ending after , ; : ) or a dash when that keeps 64, a longer single word a cell alone, and becomes up to three chunks: the cells before the start word's cell, that cell, the cells after; cells depend only on the sentence, so a restart in the same cell asks for the same texts; then 500 and 1000 char caps from the next sentence, then the normal 1400-2200 targets) and sends them in `init`, so host and webview always agree on chunk boundaries. Disk-cached timings are chunk-relative, so identical text at shifted word indexes highlights its own words.
 - **Webview owns playback state.** The webview engine drives `position` and `state` messages; the extension host updates the status bar and persists position in response. The host never assumes playback state — it reads it from messages.
 - **Provider/voice switches reconfigure in place, never auto-play.** `ReadingSession.reconfigure()` aborts the old synthesis pipeline, builds a new one, and re-inits the same webview paused at the current sentence. The user presses play when ready. No surprise audio.
 - **Never cache fallback voice lists.** `VoiceCache` stores only real provider lists (length > 1). If `listVoices()` times out, the fallback (just the default voice) is returned for display but not stored — so the next fetch retries the real list. Caching the fallback would pin the provider to a single voice for the whole session.

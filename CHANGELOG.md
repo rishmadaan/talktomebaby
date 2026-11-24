@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Faster start: Read from Here, Read Selection, resume after reload and a voice switch begin with the starting sentence on its own, then slightly longer pieces, so the first audio arrives quickly instead of waiting behind the top of the document. After those first pieces the parts match a read from the top, so audio already cached for the rest of the document still plays free.
+- Faster start: Read from Here, Read Selection, resume after reload and a voice switch begin with the starting sentence on its own, then slightly longer pieces, so the first audio arrives quickly instead of waiting behind the top of the document. A long starting sentence (over 200 characters) is read in pieces of up to about 160 characters, beginning with the piece that holds your word, so its first audio does not wait for the whole sentence; starting again inside the same piece reuses the audio already made, and Play after Pause does not wait for the pieces before your word. Reading from the very top of a document is unchanged. After those first pieces the parts match a read from the top, so audio already cached for the rest of the document still plays free.
 - The player bar shows "Loading…" while it waits for audio, and "Nothing to read." for a blank or code-only document.
 - Fix: the chosen speed holds when the next part of the audio loads (it used to drop back to 1x).
 - Fix: sentences ending in words like "first." or "last." are no longer joined to the next one (they were read as the abbreviation "St.").
@@ -10,7 +10,6 @@
 - Fix: a request cancelled by a voice switch or stop is no longer synthesized a second time.
 - Fix: switching voice while paused prepares only the current part; nothing further is synthesized until Play. A switch while the first audio is still loading keeps the requested position.
 - Fix: jumping to a word the voice gave no timing for starts playback at the end of the nearest earlier timed word (approximate), or at the start of that part when no earlier word is timed, and the highlight stays on the word you chose.
-- Faster start in a long sentence: when more than 200 characters of the sentence are left from the word you start at, reading begins with a short piece (at most 160 characters) from that word, so the first audio no longer waits for the whole sentence. The rest of the sentence follows.
 - Fix: when a part further ahead fails to load, playback no longer pauses while the current part plays fine; that part is tried again when reading reaches it, and the error shows only if it fails then.
 - Fix: clicking a word jumps there once; after several voice switches one click used to register several times.
 - Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
