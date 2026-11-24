@@ -90,14 +90,6 @@ function init(
 
   engine.setSpeed(settings.speed);
 
-  // click any word to jump
-  root.addEventListener("click", (e) => {
-    const target = (e.target as HTMLElement).closest("span[data-w]");
-    if (!target || !engine) return;
-    engine.jumpToWord(Number(target.getAttribute("data-w")));
-    highlight?.engageFollow();
-  });
-
   function jumpSentence(delta: number) {
     if (!engine) return;
     const next = Math.max(0, Math.min(model.sentences.length - 1, engine.currentSentence + delta));
@@ -125,6 +117,14 @@ function init(
   // If the settings panel is open, restore the gear's active state.
   settingsPanel.syncToggleState();
 }
+
+// Click any word to jump. Registered once: #content outlives every init, and the handler reads the current engine.
+document.getElementById("content")!.addEventListener("click", (e) => {
+  const target = (e.target as HTMLElement).closest("span[data-w]");
+  if (!target || !engine) return;
+  engine.jumpToWord(Number(target.getAttribute("data-w")));
+  highlight?.engageFollow();
+});
 
 window.addEventListener("message", (event) => {
   const msg = event.data;

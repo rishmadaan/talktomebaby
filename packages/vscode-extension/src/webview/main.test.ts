@@ -62,4 +62,13 @@ describe("webview init", () => {
     expect(document.getElementById("player-status")!.textContent).toBe("Loading…");
     expect(posted).not.toContainEqual({ type: "state", state: "paused", gen: 4 });
   });
+
+  it("one click on a word jumps once, after several inits (voice switches)", () => {
+    init("One fish here. Two fish there.");
+    init("One fish here. Two fish there.");
+    init("One fish here. Two fish there.");
+    posted.length = 0;
+    document.querySelector<HTMLElement>('span[data-w="3"]')!.click(); // "Two"
+    expect(posted.filter((m) => m.type === "position")).toEqual([{ type: "position", wordIndex: 3, sentenceIndex: 1, gen: 4 }]);
+  });
 });

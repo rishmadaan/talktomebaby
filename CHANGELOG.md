@@ -11,6 +11,7 @@
 - Fix: switching voice while paused prepares only the current part; nothing further is synthesized until Play. A switch while the first audio is still loading keeps the requested position.
 - Fix: jumping to a word the voice gave no timing for starts playback at the end of the nearest earlier timed word (approximate), or at the start of that part when no earlier word is timed, and the highlight stays on the word you chose.
 - Fix: when a part further ahead fails to load, playback no longer pauses while the current part plays fine; that part is tried again when reading reaches it, and the error shows only if it fails then.
+- Fix: clicking a word jumps there once; after several voice switches one click used to register several times.
 - Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
 - Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged.
 - CLI: plain `talktomebaby config` now prints the Edge use-at-your-own-risk notice too, on stderr so its JSON output stays parseable.
