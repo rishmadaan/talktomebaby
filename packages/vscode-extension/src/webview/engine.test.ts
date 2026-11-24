@@ -362,6 +362,72 @@ describe("Engine", () => {
     expect(plan[cell + 1].text.startsWith("the agenda and")).toBe(true);
   });
 
+  describe("Play after Pause in a long sentence read in cells", () => {
+    const sentence = "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair it, " +
+      "the members agreed that the report would be rewritten from the beginning, that every figure in it would be checked twice by someone who had not worked on it.";
+    const doc = parseDocument(`Intro sentence here. ${sentence}`, "s.txt", 1);
+    const word = (t: string) => doc.sentences[1].words.find((w) => w.text === t)!.index;
+    const start = word("members"); // in the middle cell: "the agenda … beginning,"
+    const plan = buildChunks(doc, undefined, undefined, start);
+    const cell = plan.findIndex((c) => c.words.some((r) => r.wordIndex === start));
+    const fraction = (c: Chunk): ChunkTimings => ({ unit: "fraction", words: c.words.map((r) => ({
+      wordIndex: r.wordIndex, start: r.charStart / c.text.length, end: r.charEnd / c.text.length })) });
+    const receive = (engine: Engine, i: number) => engine.receiveChunk(i, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[i]) });
+    const cellFirst = plan[cell].words[0].wordIndex;
+
+    it("the plan: the cells before, the start word's cell, the cells after", () => {
+      expect(plan[cell - 1].text.startsWith("When the committee")).toBe(true);
+      expect(plan[cell].text.startsWith("the agenda and")).toBe(true);
+      expect(plan[cell + 1].text.startsWith("that every figure")).toBe(true);
+      expect(doc.words[cellFirst].text).toBe("the");
+    });
+
+    it("resumes from the start of the cell in hand, not the unsynthesized cells before it", () => {
+      const { engine, audios, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      receive(engine, cell);
+      audios[0]._loaded(10);
+      engine.pause();
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.requestChunk).not.toHaveBeenCalledWith(cell - 1, true);
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(audios[0].currentTime).toBe(0); // the cell's own first word
+      expect(audios[0].paused).toBe(false);
+    });
+
+    it("paused before the cell's audio arrived: resumes from the cell's first word and waits only on that cell", () => {
+      const { engine, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      engine.pause();
+      receive(engine, cell + 1); // the prefetched cells after it arrive first
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(cb.requestChunk).toHaveBeenCalledWith(cell, true);
+      expect(cb.requestChunk).not.toHaveBeenCalledWith(cell - 1, true);
+    });
+
+    it("paused in the cells after: resumes from the start of the cell already played", () => {
+      const { engine, audios, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      receive(engine, cell);
+      audios[0]._loaded(10);
+      receive(engine, cell + 1);
+      audios[1]._loaded(10);
+      audios[0]._ended();
+      engine.tick();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(plan[cell + 1].words[0].wordIndex, 1);
+      engine.pause();
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(cb.requestChunk).not.toHaveBeenCalled();
+      expect(audios[0].paused).toBe(false);
+      expect(audios[0].currentTime).toBe(0);
+    });
+  });
+
   it("a primed chunk that fails is waited on", () => {
     const { engine } = setup();
     engine.primeAt(2);
