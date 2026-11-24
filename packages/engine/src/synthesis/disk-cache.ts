@@ -16,8 +16,9 @@ export class DiskCache {
 
   constructor(private dir: string, private maxBytes: number) {}
 
+  // "v2": timings are chunk-relative; older entries hold document word indexes and must miss.
   static makeKey(text: string, providerId: string, voiceId: string): string {
-    return createHash("sha256").update(`${text} ${providerId} ${voiceId}`).digest("hex").slice(0, 24);
+    return createHash("sha256").update(`v2 ${text} ${providerId} ${voiceId}`).digest("hex").slice(0, 24);
   }
 
   private binPath(key: string) { return join(this.dir, `${key}.bin`); }

@@ -86,4 +86,11 @@ describe("word spans", () => {
     expect(m.words.every((w) => !w.text.includes("\r"))).toBe(true);
     expect(m.words.every((w) => src.slice(w.source.start, w.source.end) === w.text)).toBe(true);
   });
+
+  it("does not read 'st.' or 'mr.' inside a word as an abbreviation", () => {
+    const m = parseDocument("She came first. He came last. Then the summr. ended.", "t.txt", 1);
+    expect(m.sentences.map((s) => s.text)).toEqual(["She came first.", "He came last.", "Then the summr.", "ended."]);
+    expect(parseDocument("Ask Dr. Who. St. Ives is far.", "t.txt", 1).sentences.map((s) => s.text))
+      .toEqual(["Ask Dr. Who.", "St. Ives is far."]);
+  });
 });

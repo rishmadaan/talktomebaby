@@ -68,4 +68,32 @@ describe("SynthesisService", () => {
     await expect(p1).rejects.toThrow();
     await p0.catch(() => {}); // in-flight may reject too; either is fine
   });
+
+  it("does not retry a job that abortAll cancelled", async () => {
+    const synthesize = vi.fn((_c: Chunk, _v: string, signal: AbortSignal) =>
+      new Promise<ChunkAudio>((_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted")))));
+    const svc = new SynthesisService({ ...mockProvider([]), synthesize }, "v");
+    const p = svc.request(mkChunk(0));
+    await new Promise((r) => setTimeout(r, 0));
+    svc.abortAll();
+    await expect(p).rejects.toThrow("aborted");
+    expect(synthesize).toHaveBeenCalledTimes(1);
+  });
+
+  it("cached timings light the requesting chunk's own words, not the ones they were made for", async () => {
+    const store = new Map<string, ChunkAudio>();
+    const cache = { get: async (k: string) => store.get(k), set: async (k: string, v: ChunkAudio) => { store.set(k, v); } };
+    const at = (index: number, first: number): Chunk => ({ index, text: "Hello there.", sentenceIndexes: [0], words: [
+      { wordIndex: first, charStart: 0, charEnd: 5 }, { wordIndex: first + 1, charStart: 6, charEnd: 12 }] });
+    const provider = { ...mockProvider([]), synthesize: vi.fn(async (c: Chunk) => ({
+      audio: new Uint8Array(4), format: "mp3" as const,
+      timings: { unit: "ms" as const, words: c.words.map((w, i) => ({ wordIndex: w.wordIndex, start: i * 100, end: i * 100 + 90 })) },
+    })) };
+    const svc = new SynthesisService(provider, "v", cache);
+    await svc.request(at(0, 342));
+    // The same text after an edit above it: word numbers moved by one.
+    const hit = await svc.request(at(1, 343));
+    expect(provider.synthesize).toHaveBeenCalledTimes(1);
+    expect(hit.timings.words.map((w) => w.wordIndex)).toEqual([343, 344]);
+  });
 });

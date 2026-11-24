@@ -6,14 +6,14 @@
 import { Engine, AudioLike } from "./engine";
 import { renderModel } from "./renderer";
 import { HighlightController } from "./highlight";
-import { buildChunks, Chunk } from "@talktomebaby/engine/core";
+import { Chunk } from "@talktomebaby/engine/core";
 import { DocumentModel } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 import { initPlayerBar, PlayerBar } from "./player-bar";
 import { initSettingsPanel, SettingsPanel } from "./settings-panel";
-import { SettingsData } from "../ui/reader-panel";
+import { SettingsData, ViewMsg } from "../ui/reader-panel";
 
-declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
+declare function acquireVsCodeApi(): { postMessage(msg: ViewMsg): void };
 const vscode = acquireVsCodeApi();
 
 let engine: Engine | null = null;
@@ -28,6 +28,7 @@ function init(
   model: DocumentModel,
   chunks: Chunk[],
   settings: { speed: number; fontSize: number; sentenceColor: string; wordColor: string },
+  gen: number,
   startAtWord = 0,
   autoplay = true
 ) {
@@ -67,16 +68,17 @@ function init(
   });
 
   engine = new Engine(model, chunks, {
-    requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority }),
+    requestChunk: (chunkIndex, priority) => vscode.postMessage({ type: "requestChunk", chunkIndex, priority, gen }),
     onPosition: (wordIndex, sentenceIndex) => {
       highlight?.setActive(wordIndex, sentenceIndex);
       playerBar?.setPosition(sentenceIndex, model.sentences.length);
-      vscode.postMessage({ type: "position", wordIndex, sentenceIndex });
+      vscode.postMessage({ type: "position", wordIndex, sentenceIndex, gen });
     },
     onState: (state) => {
       playerBar?.setState(state);
-      vscode.postMessage({ type: "state", state });
+      vscode.postMessage({ type: "state", state, gen });
     },
+    onLoading: (loading) => playerBar?.setLoading(loading),
     createAudio: () => new Audio() as unknown as AudioLike,
     // Uint8Array -> BlobPart cast: TS 5.9's typed-array generic widens the backing
     // buffer to ArrayBufferLike (incl. SharedArrayBuffer), which isn't a BlobPart.
@@ -107,11 +109,13 @@ function init(
 
   const clamped = Math.max(0, Math.min(model.words.length - 1, startAtWord));
   const startWord = model.words[clamped];
-  if (!autoplay && startWord) {
+  if (!startWord) {
+    playerBar.showEmpty();              // blank or code-only: nothing to synthesize, so no "Loading…"
+  } else if (!autoplay) {
     // Reconfigure of a paused session: prime the new voice at the same spot,
     // do not play. A later resume/play picks up from here.
     engine.primeAt(startWord.index);
-  } else if (startWord && clamped > 0) {
+  } else if (clamped > 0) {
     engine.jumpToWord(startWord.index); // autoplay, but resume at the prior position
   } else {
     engine.start(0);                    // fresh read from the top
@@ -126,8 +130,8 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   switch (msg.type) {
     case "init": {
-      const chunks = buildChunks(msg.model);
-      init(msg.model, chunks, msg.settings, msg.startAtWord ?? 0, msg.autoplay ?? true);
+      // The host plans the chunks (from the start word) and sends them, so both sides always agree.
+      init(msg.model, msg.chunks as Chunk[], msg.settings, msg.gen, msg.startAtWord ?? 0, msg.autoplay ?? true);
       break;
     }
     case "chunkAudio":

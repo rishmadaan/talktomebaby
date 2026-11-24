@@ -77,7 +77,7 @@ interface RawBlock {
 // ─── Ported verbatim from src/utils/text-parser.ts (vscode-free functions) ───
 
 const ABBREVIATION_PATTERN =
-  /(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|i\.e|e\.g|a\.m|p\.m)\./gi;
+  /\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|i\.e|e\.g|a\.m|p\.m)\./gi;
 // Replaces dots in abbreviations so the sentence scanner does not split at them.
 // Only lives in the `processed` boundary-detection string, never surfaces in output.
 const DOT_PLACEHOLDER = "\u0000";

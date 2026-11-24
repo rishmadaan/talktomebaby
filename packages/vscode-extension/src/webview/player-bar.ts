@@ -15,6 +15,10 @@ export interface PlayerBar {
   setState(state: "playing" | "paused" | "ended"): void;
   setPosition(sentenceIndex: number, totalSentences: number): void;
   showError(message: string): void;
+  /** Shows "Loading…" while playback waits for audio; restores the position text after. */
+  setLoading(loading: boolean): void;
+  /** For a document with no readable words: says so and leaves nothing to press. */
+  showEmpty(): void;
 }
 
 const PRESETS = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -61,6 +65,8 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
   gear.setAttribute("aria-expanded", "false");
 
   setSpeedUI(opts.initialSpeed);
+  let positionText = "";
+  let loading = false;
 
   return {
     setState(state) {
@@ -69,10 +75,21 @@ export function initPlayerBar(opts: PlayerBarOptions): PlayerBar {
       prev.disabled = next.disabled = state === "ended";
     },
     setPosition(sentenceIndex, totalSentences) {
-      status.textContent = `Sentence ${sentenceIndex + 1} / ${totalSentences}`;
+      positionText = `Sentence ${sentenceIndex + 1} / ${totalSentences}`;
+      if (!loading) status.textContent = positionText; // a seek while waiting keeps "Loading…"; shown when it ends
     },
     showError(message) {
       status.textContent = `⚠ ${message}`;
+    },
+    setLoading(on) {
+      loading = on;
+      // A failed chunk ends loading too: leave its error showing until the next try.
+      if (!loading && status.textContent?.startsWith("⚠")) return;
+      status.textContent = loading ? "Loading…" : positionText;
+    },
+    showEmpty() {
+      status.textContent = "Nothing to read.";
+      prev.disabled = playPause.disabled = next.disabled = true;
     },
   };
 }

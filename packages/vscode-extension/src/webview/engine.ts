@@ -8,7 +8,7 @@ import { Chunk } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 
 export interface AudioLike {
-  currentTime: number; duration: number; playbackRate: number; preservesPitch: boolean;
+  currentTime: number; duration: number; playbackRate: number; defaultPlaybackRate: number; preservesPitch: boolean;
   paused: boolean; src: string;
   onended: (() => void) | null;
   onloadedmetadata: (() => void) | null;
@@ -19,6 +19,8 @@ export interface EngineCallbacks {
   requestChunk(chunkIndex: number, priority: boolean): void;
   onPosition(wordIndex: number, sentenceIndex: number): void;
   onState(state: "playing" | "paused" | "ended"): void;
+  /** True while playback waits for the current chunk's audio to arrive. */
+  onLoading?(loading: boolean): void;
   createAudio(): AudioLike;
   makeUrl(audio: Uint8Array, format: string): string;
   revokeUrl(url: string): void;
@@ -39,6 +41,10 @@ export class Engine {
   private speed = 1;
   private playing = false;
   private pendingJumpWord: number | null = null;
+  // The last seek's word: tick reports nothing below it until the audio reaches it (an
+  // untimed word seeks to its neighbour's end, and 1.001 s reads back as 1000.999… ms).
+  private seekFloor: number | null = null;
+  private loading = false;
   private wordToSentence = new Map<number, number>();
   private wordToChunk = new Map<number, number>();
   private sentenceFirstWord = new Map<number, number>();
@@ -58,8 +64,15 @@ export class Engine {
   start(chunkIndex: number) {
     this.currentChunk = chunkIndex;
     this.playing = true;
+    this.setLoading(true);
     this.cb.requestChunk(chunkIndex, true);
     this.prefetch(chunkIndex + 1);
+  }
+
+  private setLoading(loading: boolean) {
+    if (loading === this.loading) return;
+    this.loading = loading;
+    this.cb.onLoading?.(loading);
   }
 
   /**
@@ -73,18 +86,34 @@ export class Engine {
     const chunkIndex = this.wordToChunk.get(wordIndex);
     if (chunkIndex === undefined) return;
     this.currentChunk = chunkIndex;
-    this.currentWord = wordIndex;
+    this.currentWord = this.seekFloor = wordIndex;
+    this.reportPosition(wordIndex);
     this.playing = false;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, wordIndex);
     } else {
       this.pendingJumpWord = wordIndex;
       this.cb.requestChunk(chunkIndex, true);
     }
-    this.prefetch(chunkIndex + 1);
+    // No prefetch while paused: chunks ahead are synthesized (and billed) only after Play.
     this.cb.onState("paused");
+  }
+
+  /** Seconds to seek to for a word: its start, else the end of the nearest earlier timed word (Edge can skip a boundary), else 0. */
+  private seekTime(lc: LoadedChunk, wordIndex: number): number {
+    let best: number | null = null;
+    for (const w of lc.timingsMs!) {
+      if (w.wordIndex === wordIndex) return w.start / 1000;
+      if (w.wordIndex < wordIndex) best = w.end;
+    }
+    return best !== null ? best / 1000 : 0;
+  }
+
+  // A seek reports at once: the host replans a voice switch from it, and a tick
+  // landing on this same word would not report it again.
+  private reportPosition(wordIndex: number) {
+    this.cb.onPosition(wordIndex, this.wordToSentence.get(wordIndex) ?? 0);
   }
 
   private prefetch(from: number) {
@@ -98,6 +127,8 @@ export class Engine {
     const url = this.cb.makeUrl(data.audio, data.format);
     const audio = this.cb.createAudio();
     audio.preservesPitch = true;
+    // Loading a source resets playbackRate to defaultPlaybackRate, so set both.
+    audio.defaultPlaybackRate = this.speed;
     audio.playbackRate = this.speed;
     audio.src = url;
     const lc: LoadedChunk = {
@@ -126,11 +157,11 @@ export class Engine {
     // Apply a pending seek whether we're going to play or just prime-in-place,
     // so a paused prime still lands the audio at the right word.
     if (this.pendingJumpWord !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === this.pendingJumpWord);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, this.pendingJumpWord);
       this.pendingJumpWord = null;
     }
     if (!this.playing) return; // primed but paused — loaded and seeked, do not play
+    this.setLoading(false);
     lc.audio.play().catch(() => this.cb.onState("paused"));
     this.cb.onState("playing");
   }
@@ -151,6 +182,7 @@ export class Engine {
       lc.audio.play().catch(() => this.cb.onState("paused"));
       this.cb.onState("playing");
     } else {
+      this.setLoading(true);
       this.cb.requestChunk(next, true);
     }
   }
@@ -159,6 +191,7 @@ export class Engine {
     const lc = this.loaded.get(this.currentChunk);
     lc?.audio.pause();
     this.playing = false;
+    this.setLoading(false);
     this.cb.onState("paused");
   }
 
@@ -176,17 +209,20 @@ export class Engine {
     const prev = this.loaded.get(this.currentChunk);
     prev?.audio.pause();
     this.currentChunk = chunkIndex;
-    this.currentWord = wordIndex;
+    this.currentWord = this.seekFloor = wordIndex;
+    this.reportPosition(wordIndex);
     this.playing = true;
     const lc = this.loaded.get(chunkIndex);
     if (lc && lc.timingsMs !== null) {
-      const t = lc.timingsMs.find((w) => w.wordIndex === wordIndex);
-      lc.audio.currentTime = t ? t.start / 1000 : 0;
+      lc.audio.currentTime = this.seekTime(lc, wordIndex);
+      this.pendingJumpWord = null; // else a late chunk would seek to an earlier click's word
+      this.setLoading(false);
       lc.audio.play().catch(() => this.cb.onState("paused"));
       this.cb.onState("playing");
       this.prefetch(chunkIndex + 1);
     } else {
       this.pendingJumpWord = wordIndex;
+      this.setLoading(true);
       this.cb.requestChunk(chunkIndex, true);
       this.prefetch(chunkIndex + 1);
     }
@@ -194,7 +230,10 @@ export class Engine {
 
   setSpeed(rate: number) {
     this.speed = rate;
-    for (const lc of this.loaded.values()) lc.audio.playbackRate = rate;
+    for (const lc of this.loaded.values()) {
+      lc.audio.defaultPlaybackRate = rate;
+      lc.audio.playbackRate = rate;
+    }
   }
 
   stop() {
@@ -204,6 +243,7 @@ export class Engine {
     }
     this.loaded.clear();
     this.playing = false;
+    this.setLoading(false);
   }
 
   // Called on a ~100ms interval by main.ts; resolves current word from audio time.
@@ -216,9 +256,10 @@ export class Engine {
       if (ms >= w.start) word = w.wordIndex;
       else break;
     }
-    if (word >= 0 && word !== this.currentWord) {
+    if (word < 0 || (this.seekFloor !== null && word < this.seekFloor)) return;
+    if (word !== this.currentWord) {
       this.currentWord = word;
-      this.cb.onPosition(word, this.wordToSentence.get(word) ?? 0);
+      this.reportPosition(word);
     }
   }
 
