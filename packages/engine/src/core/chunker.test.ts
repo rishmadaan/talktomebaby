@@ -107,69 +107,106 @@ describe("buildChunks", () => {
     expect(chunks.map((c) => c.text)).toEqual(["Done. I fixed the bug in the parser and added a test. All tests pass now."]);
   });
 
-  describe("a long start sentence opens with a short head", () => {
+  describe("a long start sentence is read in cells", () => {
     // 395 characters, one sentence, inside a document of several plain chunks.
     const longSentence =
       "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair it, " +
       "the members agreed that the report would be rewritten from the beginning, that every figure in it would be checked twice by someone who had not worked on it, " +
       "and that nothing would be published until the board had read it in full.";
+    // Its cells: each at most 160 chars, cut after a word ending in a comma where that keeps 64.
+    const cells = [
+      "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget,",
+      "the agenda and who should chair it, the members agreed that the report would be rewritten from the beginning,",
+      "that every figure in it would be checked twice by someone who had not worked on it, and that nothing would be published until the board had read it in full.",
+    ];
     const text = [longPara(0), longPara(1), `Intro sentence here. ${longSentence} After it comes this one.`,
       ...Array.from({ length: 10 }, (_, p) => longPara(p + 2))].join("\n\n");
     const m = parseDocument(text, "s.txt", 1);
     const ls = m.sentences.find((s) => s.text === longSentence)!;
     const plain = buildChunks(m);
     const holding = (c: Chunk[], wordIndex: number) => c.findIndex((x) => x.words.some((r) => r.wordIndex === wordIndex));
-    // Every word once, in order, each indexing its own chunk's text; the chunks after
-    // `upTo` are the plain plan's last ones, text for text.
-    const sound = (chunks: Chunk[], upTo: number) => {
-      for (const c of chunks) for (const r of c.words) expect(c.text.slice(r.charStart, r.charEnd)).toBe(m.words[r.wordIndex].text);
-      expect(chunks.flatMap((c) => c.words.map((r) => r.wordIndex))).toEqual(m.words.map((w) => w.index));
-      const tail = chunks.slice(upTo + 1).map((c) => c.text);
-      expect(tail.length).toBeGreaterThan(0);
-      expect(tail).toEqual(plain.slice(-tail.length).map((c) => c.text));
+    // Every word once, in order, each indexing its own chunk's text.
+    const sound = (chunks: Chunk[], d = m) => {
+      for (const c of chunks) for (const r of c.words) expect(c.text.slice(r.charStart, r.charEnd)).toBe(d.words[r.wordIndex].text);
+      expect(chunks.flatMap((c) => c.words.map((r) => r.wordIndex))).toEqual(d.words.map((w) => w.index));
     };
+    // The start sentence's chunks joined back into one: the plan as it was before cells.
+    const merged = (chunks: Chunk[], si: number) => chunks.reduce<{ text: string; sentenceIndexes: number[] }[]>((out, c) => {
+      const prev = out.at(-1);
+      if (prev && c.sentenceIndexes.join() === `${si}` && prev.sentenceIndexes.join() === `${si}`) prev.text += ` ${c.text}`;
+      else out.push({ text: c.text, sentenceIndexes: c.sentenceIndexes });
+      return out;
+    }, []);
 
-    it("from its first word: a head of at most 160 characters, then the rest opens the ramp", () => {
-      const chunks = buildChunks(m, 2200, 1400, ls.words[0].index);
-      const h = holding(chunks, ls.words[0].index);
-      expect(chunks[h].text).toBe("When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair");
-      expect(chunks[h].text.length).toBeLessThanOrEqual(160);
-      expect(chunks[h - 1].text.endsWith("Intro sentence here.")).toBe(true); // no chunk of the words before it
-      expect(chunks[h].sentenceIndexes).toEqual([ls.index]);
-      expect(chunks[h + 1].text.startsWith("it, the members agreed")).toBe(true);
-      expect(chunks[h + 1].sentenceIndexes.slice(0, 2)).toEqual([ls.index, ls.index + 1]);
-      expect(chunks[h + 1].text.length).toBeLessThanOrEqual(500);
-      expect([chunks[h].text, chunks[h + 1].text].join(" ")).toBe(`${longSentence} After it comes this one.`);
-      sound(chunks, h + 2);
+    it("from every start word: the chunk holding it is its cell, the same texts within a cell, and every other chunk as before", () => {
+      const byCell = new Map<string, string[]>();
+      const outside = new Set<string>();
+      for (const w of ls.words) {
+        const chunks = buildChunks(m, 2200, 1400, w.index);
+        sound(chunks);
+        const cell = chunks[holding(chunks, w.index)].text;
+        expect(cells).toContain(cell);
+        const texts = chunks.map((c) => c.text);
+        if (byCell.has(cell)) expect(texts).toEqual(byCell.get(cell)); // a restart in the same cell: every text a cache hit
+        else byCell.set(cell, texts);
+        // The sentence's chunks: the cells before, the cell, the cells after; no empty one.
+        const own = chunks.filter((c) => c.sentenceIndexes.join() === `${ls.index}`).map((c) => c.text);
+        const c = cells.indexOf(cell);
+        expect(own).toEqual([cells.slice(0, c).join(" "), cell, cells.slice(c + 1).join(" ")].filter(Boolean));
+        // Joined back, the plan is ea2f5b2's for a start in this sentence: [0..24] [25] then the 500/1000 ramp and the plain tail.
+        const back = merged(chunks, ls.index);
+        expect(back.map((x) => [x.sentenceIndexes[0], x.sentenceIndexes.at(-1)])).toEqual([[0, 24], [25, 25], [26, 38], [39, 50], [51, 86], [87, 134], [135, 146]]);
+        expect(back[1].text).toBe(longSentence);
+        outside.add(JSON.stringify(chunks.filter((x) => !x.sentenceIndexes.includes(ls.index)).map((x) => x.text)));
+      }
+      expect([...byCell.keys()]).toEqual(cells);
+      expect(outside.size).toBe(1); // no chunk outside the sentence depends on the start word
+      const tail = JSON.parse([...outside][0]) as string[];
+      expect(tail.slice(-2)).toEqual(plain.slice(-2).map((c) => c.text));
     });
 
-    it("from a word mid-sentence: the words before it, then a head from that word, then the rest", () => {
-      const start = ls.words[12]; // "long"
-      const chunks = buildChunks(m, 2200, 1400, start.index);
-      const h = holding(chunks, start.index);
-      expect(chunks[h - 1].text).toBe("When the committee finally met on Tuesday, after three postponements and a");
-      expect(chunks[h - 1].sentenceIndexes).toEqual([ls.index]);
-      expect(chunks[h].words[0].wordIndex).toBe(start.index); // the first audio holds the chosen word
-      expect(chunks[h].text).toBe("long exchange of letters about the venue, the budget, the agenda and who should chair it, the members agreed that the report would be rewritten from the");
-      expect(chunks[h + 1].text.startsWith("beginning, that every figure")).toBe(true);
-      // The rest follows the 500 ramp: as full as it gets before the next sentence would overflow it.
-      const rest = chunks[h + 1];
-      expect(rest.text.length).toBeLessThanOrEqual(500);
-      expect(rest.text.length + 1 + m.sentences[rest.sentenceIndexes.at(-1)! + 1].text.length).toBeGreaterThan(500);
-      expect(`${chunks[h - 1].text} ${chunks[h].text} ${rest.text}`.startsWith(longSentence)).toBe(true);
-      sound(chunks, h + 2);
+    it("a start in the first cell has no chunk of words before it; in the last cell, none after it", () => {
+      const first = buildChunks(m, 2200, 1400, ls.words[1].index).map((c) => c.text);
+      const c0 = first.indexOf(cells[0]);
+      expect(first[c0 - 1].endsWith("Intro sentence here.")).toBe(true);
+      expect(first[c0 + 1]).toBe(`${cells[1]} ${cells[2]}`);
+      const last = buildChunks(m, 2200, 1400, ls.words.at(-1)!.index).map((c) => c.text);
+      const at = last.indexOf(cells[2]);
+      expect(last[at - 1]).toBe(`${cells[0]} ${cells[1]}`);
+      expect(last[at + 1].startsWith("After it comes this one.")).toBe(true);
     });
 
-    it("keeps today's plan when at most 200 characters are left from the start word", () => {
-      const pos: number[] = [];
-      for (let q = 0, k = 0; k < ls.words.length; k++) { q = longSentence.indexOf(ls.words[k].text, q); pos.push(q); q += ls.words[k].text.length; }
-      const k = pos.findIndex((p) => longSentence.length - p <= 200); // the first word with at most 200 left
-      const whole = (c: Chunk[]) => c.some((x) => x.text === longSentence);
-      expect(whole(buildChunks(m, 2200, 1400, ls.words[k].index))).toBe(true);
-      expect(whole(buildChunks(m, 2200, 1400, ls.words[k - 1].index))).toBe(false);
+    it("a cell ends after a comma only while it keeps at least 64 characters", () => {
+      // "A b…b," is exactly 64 (or 63) characters; the words after it carry no comma.
+      const tail = Array.from({ length: 40 }, (_, q) => `word${q}`).join(" ");
+      const firstCell = (bs: number) => {
+        const d = parseDocument(`Intro. A ${"b".repeat(bs)}, ${tail}.`, "c.txt", 1);
+        const chunks = buildChunks(d, 2200, 1400, d.sentences[1].words[0].index);
+        sound(chunks, d);
+        return chunks[1].text;
+      };
+      expect(firstCell(61)).toBe(`A ${"b".repeat(61)},`);           // 64: cut after the comma
+      expect(firstCell(60).startsWith(`A ${"b".repeat(60)}, word0`)).toBe(true); // 63: the comma is not a cut
+      expect(firstCell(60).length).toBeLessThanOrEqual(160);
     });
 
-    it("splits at 201 characters from the start word, not at 200", () => {
+    it("a single word longer than 160 characters is a cell by itself, first in the sentence or not", () => {
+      const url = `https://example.com/${"a".repeat(150)}`; // 170
+      const rest = "is where the full list of every change made to the parser this year lives, with the reasons for each.";
+      const d = parseDocument(`Intro. ${url} ${rest} See ${url} ${rest}`, "u.txt", 1);
+      const at = (s: number, t: string) => d.sentences[s].words.find((w) => w.text === t)!.index;
+      expect(buildChunks(d, 2200, 1400, at(1, "parser")).map((c) => c.text)).toEqual(["Intro.", url, rest, `See ${url} ${rest}`]);
+      expect(buildChunks(d, 2200, 1400, at(2, url)).map((c) => c.text)).toEqual([`Intro. ${url} ${rest}`, "See", url, rest]);
+    });
+
+    it("keeps today's plan for a sentence of at most 200 characters, from any word in it", () => {
+      const s200 = `${"abcd ".repeat(39)}eeee.`;
+      expect(s200.length).toBe(200);
+      const d = parseDocument(`Intro. ${s200} Next one.`, "b.txt", 1);
+      for (const w of d.sentences[1].words) expect(buildChunks(d, 2200, 1400, w.index).map((c) => c.text)).toEqual(["Intro.", s200, "Next one."]);
+    });
+
+    it("splits a start sentence of 201 characters, not of 200", () => {
       const doc = (n: number) => parseDocument(`Intro. ${"abcd ".repeat(39)}${"e".repeat(n - 196)}.`, "b.txt", 1);
       const whole = (n: number) => buildChunks(doc(n), 2200, 1400, 1).map((c) => c.text).includes(doc(n).sentences[1].text);
       expect(doc(200).sentences[1].text.length).toBe(200);
@@ -180,21 +217,6 @@ describe("buildChunks", () => {
     it("a read from the top keeps its plan, even with a long first sentence", () => {
       const top = parseDocument(`${longSentence}\n\nShort one. Another short one.`, "top.txt", 1);
       expect(buildChunks(top, 2200, 1400, 0).map((c) => c.text)).toEqual([longSentence, "Short one. Another short one."]);
-    });
-
-    it("a head is at least one word, however long that word", () => {
-      const url = `https://example.com/${"a".repeat(180)}`;
-      const d = parseDocument(`Intro. See ${url} for the full list of every change made to the parser this year and the reasons for each.`, "u.txt", 1);
-      const start = d.words.find((w) => w.text === url)!;
-      const chunks = buildChunks(d, 2200, 1400, start.index);
-      expect(chunks.map((c) => c.text)).toEqual(["Intro.", "See", url, "for the full list of every change made to the parser this year and the reasons for each."]);
-    });
-
-    it("a long last word as the start leaves no rest, so the sentence stays whole", () => {
-      const url = `https://example.com/${"a".repeat(200)}`;
-      const d = parseDocument(`Intro. See ${url}`, "u.txt", 1);
-      const chunks = buildChunks(d, 2200, 1400, d.words.find((w) => w.text === url)!.index);
-      expect(chunks.map((c) => c.text)).toEqual(["Intro.", `See ${url}`]);
     });
 
     it("the CLI's plan (no start word) never splits a sentence", () => {

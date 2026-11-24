@@ -12,10 +12,15 @@ export interface Chunk { index: number; text: string; sentenceIndexes: number[];
 // first audio arrives fast and each chunk is synthesized while the shorter one
 // before it plays.
 const RAMP = [500, 1000];
-// A start sentence longer than SPLIT_OVER from the start word opens with a head of
-// at most HEAD_MAX characters, so its first audio does not wait on the whole sentence.
+// A start sentence longer than SPLIT_OVER is read in cells of at most CELL_MAX chars,
+// so its first audio does not wait on the whole sentence. A cell ends after a word
+// ending in , ; : ) or a dash when that keeps it at least CELL_KEEP chars (a natural
+// pause at the seam). Cells depend only on the sentence, so a restart inside the
+// same cell asks for the same texts and hits the disk cache.
 const SPLIT_OVER = 200;
-const HEAD_MAX = 160;
+const CELL_MAX = 160;
+const CELL_KEEP = 64;
+const PAUSE_END = /[,;:)\u2013\u2014]$/;
 
 // [from, to) sentences; sentence `from` starts at char a and sentence `to - 1` ends
 // before char b (both word starts), when a sentence is split across chunks.
@@ -32,10 +37,26 @@ const locate = (s: Sentence) => {
   return out;
 };
 
+// The first located word of each cell of a sentence (indexes into `located`).
+const cellsOf = (located: ReturnType<typeof locate>): number[] => {
+  const end = (k: number) => located[k].at + located[k].text.length;
+  const cells: number[] = [];
+  for (let a = 0; a < located.length; ) {
+    let b = a; // at least one word, however long
+    while (b + 1 < located.length && end(b + 1) - located[a].at <= CELL_MAX) b++;
+    if (b + 1 < located.length) {
+      for (let k = b; k >= a && end(k) - located[a].at >= CELL_KEEP; k--) if (PAUSE_END.test(located[k].text)) { b = k; break; }
+    }
+    cells.push(a);
+    a = b + 1;
+  }
+  return cells;
+};
+
 /**
  * @param startWordIndex where reading starts; its sentence opens a short first chunk
- * (one with more than 200 chars from the start word: any words before it, then a head
- * of at most 160 chars from it; the rest of the sentence opens the ramp).
+ * (one longer than 200 chars, when the start is not word 0: the cell holding the start
+ * word, with the cells before it and after it as a chunk each).
  * Leave it out for the plain plan (the CLI: it has no prefetch, so a ramp is audible gaps).
  * With it, the plan is the plain plan with only the chunk holding the start sentence
  * (and, if little of that chunk is left, the next one) split up, so every later chunk
@@ -49,13 +70,12 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
 
   // End (exclusive) of the chunk opening at sentence `from`: at most `max` chars, or
   // earlier at a block boundary once `min` is reached. A first sentence always fits.
-  // `skip` chars of sentence `from` are already in an earlier chunk.
-  const take = (from: number, to: number, max: number, min: number, skip = 0): number => {
+  const take = (from: number, to: number, max: number, min: number): number => {
     let end = from;
     let curLen = 0;
     for (; end < to; end++) {
       // Counts a joining space on every sentence but the document's first, as the plan always has.
-      const addLen = model.sentences[end].text.length - (end === from ? skip : 0) + (end ? 1 : 0);
+      const addLen = model.sentences[end].text.length + (end ? 1 : 0);
       if (end > from && curLen + addLen > max) break;
       if (end > from && curLen >= min && blockOf.get(end) !== blockOf.get(end - 1)) break;
       curLen += addLen;
@@ -74,41 +94,38 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
     const [from, to] = plain[k];
     ranges = plain.slice(0, k);
     // Pieces with the given caps, then whatever is left as one chunk.
-    const ramp = (a: number, b: number, caps: number[], skip = 0) => {
+    const ramp = (a: number, b: number, caps: number[]) => {
       for (const cap of caps) {
         if (a >= b) return;
         const max = Math.min(cap, maxChars);
-        const end = take(a, b, max, Math.floor(max / 2), skip); // half full first, so a heading does not ride alone
-        ranges.push([a, end, skip]);
+        const end = take(a, b, max, Math.floor(max / 2)); // half full first, so a heading does not ride alone
+        ranges.push([a, end]);
         a = end;
-        skip = 0;
       }
       if (a < b) ranges.push([a, b]);
     };
-    // A long start sentence: cut at word starts into [words before the start word,]
-    // a head of at most HEAD_MAX chars from it, and the rest, which opens the ramp.
+    if (start > from) ranges.push([from, start]);
+    // A long start sentence: [cells before c,] the cell c holding the start word, [cells after c].
     // Not from word 0: a read from the top keeps its plan.
     const ss = model.sentences[start];
     const located = locate(ss);
     const i = located.findIndex((w) => w.index >= startWordIndex);
-    let cut: { head: number; rest: number } | undefined;
-    if (startWordIndex > 0 && i >= 0 && ss.text.length - located[i].at > SPLIT_OVER) {
-      const head = located[i].at;
-      let j = i + 1; // the rest's first word
-      while (j + 1 < located.length && ss.text.slice(head, located[j + 1].at).trimEnd().length <= HEAD_MAX) j++;
-      if (j < located.length) cut = { head, rest: located[j].at };
-    }
-    if (start > from) ranges.push([from, start]);
-    if (cut) {
-      if (cut.head) ranges.push([start, start + 1, 0, cut.head]); // synthesized only if the listener goes back
-      ranges.push([start, start + 1, cut.head, cut.rest]);
-      ramp(start, to, RAMP, cut.rest);
+    const cells = startWordIndex > 0 && ss.text.length > SPLIT_OVER ? cellsOf(located) : [];
+    if (cells.length) {
+      let c = 0;
+      while (c + 1 < cells.length && cells[c + 1] <= i) c++;
+      const at = (ci: number) => located[cells[ci]].at;
+      const after = c + 1 < cells.length ? at(c + 1) : undefined;
+      if (c > 0) ranges.push([start, start + 1, 0, at(c)]); // synthesized only if the listener goes back
+      ranges.push([start, start + 1, at(c), after]);
+      if (after !== undefined) ranges.push([start, start + 1, after]);
     } else {
       ranges.push([start, start + 1]);
-      ramp(start + 1, to, RAMP);
     }
+    ramp(start + 1, to, RAMP);
     let next = k + 1;
-    const restLen = [...(cut ? [ss.text.slice(cut.rest)] : []), ...model.sentences.slice(start + 1, to).map((s) => s.text)].join(" ").length;
+    // The start sentence's own text is left out, so every chunk after it is the same from any start in it.
+    const restLen = model.sentences.slice(start + 1, to).map((s) => s.text).join(" ").length;
     // Too little left before the next plain chunk to cover its synthesis: split that one too.
     if (restLen < RAMP[0] && next < plain.length) { ramp(plain[next][0], plain[next][1], RAMP.slice(0, 1)); next++; }
     ranges.push(...plain.slice(next));

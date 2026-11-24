@@ -332,32 +332,34 @@ describe("Engine", () => {
     expect(engine.chunkFailed(1)).toBe(true);              // the retry fails while playback waits on it
   });
 
-  it("plays a long start sentence split mid-sentence from the chosen word, then hands off to the rest of it", () => {
+  it("plays a long start sentence from the chosen word inside its cell, then hands off to the cells after it", () => {
     const sentence = "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair it, " +
       "the members agreed that the report would be rewritten from the beginning, that every figure in it would be checked twice by someone who had not worked on it.";
     const doc = parseDocument(`Intro sentence here. ${sentence}`, "s.txt", 1);
     const start = doc.sentences[1].words[12].index; // "long"
     const plan = buildChunks(doc, undefined, undefined, start);
-    const head = plan.findIndex((c) => c.words[0]?.wordIndex === start);
-    expect(plan[head].sentenceIndexes).toEqual([1]);
-    expect(plan[head + 1].sentenceIndexes).toEqual([1]);
+    const cell = plan.findIndex((c) => c.words.some((r) => r.wordIndex === start));
+    expect(plan[cell].text.startsWith("When the committee")).toBe(true); // the cell opens at the sentence start
+    expect(plan[cell].sentenceIndexes).toEqual([1]);
+    expect(plan[cell + 1].sentenceIndexes).toEqual([1]);
     const fraction = (c: Chunk): ChunkTimings => ({ unit: "fraction", words: c.words.map((r) => ({
       wordIndex: r.wordIndex, start: r.charStart / c.text.length, end: r.charEnd / c.text.length })) });
     const { engine, audios, cb } = setup(plan, doc);
     engine.jumpToWord(start);
-    expect(cb.requestChunk).toHaveBeenCalledWith(head, true);
+    expect(cb.requestChunk).toHaveBeenCalledWith(cell, true);
     expect(cb.onPosition).toHaveBeenLastCalledWith(start, 1);
-    engine.receiveChunk(head, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[head]) });
+    engine.receiveChunk(cell, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[cell]) });
     audios[0]._loaded(10);
     expect(audios[0].paused).toBe(false);
-    expect(audios[0].currentTime).toBe(0); // the head's audio opens on the chosen word
-    engine.receiveChunk(head + 1, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[head + 1]) });
+    const ref = plan[cell].words.find((r) => r.wordIndex === start)!;
+    expect(audios[0].currentTime).toBeCloseTo((ref.charStart / plan[cell].text.length) * 10); // audio opens on the chosen word
+    engine.receiveChunk(cell + 1, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[cell + 1]) });
     audios[1]._loaded(10);
     audios[0]._ended();
     expect(audios[1].paused).toBe(false);
     engine.tick();
-    expect(cb.onPosition).toHaveBeenLastCalledWith(plan[head + 1].words[0].wordIndex, 1); // the rest's first word, same sentence
-    expect(doc.words[plan[head + 1].words[0].wordIndex].text).toBe("beginning,");
+    expect(cb.onPosition).toHaveBeenLastCalledWith(plan[cell + 1].words[0].wordIndex, 1); // the next cell's first word, same sentence
+    expect(plan[cell + 1].text.startsWith("the agenda and")).toBe(true);
   });
 
   it("a primed chunk that fails is waited on", () => {
