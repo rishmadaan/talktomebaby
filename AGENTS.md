@@ -9,7 +9,7 @@ npm run compile        # dev build: esbuild ext (→ out/extension.js) + webview
 npm run watch          # incremental rebuild on save
 npm run build          # production build (minified, no sourcemaps)
 npm run package        # npx @vscode/vsce package — runs build first via vscode:prepublish
-npm test               # vitest run — 173 tests across 24 files, plus 3 packaging checks (no vscode runtime needed)
+npm test               # vitest run — 174 tests across 24 files, plus 3 packaging checks (no vscode runtime needed)
 ```
 
 Press F5 in VS Code to launch the Extension Development Host (runs `npm: watch` as the default build task). Reload the dev host window to pick up changes.
