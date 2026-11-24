@@ -90,14 +90,6 @@ function init(
 
   engine.setSpeed(settings.speed);
 
-  // click any word to jump
-  root.addEventListener("click", (e) => {
-    const target = (e.target as HTMLElement).closest("span[data-w]");
-    if (!target || !engine) return;
-    engine.jumpToWord(Number(target.getAttribute("data-w")));
-    highlight?.engageFollow();
-  });
-
   function jumpSentence(delta: number) {
     if (!engine) return;
     const next = Math.max(0, Math.min(model.sentences.length - 1, engine.currentSentence + delta));
@@ -126,6 +118,14 @@ function init(
   settingsPanel.syncToggleState();
 }
 
+// Click any word to jump. Registered once: #content outlives every init, and the handler reads the current engine.
+document.getElementById("content")!.addEventListener("click", (e) => {
+  const target = (e.target as HTMLElement).closest("span[data-w]");
+  if (!target || !engine) return;
+  engine.jumpToWord(Number(target.getAttribute("data-w")));
+  highlight?.engageFollow();
+});
+
 window.addEventListener("message", (event) => {
   const msg = event.data;
   switch (msg.type) {
@@ -141,8 +141,10 @@ window.addEventListener("message", (event) => {
       });
       break;
     case "chunkFailed":
+      // A failed prefetch changes nothing the listener hears; a later request retries it.
+      if (!engine?.chunkFailed(msg.chunkIndex)) break;
       playerBar?.showError(`Couldn't synthesize part ${msg.chunkIndex + 1}: ${msg.error}`);
-      engine?.pause();
+      engine.pause();
       break;
     case "seekToWord":
       engine?.jumpToWord(msg.wordIndex);

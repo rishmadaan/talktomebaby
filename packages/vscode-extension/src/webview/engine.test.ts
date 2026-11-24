@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { Engine, AudioLike, EngineCallbacks } from "./engine";
-import { DocumentModel } from "@talktomebaby/engine/core";
+import { DocumentModel, parseDocument, buildChunks } from "@talktomebaby/engine/core";
 import { Chunk } from "@talktomebaby/engine/core";
 import { ChunkTimings } from "@talktomebaby/engine/core";
 
@@ -50,14 +50,14 @@ const msTimings: ChunkTimings = { unit: "ms", words: [
 const msTimings2: ChunkTimings = { unit: "ms", words: [
   { wordIndex: 2, start: 0, end: 400 }, { wordIndex: 3, start: 500, end: 900 } ] };
 
-function setup(plan: Chunk[] = chunks) {
+function setup(plan: Chunk[] = chunks, doc: DocumentModel = model) {
   const audios: FakeAudio[] = [];
   const cb: EngineCallbacks = {
     requestChunk: vi.fn(), onPosition: vi.fn(), onState: vi.fn(),
     createAudio: () => { const a = new FakeAudio(); audios.push(a); return a; },
     makeUrl: () => "blob:x", revokeUrl: vi.fn(),
   };
-  const engine = new Engine(model, plan, cb);
+  const engine = new Engine(doc, plan, cb);
   return { engine, audios, cb };
 }
 
@@ -317,5 +317,133 @@ describe("Engine", () => {
     engine.pause();
     expect(onLoading).toHaveBeenLastCalledWith(false);
     expect(onLoading).toHaveBeenCalledTimes(4);
+  });
+
+  it("a failed prefetch is not waited on: chunk 0 keeps playing, and the handoff asks for chunk 1 again", () => {
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    expect(engine.chunkFailed(1)).toBe(false); // the prefetch of chunk 1 failed
+    expect(audios[0].paused).toBe(false);
+    vi.mocked(cb.requestChunk).mockClear();
+    audios[0]._ended();
+    expect(cb.requestChunk).toHaveBeenCalledWith(1, true); // not treated as loaded: retried
+    expect(engine.chunkFailed(1)).toBe(true);              // the retry fails while playback waits on it
+  });
+
+  it("plays a long start sentence from the chosen word inside its cell, then hands off to the cells after it", () => {
+    const sentence = "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair it, " +
+      "the members agreed that the report would be rewritten from the beginning, that every figure in it would be checked twice by someone who had not worked on it.";
+    const doc = parseDocument(`Intro sentence here. ${sentence}`, "s.txt", 1);
+    const start = doc.sentences[1].words[12].index; // "long"
+    const plan = buildChunks(doc, undefined, undefined, start);
+    const cell = plan.findIndex((c) => c.words.some((r) => r.wordIndex === start));
+    expect(plan[cell].text.startsWith("When the committee")).toBe(true); // the cell opens at the sentence start
+    expect(plan[cell].sentenceIndexes).toEqual([1]);
+    expect(plan[cell + 1].sentenceIndexes).toEqual([1]);
+    const fraction = (c: Chunk): ChunkTimings => ({ unit: "fraction", words: c.words.map((r) => ({
+      wordIndex: r.wordIndex, start: r.charStart / c.text.length, end: r.charEnd / c.text.length })) });
+    const { engine, audios, cb } = setup(plan, doc);
+    engine.jumpToWord(start);
+    expect(cb.requestChunk).toHaveBeenCalledWith(cell, true);
+    expect(cb.onPosition).toHaveBeenLastCalledWith(start, 1);
+    engine.receiveChunk(cell, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[cell]) });
+    audios[0]._loaded(10);
+    expect(audios[0].paused).toBe(false);
+    const ref = plan[cell].words.find((r) => r.wordIndex === start)!;
+    expect(audios[0].currentTime).toBeCloseTo((ref.charStart / plan[cell].text.length) * 10); // audio opens on the chosen word
+    engine.receiveChunk(cell + 1, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[cell + 1]) });
+    audios[1]._loaded(10);
+    audios[0]._ended();
+    expect(audios[1].paused).toBe(false);
+    engine.tick();
+    expect(cb.onPosition).toHaveBeenLastCalledWith(plan[cell + 1].words[0].wordIndex, 1); // the next cell's first word, same sentence
+    expect(plan[cell + 1].text.startsWith("the agenda and")).toBe(true);
+  });
+
+  describe("Play after Pause in a long sentence read in cells", () => {
+    const sentence = "When the committee finally met on Tuesday, after three postponements and a long exchange of letters about the venue, the budget, the agenda and who should chair it, " +
+      "the members agreed that the report would be rewritten from the beginning, that every figure in it would be checked twice by someone who had not worked on it.";
+    const doc = parseDocument(`Intro sentence here. ${sentence}`, "s.txt", 1);
+    const word = (t: string) => doc.sentences[1].words.find((w) => w.text === t)!.index;
+    const start = word("members"); // in the middle cell: "the agenda … beginning,"
+    const plan = buildChunks(doc, undefined, undefined, start);
+    const cell = plan.findIndex((c) => c.words.some((r) => r.wordIndex === start));
+    const fraction = (c: Chunk): ChunkTimings => ({ unit: "fraction", words: c.words.map((r) => ({
+      wordIndex: r.wordIndex, start: r.charStart / c.text.length, end: r.charEnd / c.text.length })) });
+    const receive = (engine: Engine, i: number) => engine.receiveChunk(i, { audio: new Uint8Array(1), format: "mp3", timings: fraction(plan[i]) });
+    const cellFirst = plan[cell].words[0].wordIndex;
+
+    it("the plan: the cells before, the start word's cell, the cells after", () => {
+      expect(plan[cell - 1].text.startsWith("When the committee")).toBe(true);
+      expect(plan[cell].text.startsWith("the agenda and")).toBe(true);
+      expect(plan[cell + 1].text.startsWith("that every figure")).toBe(true);
+      expect(doc.words[cellFirst].text).toBe("the");
+    });
+
+    it("resumes from the start of the cell in hand, not the unsynthesized cells before it", () => {
+      const { engine, audios, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      receive(engine, cell);
+      audios[0]._loaded(10);
+      engine.pause();
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.requestChunk).not.toHaveBeenCalledWith(cell - 1, true);
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(audios[0].currentTime).toBe(0); // the cell's own first word
+      expect(audios[0].paused).toBe(false);
+    });
+
+    it("paused before the cell's audio arrived: resumes from the cell's first word and waits only on that cell", () => {
+      const { engine, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      engine.pause();
+      receive(engine, cell + 1); // the prefetched cells after it arrive first
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(cb.requestChunk).toHaveBeenCalledWith(cell, true);
+      expect(cb.requestChunk).not.toHaveBeenCalledWith(cell - 1, true);
+    });
+
+    it("paused in the cells after: resumes from the start of the cell already played", () => {
+      const { engine, audios, cb } = setup(plan, doc);
+      engine.jumpToWord(start);
+      receive(engine, cell);
+      audios[0]._loaded(10);
+      receive(engine, cell + 1);
+      audios[1]._loaded(10);
+      audios[0]._ended();
+      engine.tick();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(plan[cell + 1].words[0].wordIndex, 1);
+      engine.pause();
+      vi.mocked(cb.requestChunk).mockClear();
+      engine.resume();
+      expect(cb.onPosition).toHaveBeenLastCalledWith(cellFirst, 1);
+      expect(cb.requestChunk).not.toHaveBeenCalled();
+      expect(audios[0].paused).toBe(false);
+      expect(audios[0].currentTime).toBe(0);
+    });
+  });
+
+  it("a primed chunk that fails is waited on", () => {
+    const { engine } = setup();
+    engine.primeAt(2);
+    expect(engine.chunkFailed(1)).toBe(true);
+  });
+
+  it("a failed re-request of the current chunk whose audio already arrived is not waited on", () => {
+    const { engine, audios } = setup();
+    engine.start(0);
+    // Fraction timings: a seek before the metadata loads asks for the chunk again.
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: { unit: "fraction", words: [
+      { wordIndex: 0, start: 0, end: 0.4 }, { wordIndex: 1, start: 0.5, end: 0.9 } ] } });
+    engine.jumpToWord(1);
+    expect(engine.chunkFailed(0)).toBe(false); // that re-request failed; the audio is in hand
+    audios[0]._loaded(1.0);
+    expect(audios[0].paused).toBe(false);
+    expect(audios[0].currentTime).toBe(0.5);
   });
 });

@@ -122,6 +122,15 @@ export class Engine {
     }
   }
 
+  /**
+   * A chunk's synthesis failed: true if playback was waiting on it (the current chunk,
+   * not yet loaded: playing, loading, or a pending seek or prime into it). It is not
+   * marked loaded either way, so a later handoff or seek requests it again.
+   */
+  chunkFailed(chunkIndex: number): boolean {
+    return chunkIndex === this.currentChunk && !this.loaded.has(chunkIndex);
+  }
+
   receiveChunk(chunkIndex: number, data: { audio: Uint8Array; format: string; timings: ChunkTimings }) {
     if (this.loaded.has(chunkIndex)) return;
     const url = this.cb.makeUrl(data.audio, data.format);
@@ -198,7 +207,12 @@ export class Engine {
   resume() {
     this.playing = true;
     const sentence = this.wordToSentence.get(Math.max(this.currentWord, 0)) ?? 0;
-    const firstWord = this.sentenceFirstWord.get(sentence);
+    // From the sentence's first word whose audio is in hand (or on its way): a long
+    // sentence's cells before the start were never synthesized, so Play must not wait on them.
+    const firstWord = this.model.sentences[sentence]?.words.find((w) => {
+      const c = this.wordToChunk.get(w.index)!; // every word is in a chunk
+      return this.loaded.has(c) || c === this.currentChunk;
+    })?.index ?? this.sentenceFirstWord.get(sentence);
     if (firstWord !== undefined) this.jumpToWord(firstWord);
     else this.maybeStartChunk(this.currentChunk);
   }
