@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.3] - 2026-11-24
 
 - Faster start: Read from Here, Read Selection, resume after reload and a voice switch begin with the starting sentence on its own, then slightly longer pieces, so the first audio arrives quickly instead of waiting behind the top of the document. After those first pieces the parts match a read from the top, so audio already cached for the rest of the document still plays free. A starting sentence longer than 200 characters starts faster too: reading begins with a short part of it that holds your word (normally up to about 160 characters; a single longer word stays whole), and the rest of the sentence follows. On a paid voice, starting again in another part of that same long sentence makes some of its audio again. Reading from the very top of a document is unchanged.
 - The player bar shows "Loading…" while it waits for audio, and "Nothing to read." for a blank or code-only document.
@@ -13,7 +13,7 @@
 - Fix: when a part further ahead fails to load, playback no longer pauses while the current part plays fine; that part is tried again when reading reaches it, and the error shows only if it fails then.
 - Fix: clicking a word jumps there once; after several voice switches one click used to register several times.
 - Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
-- Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged.
+- Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged. The engine and CLI versions are 0.2.3.
 - CLI: plain `talktomebaby config` now prints the Edge use-at-your-own-risk notice too, on stderr so its JSON output stays parseable.
 - Docs: the "no contract with Microsoft" lines now speak only for TalkToMeBaby.
 
