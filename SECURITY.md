@@ -16,4 +16,4 @@ If you suspect a provider key was exposed outside TalkToMeBaby, revoke it with t
 
 ## Network Providers
 
-The default Edge TTS provider uses an unofficial Microsoft endpoint through the `msedge-tts` package. This is a reliability and upstream-change risk, not a secret-handling mechanism. ElevenLabs and Sarvam use their official APIs and require user-provided keys.
+Edge TTS, the default provider on Windows and Linux (and in the CLI), makes unofficial use of a Microsoft endpoint through the `msedge-tts` package. This is a reliability and upstream-change risk, not a secret-handling mechanism. Use at your own risk; see [DISCLAIMER.md](DISCLAIMER.md#microsoft-edge-voices-edge-tts). ElevenLabs and Sarvam use their official APIs and require user-provided keys.

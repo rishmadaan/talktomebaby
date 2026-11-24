@@ -12,8 +12,13 @@
 - Fix: jumping to a word the voice gave no timing for starts playback at the end of the nearest earlier timed word (approximate), or at the start of that part when no earlier word is timed, and the highlight stays on the word you chose.
 - Note: audio cached by earlier versions is not reused and is made once more on first play; paid providers (ElevenLabs, OpenAI, Sarvam) bill that once.
 - Engine: `buildChunks` takes an optional fourth argument, `startWordIndex`; without it the plan is unchanged.
+- CLI: plain `talktomebaby config` now prints the Edge use-at-your-own-risk notice too, on stderr so its JSON output stays parseable.
+- Docs: the "no contract with Microsoft" lines now speak only for TalkToMeBaby.
 
-- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, and the CLI install message. The engine and CLI npm packages now ship DISCLAIMER.md.
+## [0.4.2] - 2026-10-28
+
+- New homepage at https://rishmadaan.github.io/talktomebaby/, published from GitHub. The extension's homepage link on the VS Code Marketplace and Open VSX now points there.
+- Docs: Microsoft Edge voices "use at your own risk" disclaimer added to DISCLAIMER.md, README, PRIVACY.md, every docs-site page footer, the provider setting descriptions, the Reader's provider picker, the Select Voice picker label, the CLI messages for install, on, toggle, status, `config provider edge` and help. The homepage carries an own-risk note with a disclaimer link (it names no vendor). The engine and CLI packages now ship DISCLAIMER.md; their versions are 0.2.2.
 
 ## [0.4.1] - 2026-10-28
 
