@@ -56,7 +56,7 @@ const cellsOf = (located: ReturnType<typeof locate>): number[] => {
 /**
  * @param startWordIndex where reading starts; its sentence opens a short first chunk
  * (one longer than 200 chars, when the start is not word 0: the cell holding the start
- * word, with the cells before it and after it as a chunk each).
+ * word, with the cells before it, the next cell, and the cells after that as a chunk each).
  * Leave it out for the plain plan (the CLI: it has no prefetch, so a ramp is audible gaps).
  * With it, the plan is the plain plan with only the chunk holding the start sentence
  * (and, if little of that chunk is left, the next one) split up, so every later chunk
@@ -105,7 +105,8 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
       if (a < b) ranges.push([a, b]);
     };
     if (start > from) ranges.push([from, start]);
-    // A long start sentence: [cells before c,] the cell c holding the start word, [cells after c].
+    // A long start sentence: [cells before c,] the cell c holding the start word, [cell c+1,]
+    // [cells after c+1]; the next cell alone, so a start late in cell c does not wait on all the rest.
     // Not from word 0: a read from the top keeps its plan.
     const ss = model.sentences[start];
     const located = locate(ss);
@@ -114,11 +115,11 @@ export function buildChunks(model: DocumentModel, maxChars = 2200, minChars = 14
     if (cells.length) {
       let c = 0;
       while (c + 1 < cells.length && cells[c + 1] <= i) c++;
-      const at = (ci: number) => located[cells[ci]].at;
-      const after = c + 1 < cells.length ? at(c + 1) : undefined;
+      const at = (ci: number) => (ci < cells.length ? located[cells[ci]].at : undefined);
       if (c > 0) ranges.push([start, start + 1, 0, at(c)]); // synthesized only if the listener goes back
-      ranges.push([start, start + 1, at(c), after]);
-      if (after !== undefined) ranges.push([start, start + 1, after]);
+      ranges.push([start, start + 1, at(c), at(c + 1)]);
+      if (c + 1 < cells.length) ranges.push([start, start + 1, at(c + 1), at(c + 2)]);
+      if (c + 2 < cells.length) ranges.push([start, start + 1, at(c + 2)]);
     } else {
       ranges.push([start, start + 1]);
     }

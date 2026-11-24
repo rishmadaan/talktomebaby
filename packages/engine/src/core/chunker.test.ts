@@ -149,10 +149,10 @@ describe("buildChunks", () => {
         const texts = chunks.map((c) => c.text);
         if (byCell.has(cell)) expect(texts).toEqual(byCell.get(cell)); // a restart in the same cell: every text a cache hit
         else byCell.set(cell, texts);
-        // The sentence's chunks: the cells before, the cell, the cells after; no empty one.
+        // The sentence's chunks: the cells before, the cell, the next cell, the cells after that; no empty one.
         const own = chunks.filter((c) => c.sentenceIndexes.join() === `${ls.index}`).map((c) => c.text);
         const c = cells.indexOf(cell);
-        expect(own).toEqual([cells.slice(0, c).join(" "), cell, cells.slice(c + 1).join(" ")].filter(Boolean));
+        expect(own).toEqual([cells.slice(0, c).join(" "), cell, cells[c + 1], cells.slice(c + 2).join(" ")].filter(Boolean));
         // Joined back, the plan is ea2f5b2's for a start in this sentence: [0..24] [25] then the 500/1000 ramp and the plain tail.
         const back = merged(chunks, ls.index);
         expect(back.map((x) => [x.sentenceIndexes[0], x.sentenceIndexes.at(-1)])).toEqual([[0, 24], [25, 25], [26, 38], [39, 50], [51, 86], [87, 134], [135, 146]]);
@@ -169,11 +169,23 @@ describe("buildChunks", () => {
       const first = buildChunks(m, 2200, 1400, ls.words[1].index).map((c) => c.text);
       const c0 = first.indexOf(cells[0]);
       expect(first[c0 - 1].endsWith("Intro sentence here.")).toBe(true);
-      expect(first[c0 + 1]).toBe(`${cells[1]} ${cells[2]}`);
+      expect(first.slice(c0 + 1, c0 + 3)).toEqual([cells[1], cells[2]]);
+      expect(first[c0 + 3].startsWith("After it comes this one.")).toBe(true);
       const last = buildChunks(m, 2200, 1400, ls.words.at(-1)!.index).map((c) => c.text);
       const at = last.indexOf(cells[2]);
       expect(last[at - 1]).toBe(`${cells[0]} ${cells[1]}`);
       expect(last[at + 1].startsWith("After it comes this one.")).toBe(true);
+    });
+
+    it("the cell after the start word's cell is a chunk alone; the cells after that are joined", () => {
+      // 600 characters in four cells: w000..w031, w032..w063, w064..w095 (159 each), w096..w119. (120).
+      const ws = (a: number, b: number) => Array.from({ length: b - a }, (_, q) => `w${String(a + q).padStart(3, "0")}`).join(" ");
+      const d = parseDocument(`Intro. ${ws(0, 120)}.`, "w.txt", 1);
+      const cell = [ws(0, 32), ws(32, 64), ws(64, 96), `${ws(96, 120)}.`];
+      const plan = (w: number) => { const chunks = buildChunks(d, 2200, 1400, d.sentences[1].words[w].index); sound(chunks, d); return chunks.map((c) => c.text); };
+      for (const w of [0, 31]) expect(plan(w)).toEqual(["Intro.", cell[0], cell[1], `${cell[2]} ${cell[3]}`]); // first cell
+      for (const w of [64, 95]) expect(plan(w)).toEqual(["Intro.", `${cell[0]} ${cell[1]}`, cell[2], cell[3]]); // last-but-one: no joined rest
+      expect(plan(32)).toEqual(["Intro.", cell[0], cell[1], cell[2], cell[3]]);
     });
 
     it("a cell ends after a comma only while it keeps at least 64 characters", () => {
