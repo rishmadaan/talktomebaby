@@ -141,8 +141,10 @@ window.addEventListener("message", (event) => {
       });
       break;
     case "chunkFailed":
+      // A failed prefetch changes nothing the listener hears; a later request retries it.
+      if (!engine?.chunkFailed(msg.chunkIndex)) break;
       playerBar?.showError(`Couldn't synthesize part ${msg.chunkIndex + 1}: ${msg.error}`);
-      engine?.pause();
+      engine.pause();
       break;
     case "seekToWord":
       engine?.jumpToWord(msg.wordIndex);

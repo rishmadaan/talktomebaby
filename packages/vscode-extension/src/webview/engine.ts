@@ -122,6 +122,15 @@ export class Engine {
     }
   }
 
+  /**
+   * A chunk's synthesis failed: true if playback was waiting on it (the current chunk,
+   * not yet loaded: playing, loading, or a pending seek or prime into it). It is not
+   * marked loaded either way, so a later handoff or seek requests it again.
+   */
+  chunkFailed(chunkIndex: number): boolean {
+    return chunkIndex === this.currentChunk && !this.loaded.has(chunkIndex);
+  }
+
   receiveChunk(chunkIndex: number, data: { audio: Uint8Array; format: string; timings: ChunkTimings }) {
     if (this.loaded.has(chunkIndex)) return;
     const url = this.cb.makeUrl(data.audio, data.format);

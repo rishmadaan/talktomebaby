@@ -318,4 +318,36 @@ describe("Engine", () => {
     expect(onLoading).toHaveBeenLastCalledWith(false);
     expect(onLoading).toHaveBeenCalledTimes(4);
   });
+
+  it("a failed prefetch is not waited on: chunk 0 keeps playing, and the handoff asks for chunk 1 again", () => {
+    const { engine, audios, cb } = setup();
+    engine.start(0);
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: msTimings });
+    audios[0]._loaded(1.0);
+    expect(engine.chunkFailed(1)).toBe(false); // the prefetch of chunk 1 failed
+    expect(audios[0].paused).toBe(false);
+    vi.mocked(cb.requestChunk).mockClear();
+    audios[0]._ended();
+    expect(cb.requestChunk).toHaveBeenCalledWith(1, true); // not treated as loaded: retried
+    expect(engine.chunkFailed(1)).toBe(true);              // the retry fails while playback waits on it
+  });
+
+  it("a primed chunk that fails is waited on", () => {
+    const { engine } = setup();
+    engine.primeAt(2);
+    expect(engine.chunkFailed(1)).toBe(true);
+  });
+
+  it("a failed re-request of the current chunk whose audio already arrived is not waited on", () => {
+    const { engine, audios } = setup();
+    engine.start(0);
+    // Fraction timings: a seek before the metadata loads asks for the chunk again.
+    engine.receiveChunk(0, { audio: new Uint8Array(1), format: "mp3", timings: { unit: "fraction", words: [
+      { wordIndex: 0, start: 0, end: 0.4 }, { wordIndex: 1, start: 0.5, end: 0.9 } ] } });
+    engine.jumpToWord(1);
+    expect(engine.chunkFailed(0)).toBe(false); // that re-request failed; the audio is in hand
+    audios[0]._loaded(1.0);
+    expect(audios[0].paused).toBe(false);
+    expect(audios[0].currentTime).toBe(0.5);
+  });
 });

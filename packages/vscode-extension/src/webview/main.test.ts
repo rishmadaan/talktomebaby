@@ -55,4 +55,11 @@ describe("webview init", () => {
     window.dispatchEvent(new MessageEvent("message", { data: { type: "chunkFailed", chunkIndex: 0, error: "boom" } }));
     expect(document.getElementById("player-status")!.textContent).toBe("⚠ Couldn't synthesize part 1: boom");
   });
+
+  it("a failed prefetch shows no error and does not pause", () => {
+    init("One fish here. Two fish there.");
+    window.dispatchEvent(new MessageEvent("message", { data: { type: "chunkFailed", chunkIndex: 1, error: "boom" } }));
+    expect(document.getElementById("player-status")!.textContent).toBe("Loading…");
+    expect(posted).not.toContainEqual({ type: "state", state: "paused", gen: 4 });
+  });
 });
