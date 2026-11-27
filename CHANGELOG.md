@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.3] - 2026-11-24
+## [0.4.3] - 2026-11-27
 
 - Faster start: Read from Here, Read Selection, resume after reload and a voice switch begin with the starting sentence on its own, then slightly longer pieces, so the first audio arrives quickly instead of waiting behind the top of the document. After those first pieces the parts match a read from the top, so audio already cached for the rest of the document still plays free. A starting sentence longer than 200 characters starts faster too: reading begins with a short part of it that holds your word (normally up to about 160 characters; a single longer word stays whole), and the rest of the sentence follows. On a paid voice, starting again in another part of that same long sentence makes some of its audio again. Reading from the very top of a document is unchanged.
 - The player bar shows "Loading…" while it waits for audio, and "Nothing to read." for a blank or code-only document.
