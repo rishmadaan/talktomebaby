@@ -34,10 +34,12 @@
 
   <h2>[0.4.3] - 2026-11-27</h2>
   <ul>
-    <li>Faster start: Read from Here, Read Selection, resume after reload and a voice switch start with the sentence you are in, then slightly longer pieces, so the first audio arrives quickly. A starting sentence longer than 200 characters starts with a short part of it that holds your word. Reading from the very top is unchanged.</li>
+    <li>Faster start: every read, including from the top, starts with the sentence you are in, then slightly longer pieces, so the first audio arrives quickly. A starting sentence longer than 200 characters starts with a short part of it that holds your word; when reading from the very top, the first sentence stays whole.</li>
+    <li>Changed: after starting partway through a long sentence, Pause then Play goes back to the start of the earliest part of that sentence already loaded, which can be later than the sentence's first word.</li>
     <li>The player bar shows "Loading…" while it waits for audio, and "Nothing to read." for a blank or code-only document.</li>
     <li>Fixed: the chosen speed now holds when the next part of the audio loads; sentences ending in "first." or "last." are no longer joined to the next; cached audio highlights the right words after an edit above the reading position; a part further ahead that fails to load no longer pauses playback; one click on a word jumps there once.</li>
-    <li>Audio cached by earlier versions is made once more on first play; paid providers bill that once.</li>
+    <li>Fixed: a request cancelled by a voice switch or stop is no longer made again; switching voice while paused prepares only the current part; a switch while the first audio is loading keeps your sentence; jumping to a word the voice gave no timing for starts just before it and the highlight stays on the word you chose.</li>
+    <li>Costs on paid voices: audio cached by earlier versions is made once more on first play, and starting again in another part of the same long sentence makes some of its audio again.</li>
     <li>CLI: plain <code>talktomebaby config</code> also prints the Edge use-at-your-own-risk notice, on stderr. The engine and CLI versions are 0.2.3.</li>
   </ul>
 
